@@ -32,7 +32,7 @@ def picture(scene,phase):
  im,d=canvas()
  if scene in [0,5,6,7]:
   for i,(x,y) in enumerate([(4,37),(82,37),(4,85),(82,85)]):
-   if scene==6 and i>=2:continue
+   if scene==6 and i>=3:continue
    panel(d,x,y)
    if scene==5:
     if i==0:
@@ -47,9 +47,15 @@ def picture(scene,phase):
    elif scene==6:
     if i==0:
      d.ellipse((x+26,y+4,x+45,y+23),fill=3);d.ellipse((x+29,y+7,x+42,y+20),fill=2 if phase&1 else 1);d.line((x+31,y+23,x+31,y+29),fill=3);d.line((x+40,y+23,x+40,y+29),fill=3)
-    else:
+    elif i==1:
      d.rectangle((x+18,y+9,x+28,y+22),fill=3);d.rectangle((x+48,y+9,x+58,y+22),fill=3)
      for xx in range(x+31,x+45,5):d.line((xx,y+13,xx+2,y+16),fill=2)
+    else:
+     d.rectangle((x+22,y+6,x+49,y+25),fill=3);d.rectangle((x+24,y+8,x+47,y+23),fill=0)
+     for yy in range(y+9,y+23,2):
+      for xx in range(x+25,x+47,2):
+       if ((xx-x)//2+(yy-y)//2+(phase&1))&1:d.rectangle((xx,yy,xx+1,yy+1),fill=1)
+     d.rectangle((x+32,y+12,x+39,y+19),fill=2)
    elif i==0:chip(d,x+24 if i==0 else x+26,y+6)
    elif i==1:
     d.rectangle((x+13,y+9,x+24,y+26),fill=3);d.rectangle((x+47,y+9,x+58,y+26),fill=3);d.line((x+24,y+17,x+47,y+17),fill=2,width=2)

@@ -6,7 +6,7 @@ are original. The interface also works in monochrome.
 
 ![Cartridge screens](assets/review.png)
 
-[Menu and live button views](assets/controls.png)
+[Menu and live button views](assets/controls.png) | [Flicker phases](assets/flicker.png)
 
 | Release | Cartridge hardware | Test in the third slot |
 | --- | --- | --- |
@@ -14,8 +14,8 @@ are original. The interface also works in monochrome.
 | [MBC3 RTC](<Bacon Bits Test Cartridge (MBC3 RTC).gbc>) | MBC3, timer, 32 KiB RAM | Real Time Clock |
 
 Both releases contain Platform, Link Cable, Audio Range, Buttons, Display,
-SRAM, Burn In, and Infrared. The MBC5 release also drives the insideGadgets
-RGB LED cartridge. Its LED page is disabled in the MBC3 release because the
+SRAM, Burn In, Infrared, and Flicker. The MBC5 release also drives the
+insideGadgets RGB LED cartridge. Its LED page is disabled in the MBC3 release because the
 same writes control the RTC latch on that mapper.
 
 Left/Right browses tests, Up/Down moves between card rows, and A opens one.
@@ -28,7 +28,9 @@ The tests retain readings for comparison: the bytes behind an emulator
 signature, separate D-pad corner holds, all audio divisors and wave shapes,
 first memory failures, and a saved SRAM configuration. Link Cable checks
 sustained traffic and shared state under different loads. Burn In combines
-repeatable loads while keeping the first failure.
+repeatable loads while keeping the first failure. Flicker compares alternating
+layers, shadows, detail, and color fields with a static dither reference. Its
+phase lengths, duty, motion clock, and single-frame step are adjustable.
 
 ## Build
 
@@ -71,7 +73,10 @@ captures, rumble-control output, IR control, RTC halt and restore, and CPU-speed
 cleanup. Frame-by-frame replays check launcher labels during focus and page
 changes, all menu animation poses, and return from Buttons. PyBoy checks all
 16 direction combinations; SameBoy checks the nine ordinary states because
-it filters opposing directions before they reach the cartridge. Paired link
+it filters opposing directions before they reach the cartridge. Both emulators
+measure Flicker phase lengths, stationary reference patches, motion, pause,
+and single-frame steps on both mapper builds and display modes. Raw frames
+cannot establish physical screen persistence or frontend blending. Paired link
 tests use synthetic byte transport. These checks do not
 establish physical cable timing, speaker response, motor strength, infrared
 range, LED brightness, battery retention, or RTC oscillator accuracy.

@@ -13,7 +13,7 @@ static const palette_color_t breakfast[16] = {
  RGB(31,30,27),RGB(28,27,23),RGB(23,9,7),RGB(8,5,4),
  RGB(31,24,6),RGB(31,30,27),RGB(23,9,7),RGB(8,5,4)
 };
-static const char * const labels[] = {"Platform","Link cable","Rumble","Audio range","Buttons","Display","SRAM test","Burn in","Cart LED","Infrared"};
+static const char * const labels[] = {"Platform","Link cable","Rumble","Audio range","Buttons","Display","SRAM test","Burn in","Cart LED","Infrared","Flicker"};
 void ui_cell(uint8_t x,uint8_t y,uint8_t tile) {set_bkg_tile_xy(x,y,tile);}
 void ui_text(uint8_t x,uint8_t y,const char *s) {while(*s) ui_cell(x++,y,(uint8_t)*s++-32u);}
 void ui_clear(void) {
@@ -73,7 +73,7 @@ static void browser(uint8_t fresh) {
 #endif
 (uint8_t)(bb_frame()/12u)&3u);
  for(i=0;i<4;++i){
-  at=group*4u+i;if(at>=10)continue;if(fresh)menu_label(i,at==1?"Link":at==3?"Audio":at==6?"Save RAM":at==7?"Burn in":at==8?"Cart LED":at==9?"IR":
+  at=group*4u+i;if(at>=11)continue;if(fresh)menu_label(i,at==1?"Link":at==3?"Audio":at==6?"Save RAM":at==7?"Burn in":at==8?"Cart LED":at==9?"IR":
 #ifdef BB_MBC3
  at==2?"Clock":
 #endif
@@ -160,14 +160,14 @@ void main(void) {
    else if(selected_test==5)display_run();
    else if(selected_test==6)sram_run();
    else if(selected_test==7)burn_run();
-   else if(selected_test==8)led_run();else ir_run();
+   else if(selected_test==8)led_run();else if(selected_test==9)ir_run();else flicker_run();
  browser(1);
 #endif
  for(;;) {
   vsync();keys=joypad();pressed=keys&~previous;previous=keys;
-  if(pressed&(J_UP|J_DOWN)){selected_test=(selected_test+((pressed&J_DOWN)?2u:8u))%10u;browser((selected_test/4u)!=last_group);}
+  if(pressed&(J_UP|J_DOWN)){if(pressed&J_DOWN){selected_test+=2u;if(selected_test>=11u)selected_test&=1u;}else selected_test=selected_test>=2u?selected_test-2u:selected_test?9u:10u;browser((selected_test/4u)!=last_group);}
   if(pressed&(J_LEFT|J_RIGHT)) {
-   selected_test=(selected_test+((pressed&J_RIGHT)?1u:9u))%10u;
+   selected_test=(selected_test+((pressed&J_RIGHT)?1u:10u))%11u;
    browser((selected_test/4u)!=last_group);
   }
   last_group=selected_test/4u;
@@ -188,7 +188,7 @@ void main(void) {
    else if(selected_test==5)display_run();
    else if(selected_test==6)sram_run();
    else if(selected_test==7)burn_run();
-   else if(selected_test==8)led_run();else ir_run();
+   else if(selected_test==8)led_run();else if(selected_test==9)ir_run();else flicker_run();
    NR52_REG=0;browser(1);previous=0;
   }
  }

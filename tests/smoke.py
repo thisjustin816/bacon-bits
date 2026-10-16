@@ -25,7 +25,7 @@ for cgb in [True,False]:
    p.tick(240,True);assert 'BACON BITS' in text(p),text(p)
    assert 'PLATFORM' in text(p)
    assert len(p.screen.image.convert('RGB').getcolors(65536))>=4
-   press('left');assert p.memory[syms['_selected_test']]==9;press('right');assert 'PLATFORM' in text(p)
+   press('left');assert p.memory[syms['_selected_test']]==10;press('right');assert 'PLATFORM' in text(p)
    press('a');p.tick(240,True)
    assert ('PYBOY' if cgb else 'NO CGB PROBES') in text(p),text(p)
    modal();leave();assert 'PLATFORM' in text(p)

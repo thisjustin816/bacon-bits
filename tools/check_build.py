@@ -57,3 +57,13 @@ button_bytes=re.search(r'button_tiles\[\]=\{([^}]+)\}',controls)[1].split(',')
 assert len(button_bytes)==37*16, 'Live D-pad tile budget changed'
 assert 96+11+3<=110 and 110<112,'Link sprite overlaps the font or instruments'
 print(f'Mixed-case font and instrument ranges passed; browser uses {96+11+3+max(counts)+8+16} resident tiles, including focus; live D-pad uses 37 tiles')
+
+# Flicker keeps the UI font and brand resident while both maps alternate.
+flicker=(ROOT/'src/flicker_data.h').read_text()
+for name,limit in [('preview',98),('reference',15)]:
+ values=re.search(r'flicker_'+name+r'_tiles\[\]=\{([^}]+)\}',flicker)[1].split(',')
+ assert len(values)%16==0 and len(values)//16<=limit,(name,len(values))
+assert 112+98==210 and 210+15==225 and 225+6<=240
+assert 110+98+15+6+16==245
+assert syms['_flicker_run']>>16==4,'Flicker moved out of its allocated code bank'
+print('Flicker fits 245 resident patterns, 6 sprites, and both preloaded LCD maps')

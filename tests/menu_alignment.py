@@ -19,7 +19,7 @@ for variant in ['', 'mbc3']:
     header=''.join(chr(t+32) if t<96 else '#' for t in p.memory[0,0x9825:0x982f])
     assert header=='Bacon Bits',header
     clock=rom.read_bytes()[0x147]==0x10
-    pages=[['Platform','Link','Clock' if clock else 'Rumble','Audio'],['Buttons','Display','Save RAM','Burn in'],['Cart LED','IR']]
+    pages=[['Platform','Link','Clock' if clock else 'Rumble','Audio'],['Buttons','Display','Save RAM','Burn in'],['Cart LED','IR','Flicker']]
     for page,labels in enumerate(pages):
      for i,label in enumerate(labels):
       center=120 if i&1 else 40;start=center-len(label)*4;y=120 if i&2 else 72

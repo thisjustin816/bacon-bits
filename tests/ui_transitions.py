@@ -73,7 +73,7 @@ for variant in ['', 'mbc3']:
        for index,(tile,glyph) in enumerate(sample):
         assert tile>=96 or glyph in [blank,old[index][1],new[index][1]],(name,target,frame,index,'Transient label garbage')
       if target!=0:
-       for _ in range(1 if target==8 else 3):p.press('right')
+       for _ in range(2 if target==8 else 3):p.press('right')
      # Back on Platform, advance to Buttons and choose the live preset.
      for _ in range(4):p.press('right')
      labels_on_buttons_page=label_signature(p.frame())

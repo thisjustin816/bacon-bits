@@ -10,7 +10,10 @@ with tempfile.TemporaryDirectory() as td:
  def get(n,size=1):return int.from_bytes(bytes(p.memory[syms['_'+n]:syms['_'+n]+size]),'little')
  def press(k):p.button_press(k);p.tick(8,True);p.button_release(k);p.tick(16,True)
  try:
-  p.tick(240,True);press('left');press('left');press('left');press('a');p.tick(60,True);press('up');press('a');p.tick(60,True);press('down');press('right') # high load
+  p.tick(240,True)
+  for _ in range(4):press('left')
+  assert get('selected_test')==7
+  press('a');p.tick(60,True);press('up');press('a');p.tick(60,True);press('down');press('right') # high load
   press('down');press('right') # CGB double speed
   press('down');press('right') # continue on failure
   press('a')

@@ -3,7 +3,7 @@
 #include "focus_data.h"
 static uint8_t prior_item;
 void ui_focus(uint8_t item,uint8_t fresh) BANKED {
- const uint8_t *map,*tiles;uint8_t y,i,tile[16],left=(item&1u)?10:0,top=(item&2u)?10:4,variant=selected_test>=8?item+4u:((selected_test/4u)==1u && !(item&1u))?6u+(item>>1):item;
+ const uint8_t *map,*tiles;uint8_t y,i,tile[16],left=(item&1u)?10:0,top=(item&2u)?10:4,variant=selected_test>=8?(item<2u?item+4u:item):((selected_test/4u)==1u && !(item&1u))?6u+(item>>1):item;
  if(!fresh && item==prior_item)return;
  if(!fresh){
   ui_scene_border(prior_item);

@@ -5,8 +5,8 @@ from PIL import Image,ImageDraw
 from pyboy import PyBoy
 ROOT=Path(__file__).resolve().parents[1];shots=[];browsers=[]
 with tempfile.TemporaryDirectory() as td:
- for selected in range(11):
-  variant='mbc3' if selected==10 else '';pick=2 if selected==10 else selected
+ for selected in range(12):
+  variant='mbc3' if selected==11 else '';pick=2 if selected==11 else selected
   f=Path(td)/f'{selected}.gbc';shutil.copy(ROOT/'build'/variant/'bacon-bits.gbc',f)
   p=PyBoy(str(f),window='null',sound_emulated=False);p.set_emulation_speed(0)
   def press(k,after=30):p.button_press(k);p.tick(8,True);p.button_release(k);p.tick(after,True)
@@ -19,7 +19,7 @@ with tempfile.TemporaryDirectory() as td:
     for _ in range(40):p.tick(2,True);frames.append(p.screen.image.convert('RGB').resize((480,432),Image.Resampling.NEAREST))
     frames[0].save(ROOT/'assets/browser.gif',save_all=True,append_images=frames[1:],duration=34,loop=0)
    press('a');p.tick(90,True)
-   if pick>=3 or selected==10:
+   if pick>=3 or selected==11:
     if pick==4:
      for _ in range(3):press('down')
     if pick==6:press('down')
@@ -28,8 +28,8 @@ with tempfile.TemporaryDirectory() as td:
    if pick==3:press('a')
    if pick==4:p.button_press('up');p.button_press('right');p.tick(16,True)
    if pick==6:press('a');press('down');press('a',after=40)
-   if pick in [7,8,9] or selected==10:press('a')
-   if selected==10:p.tick(90,True)
+   if pick in [7,8,9] or selected==11:press('a')
+   if selected==11:p.tick(90,True)
    if pick==3:
     frames=[]
     for _ in range(40):p.tick(2,True);frames.append(p.screen.image.convert('RGB').resize((480,432),Image.Resampling.NEAREST))
@@ -37,7 +37,7 @@ with tempfile.TemporaryDirectory() as td:
    p.screen.image.save(ROOT/'build'/f'review-test-{selected}.png');shots.append(p.screen.image.convert('RGB'))
   finally:p.stop(save=False)
  board=Image.new('RGB',(680,664),(227,219,200));d=ImageDraw.Draw(board)
- labels=['Platform','Link Cable','Rumble','Audio Range','D-pad diagonals','Display settings','SRAM pattern check','Burn In','Cartridge LED','Infrared','Real Time Clock']
+ labels=['Platform','Link Cable','Rumble','Audio Range','D-pad diagonals','Display settings','SRAM pattern check','Burn In','Cartridge LED','Infrared','Flicker comparison','Real Time Clock']
  for i,(im,label) in enumerate(zip(shots,labels)):
   x=8+i%4*168;y=8+i//4*168;board.paste(im,(x,y));d.text((x,y+146),label,fill=(64,40,32))
  # Last row shows the three browser pages.

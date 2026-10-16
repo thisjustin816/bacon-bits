@@ -144,6 +144,52 @@ The ramp covers all 32 component levels within 128 vertical pixels.
 Monochrome hardware shows its four shades. Test patterns use the complete LCD
 so the interface does not obscure pixels being checked.
 
+## Flicker
+
+Flicker compares temporal effects with a static dither reference. Its original
+patterns cover four techniques:
+
+- Layers alternates two background planes behind a solid moving probe.
+- Shadows keeps the scene and probe solid while alternating a small shadow.
+- Fine detail swaps checker phases at cell widths from 1 to 8 pixels.
+- Color mix swaps two large fields, with gray, gold/sky, or red/blue endpoints.
+
+These demonstrate techniques used in games such as ZAS and Shantae. They do
+not reproduce either game's artwork or rendering engine. The overview is a
+fixed illustration of alternating layers and spatial dithering; A opens the
+selected pattern over the full display.
+
+Each preset opens stopped. Select cycles through the overview, cadence,
+motion, and color pages. Phase A and B each last 1-60 LCD frames. Lead chooses
+the first phase. Duty is A's share of the cycle; the displayed cycle rate uses
+the Game Boy's approximately 59.7275 Hz LCD refresh. A 1/1 cycle is about
+29.86 Hz. Unequal lengths help compare visible flicker at different duties.
+
+Motion can advance every frame or once per complete B-to-A cycle, at 0-8
+pixels per step, horizontally, vertically, or diagonally. The probe wraps
+within the test area. Fine detail hides it so the checker remains unobstructed.
+Choose Compare Split to retain a fixed dither patch and both endpoints along
+the bottom edge, or Off to use the full height. The reference never scrolls.
+It remains 50/50 spatial dithering even when the temporal duty is unequal.
+
+On color hardware each endpoint has 32 brightness settings. Monochrome uses
+four shades and the Gray pair. Color mix defaults to gold and sky on color
+hardware, or white and black in monochrome. Equal endpoints intentionally
+remove the difference between phases.
+
+In full view, A pauses or resumes, Right advances exactly one frame while
+paused, and B stops and restores settings. Settings persist through Continue.
+The return chord stops the test before opening the usual Continue/Test menu
+dialog; Continue returns to stopped settings.
+
+Both phase maps are prepared before timed playback. During playback, the
+background map switches in VBlank and the probe uses at most six sprites.
+The emulator suites measure consecutive raw frames, phase durations, static
+references, movement, pause/step, and cleanup in both display modes and both
+mapper builds. These checks cannot establish physical panel response,
+persistence, or a frontend's frame-blending appearance. Those comparisons
+require viewing the output with the relevant display or blending setting.
+
 ## SRAM
 
 Presets cover a power cycle, a 32 KiB bank check, walking bits, and retention

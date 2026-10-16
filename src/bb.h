@@ -26,6 +26,7 @@ void link_run(void) BANKED;
 void audio_run(void) BANKED;
 void buttons_run(void) BANKED;
 void display_run(void) BANKED;
+void flicker_run(void) BANKED;
 void sram_run(void) BANKED;
 void burn_run(void) BANKED;
 char *ui_decimal(char *out,uint32_t n);
