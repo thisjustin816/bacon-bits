@@ -2,6 +2,22 @@
 #define BB_H
 #include <gb/gb.h>
 #include <gb/cgb.h>
+#define UI_FONT_COUNT 96
+#define UI_CHROME 96
+#define UI_RULE 106
+#define UI_CURSOR 103
+#define UI_EMPTY 105
+#define UI_PASS 107
+#define UI_FAIL 108
+#define UI_ACTIVE 109
+#define UI_LINK_BALL 110
+#define UI_ART 112
+#define UI_BRAND 240
+#ifdef BB_MBC3
+#define BB_RAM_BANKS 4
+#else
+#define BB_RAM_BANKS 8
+#endif
 uint8_t bb_exit(void) NONBANKED;
 void platform_run(void) BANKED;
 void link_run(void) BANKED;
@@ -29,4 +45,15 @@ void ui_text(uint8_t x,uint8_t y,const char *s);
 void ui_box(uint8_t top,uint8_t bottom);
 void ui_cell(uint8_t x,uint8_t y,uint8_t tile);
 void ui_header(void);
+extern uint16_t ui_revision;
+void ui_hardware(uint8_t scene,uint8_t frame) BANKED;
+void rtc_run(void) BANKED;
+void rtc_read(uint8_t latch) BANKED;
+void led_run(void) BANKED;
+void ir_run(void) BANKED;
+void rumble_view(void) BANKED;
+void rumble_ui_reset(void) BANKED;
+void ui_scene(uint8_t scene,uint8_t frame) BANKED;
+void ui_scene_reset(void) BANKED;
+void ui_scene_redraw(void) BANKED;
 #endif

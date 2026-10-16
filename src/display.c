@@ -1,13 +1,13 @@
-#pragma bank 6
+#pragma bank 4
 #include "bb.h"
 #include <string.h>
 uint8_t display_pattern,display_color,display_width,display_axis,display_speed=1,display_interval=30,display_invert,display_running,display_ready;
 static uint8_t row_tiles[32],row_attrs[32],patterns[256];
 static uint8_t seen;
-static const char *const presets[]={"","PIXEL CHECK","COLOR RANGE","MOTION CHECK","FLICKER CHECK"};
-static const char *const notes[]={"KEEP SETTINGS","1 PIXEL CHECKER","32 GRAY LEVELS","2 PX PER FRAME","30 FRAME INTERVAL"};
-static const char *const names[]={"SOLID","GRID","CHECKER","STRIPES","RAMPS","SCROLL","FLICKER"};
-static const char *const colors[]={"WHITE","BLACK","GRAY","RED","GREEN","BLUE"};
+static const char *const presets[]={"","Pixel check","Color range","Motion check","Flicker check"};
+static const char *const notes[]={"Keep settings","1 pixel checker","32 gray levels","2 px per frame","30 frame interval"};
+static const char *const names[]={"Solid","Grid","Checker","Stripes","Ramps","Scroll","Flicker"};
+static const char *const colors[]={"White","Black","Gray","Red","Green","Blue"};
 static void palettes(uint8_t flip) {
  palette_color_t p[4];uint8_t i,j,k;uint16_t c;
  if(_cpu!=CGB_TYPE){BGP_REG=(flip^display_invert)?0x1b:0xe4;return;}
@@ -38,14 +38,14 @@ static void prepare(void) {
  palettes(0);display_ready=1;
 }
 static void settings(uint8_t page,uint8_t selected) {
- char v[8],*end;ui_screen("DISPLAY",page?"2/2":"1/2");
- if(!page){ui_field(0,"PATTERN",names[display_pattern],selected==0);ui_field(1,"COLOR",colors[display_color],selected==1);
-  end=ui_decimal(v,1u<<display_width);*end++=' ';*end++='P';*end++='X';*end=0;ui_field(2,"WIDTH",v,selected==2);ui_field(3,"AXIS",display_axis?"VERT":"HORIZ",selected==3);
- }else {ui_value(0,"PX/FRAME",display_speed,selected==0);ui_value(1,"EVERY FR",display_interval,selected==1);ui_field(2,"INVERT",display_invert?"YES":"NO",selected==2);ui_field(3,"MODE","FULL LCD",0);}
+ char v[8],*end;ui_screen("Display",page?"2/2":"1/2");
+ if(!page){ui_field(0,"Pattern",names[display_pattern],selected==0);ui_field(1,"Color",colors[display_color],selected==1);
+  end=ui_decimal(v,1u<<display_width);*end++=' ';*end++='P';*end++='X';*end=0;ui_field(2,"Width",v,selected==2);ui_field(3,"Axis",display_axis?"Vert":"Horiz",selected==3);
+ }else {ui_value(0,"Px/frame",display_speed,selected==0);ui_value(1,"Every fr",display_interval,selected==1);ui_field(2,"Invert",display_invert?"Yes":"No",selected==2);ui_field(3,"Mode","Full LCD",0);}
 }
 void display_run(void) BANKED {
  uint8_t key,old=0,press,page=0,sel=0,phase=0;uint16_t since=0;
- {uint8_t preset=ui_presets("DISPLAY PRESETS",presets,notes,seen);if(preset==255)return;seen=1;
+ {uint8_t preset=ui_presets("Display presets",presets,notes,seen);if(preset==255)return;seen=1;
  if(preset){display_width=display_axis=display_color=display_invert=0;display_speed=2;display_interval=30;display_pattern=preset==1?2:preset==2?4:preset==3?5:6;}}
  display_running=0;settings(page,sel);
  for(;;){vsync();key=joypad();press=key&~old;old=key;

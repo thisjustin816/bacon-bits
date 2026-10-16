@@ -19,7 +19,7 @@ for cgb in [True,False]:
     for k in keys:p.button_press(k)
     p.tick(12,True)
     assert int.from_bytes(bytes(p.memory[syms['_button_diagonal']+corner*4:syms['_button_diagonal']+corner*4+4]),'little')==1
-    assert p.memory[0,0x9800+(6+corner*2)*32+1]==72
+    assert p.memory[0,0x9800+(7 if corner<2 else 13)*32+(2 if corner&1 else 8)]==109
     for k in keys:p.button_release(k)
     p.tick(12,True)
     assert int.from_bytes(bytes(p.memory[syms['_button_diagonal_peak']+corner*2:syms['_button_diagonal_peak']+corner*2+2]),'little')>=10

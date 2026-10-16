@@ -6,10 +6,8 @@ ROOT=Path(__file__).resolve().parents[1]
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'build/bacon-bits.noi').read_text(),re.M)}
 rom=ROOT/'build/bacon-bits.gbc'
 def text(p,mode="plain"):
- rows=[]
- for y in range(18):rows.append(''.join(chr(t+32) if t<64 else chr(t-96) if mode=='popup' and 128<=t<192 else chr(t-48) if mode=='rumble' and 80<=t<144 else chr(t-112) if mode=='rumble' and 144<=t<208 else '#' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]))
- return '\n'.join(rows)
-def platform_text(p):return '\n'.join(''.join(chr(t+32) if t<96 else '-' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
+ return '\n'.join(''.join(chr(t+32).upper() if t<96 else '#' for t in p.memory[0,0x9800+y*32:0x9814+y*32]) for y in range(18))
+def platform_text(p):return '\n'.join(''.join(chr(t+32).upper() if t<96 else '-' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
 for cgb in [True,False]:
  with tempfile.TemporaryDirectory() as td:
   f=Path(td)/'test.gbc';shutil.copy(rom,f);p=PyBoy(str(f),window='null',sound_emulated=False,cgb=cgb);p.set_emulation_speed(0)
@@ -27,21 +25,21 @@ for cgb in [True,False]:
    p.tick(240,True);assert 'BACON BITS' in text(p),text(p)
    assert 'PLATFORM' in text(p)
    assert len(p.screen.image.convert('RGB').getcolors(65536))>=4
-   press('left');assert 'BURN IN' in text(p);press('right');assert 'PLATFORM' in text(p)
+   press('left');assert p.memory[syms['_selected_test']]==9;press('right');assert 'PLATFORM' in text(p)
    press('a');p.tick(240,True)
-   assert ('NAME   PYBOY' if cgb else 'CGB ONLY') in platform_text(p),platform_text(p)
+   assert ('PYBOY' if cgb else 'NO CGB PROBES') in text(p),text(p)
    modal();leave();assert 'PLATFORM' in text(p)
    press('right');press('a');p.tick(100,True)
    assert p.memory[syms['_running']]==0
-   modal();leave();assert 'LINK SUSTAIN' in text(p)
+   modal();leave();assert 'LINK' in text(p)
    press('right');press('a');p.tick(100,True)
-   assert 'RUMBLE PULSE TEST' in text(p,'rumble'),text(p,'rumble')
+   assert 'RUMBLE' in text(p),text(p)
    modal();leave();assert 'RUMBLE' in text(p)
    # Rumble shares $C000 with shadow OAM. Every sprite must be hidden again.
    assert all(p.memory[0xfe00+i*4]==0 for i in range(40)), 'Rumble left stale sprites in OAM'
    press('right');press('a');p.tick(60,True);press('up');press('a');p.tick(60,True)
    assert 'AUDIO RANGE' in text(p) and 'SILENT' in text(p),text(p)
-   press('a');assert 'PLAYING' in text(p);press('b');assert 'AUDIO RANGE' in text(p)
+   press('a');assert 'PLAYING' in text(p);press('b');assert p.memory[syms['_selected_test']]==3
    assert p.memory[0xff26]&15==0,'Audio remained active on exit'
    p.screen.image.save(ROOT/'build'/('smoke-cgb.png' if cgb else 'smoke-dmg.png'))
    print(('CGB' if cgb else 'DMG')+': browser wrap, four tests, modal restoration, rumble return and sprite cleanup passed')

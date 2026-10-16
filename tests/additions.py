@@ -5,6 +5,7 @@ import numpy as np
 from pyboy import PyBoy
 ROOT=Path(__file__).resolve().parents[1]
 rom=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'build/bacon-bits.gbc'
+pattern_bytes=(4 if rom.read_bytes()[0x147]==0x10 else 8)*8192-32
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',rom.with_suffix('.noi').read_text(),re.M)}
 def run(cgb):
  with tempfile.TemporaryDirectory() as td:
@@ -12,7 +13,7 @@ def run(cgb):
   p=PyBoy(str(path),window='null',sound_emulated=False,cgb=cgb);p.set_emulation_speed(0)
   def get(n,size=1):return int.from_bytes(bytes(p.memory[syms['_'+n]:syms['_'+n]+size]),'little')
   def press(k,n=8):p.button_press(k);p.tick(n,True);p.button_release(k);p.tick(16,True)
-  def text():return '\n'.join(''.join(chr(t+32) if t<64 else '#' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
+  def text():return '\n'.join(''.join(chr(t+32).upper() if t<96 else '#' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
   def launch(n):
    for _ in range(16):
     if get('selected_test')==n:break
@@ -61,7 +62,7 @@ def run(cgb):
    press('b');launch(6);press('a');assert 'UNKNOWN' in text(),text();press('b')
    press('right');press('a');assert 'CONFIRM' in text();press('a');assert not get('ram_stage'),'NO default started destructive test'
    press('a');press('down');press('a');wait(500,lambda:'SRAM RESULT' in text())
-   assert 'PASS' in text() and get('ram_checked',4)==65504,(text(),get('ram_checked',4))
+   assert 'PASS' in text() and get('ram_checked',4)==pattern_bytes,(text(),get('ram_checked',4))
    # A real emulator battery file, followed by a fresh machine instance.
    p.stop(save=True);p=PyBoy(str(path),window='null',sound_emulated=False,cgb=cgb);p.set_emulation_speed(0);p.tick(240,True);launch(6)
    press('a');wait(400,lambda:'SRAM RESULT' in text());assert 'PASS' in text(),text()

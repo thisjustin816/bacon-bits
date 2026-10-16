@@ -1,78 +1,12 @@
-"""Original Bacon Bits pixel illustrations, drawn at the native resolution."""
+"""Generate the original shared font, frames and probe markers."""
 from pathlib import Path
-import sys
-from PIL import Image, ImageDraw
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / 'vendor/rumble-pulse'))
+from generated import write_generated
+from scenes import encode_tile
+from PIL import Image,ImageDraw
 from lettering import tiles as letter_tiles
-# Palette indexes are shared by the source PNGs and the cartridge tiles.
-PALETTES = [
-    [(255,247,222),(255,199,48),(190,72,56),(64,40,32)],
-    [(155,215,247),(255,223,72),(255,247,222),(64,40,32)],
-]
-def canvas():
-    im=Image.new('P',(64,48),0);im.putpalette(sum((list(c) for c in PALETTES[0]),[])+[0]*756)
-    return im,ImageDraw.Draw(im)
-def board(d,x,y,w=27,h=35):
-    d.rectangle((x+2,y,x+w-3,y+h),fill=3)
-    d.rectangle((x,y+2,x+w-1,y+h-2),fill=3)
-    d.rectangle((x+2,y+2,x+w-3,y+h-2),fill=1)
-    d.rectangle((x+5,y+5,x+w-6,y+17),fill=3)
-    d.rectangle((x+7,y+7,x+w-8,y+15),fill=0)
-    d.rectangle((x+6,y+23,x+12,y+25),fill=3)
-    d.rectangle((x+8,y+21,x+10,y+27),fill=3)
-    d.rectangle((x+w-10,y+23,x+w-8,y+25),fill=2)
-    d.rectangle((x+w-6,y+21,x+w-4,y+23),fill=2)
-    d.line((x+8,y+h-5,x+w-8,y+h-5),fill=2,width=1)
-icons=[]
-im,d=canvas();board(d,19,5)
-# System: a chip in the device screen, with eight visible contacts.
-d.rectangle((29,14,35,18),fill=3)
-for x in [30,33]:d.line((x,12,x,20),fill=3)
-icons.append(im)
-im,d=canvas();board(d,1,11,25,34);board(d,38,11,25,34)
-d.line([(13,11),(13,3),(50,3),(50,11)],fill=3,width=3)
-d.line([(13,11),(13,3),(50,3),(50,11)],fill=2,width=1)
-icons.append(im)
-im,d=canvas()
-# Rumble: motor, eccentric weight, and vibration marks.
-d.rectangle((19,16,44,35),fill=3);d.rectangle((21,18,42,33),fill=1)
-d.rectangle((15,21,18,29),fill=3);d.rectangle((45,22,50,28),fill=3)
-d.rectangle((49,16,55,26),fill=2);d.rectangle((24,35,27,39),fill=3);d.rectangle((37,35,40,39),fill=3)
-for x,sgn in [(9,-1),(58,1)]:d.line([(x,16),(x+sgn*3,22),(x,28),(x+sgn*3,34)],fill=2,width=2)
-icons.append(im)
-im,d=canvas()
-# Audio: a speaker cone and three separated sound waves.
-d.rectangle((8,18,17,31),fill=3);d.polygon([(17,18),(31,8),(31,41),(17,31)],fill=3)
-d.polygon([(20,20),(28,14),(28,35),(20,29)],fill=1)
-for x,height in [(37,6),(45,11),(53,16)]:
- d.line([(x,24-height),(x+4,24-height//2),(x+4,24+height//2),(x,24+height)],fill=2,width=2)
-icons.append(im)
-
-# Additional original diagnostic icons.
-im,d=canvas();board(d,18,5);d.rectangle((24,24,36,26),fill=2);icons.append(im)
-im,d=canvas();d.rectangle((7,4,56,35),fill=3);d.rectangle((10,7,53,32),fill=0)
-for y in range(8,32,6):
- for x in range(11,53,6):
-  if ((x-11)//6+(y-8)//6)&1:d.rectangle((x,y,x+4,y+4),fill=1)
-d.rectangle((28,36,35,41),fill=3);d.rectangle((19,42,44,44),fill=2);icons.append(im)
-im,d=canvas();d.rectangle((16,8,47,37),fill=3);d.rectangle((19,11,44,34),fill=1)
-for y in range(11,35,7):d.rectangle((11,y,15,y+2),fill=3);d.rectangle((48,y,52,y+2),fill=3)
-d.rectangle((24,18,39,27),fill=0);d.rectangle((27,21,36,24),fill=2);icons.append(im)
-im,d=canvas();d.ellipse((14,7,49,42),fill=3);d.ellipse((17,10,46,39),fill=1)
-d.line([(32,15),(32,25),(40,29)],fill=3,width=3)
-d.line([(12,4),(8,12),(12,20)],fill=2,width=2);d.line([(52,4),(56,12),(52,20)],fill=2,width=2);icons.append(im)
-
+ROOT=Path(__file__).resolve().parents[1]
 def encode(im):
-    data=[]
-    for y in range(0,im.height,8):
-        for x in range(0,im.width,8):
-            for dy in range(8):
-                lo=hi=0
-                for dx in range(8):
-                    c=im.getpixel((x+dx,y+dy));lo=lo*2+(c&1);hi=hi*2+(c>>1)
-                data += [lo,hi]
-    return data
+    return list(b''.join(encode_tile(im,x,y) for y in range(im.height//8) for x in range(im.width//8)))
 
 def array(name,data):
     return 'const unsigned char '+name+'[] = {\n'+''.join('    '+','.join(f'0x{x:02x}' for x in data[i:i+16])+',\n' for i in range(0,len(data),16))+'};\n'
@@ -93,22 +27,16 @@ def main():
       ['00000000','00000000','00333000','03333300','00333000','00000000','00000000','00000000'],
       ['00000000','00000000','00333000','03000300','00333000','00000000','00000000','00000000'],
     ]
-    patterns.append(['00000000']*4+['22222222']*4)
+    patterns.append(['11000000']+['00000000']*7)
     im=Image.new('P',(8*len(patterns),8))
     for i,pat in enumerate(patterns):
       for y,row in enumerate(pat):
        for x,c in enumerate(row):im.putpixel((i*8+x,y),int(c))
     output+=array('bb_chrome',encode(im))
-    icon_output=''
-    for i,icon in enumerate(icons):
-        icon.save(ROOT/'assets'/f'icon-{i}.png');icon_output+=array(f'bb_icon_{i}',encode(icon))
-    # Sunrise: 64 x 24, four colors from the sky palette.
-    sky=Image.new('P',(64,24),0);d=ImageDraw.Draw(sky)
-    d.ellipse((20,5,44,29),fill=1)
-    for a,b in [((32,0),(32,2)),((14,8),(17,10)),((47,10),(50,8)),((21,1),(23,4)),((41,4),(43,1))]:d.line([a,b],fill=1,width=2)
-    d.rectangle((0,20,63,23),fill=2)
-    sky.putpalette(sum((list(c) for c in PALETTES[1]),[])+[0]*756);sky.save(ROOT/'assets/sunrise.png')
-    output+=array('bb_sunrise',encode(sky))
-    (ROOT/'src/icons.h').write_text('/* Generated original browser icons. */\n'+icon_output)
-    (ROOT/'src/art.h').write_text('/* Generated by tools/art.py from original pixel drawings. */\n'+output)
+    marks=Image.new('P',(24,8),0);md=ImageDraw.Draw(marks)
+    md.rectangle((0,0,7,5),fill=3);md.rectangle((1,1,6,4),fill=1)
+    md.rectangle((8,0,15,5),fill=2);md.line((10,1,13,4),fill=3);md.line((13,1,10,4),fill=3)
+    md.rectangle((16,0,23,5),fill=2);md.rectangle((19,2,20,3),fill=0)
+    output+=array('bb_probes',encode(marks))
+    write_generated(ROOT/'src/art.h','/* Generated by tools/art.py from original pixel drawings. */\n'+output)
 if __name__=='__main__':main()

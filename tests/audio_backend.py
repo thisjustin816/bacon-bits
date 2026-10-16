@@ -1,24 +1,25 @@
 """Drive the real compiled APU routines and measure emulator audio captures."""
 from pathlib import Path
-import re,shutil,tempfile,json
+import re,shutil,tempfile,json,sys
 import numpy as np
 from pyboy import PyBoy
 ROOT=Path(__file__).resolve().parents[1]
-syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'build/bacon-bits.noi').read_text(),re.M)}
+rom=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'build/bacon-bits.gbc'
+syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',rom.with_suffix('.noi').read_text(),re.M)}
 with tempfile.TemporaryDirectory() as td:
  f=Path(td)/'test.gbc'
- data=bytearray((ROOT/'build/bacon-bits.gbc').read_bytes())
+ data=bytearray(rom.read_bytes())
  # Enter a WRAM sentinel after GBDK startup instead of entering the browser.
- entry=syms['_main'];data[entry:entry+3]=bytes([0xc3,0,0xd8]);f.write_bytes(data)
+ entry=syms['_main'];data[entry:entry+3]=bytes([0xc3,0,0xdb]);f.write_bytes(data)
  p=PyBoy(str(f),window='null',sound_emulated=True);p.set_emulation_speed(0)
- def install(_):p.memory[0xd800:0xd803]=[0xf3,0x18,0xfe]
+ def install(_):p.memory[0xdb00:0xdb03]=[0xf3,0x18,0xfe]
  p.hook_register(0,0x100,install,None);p.tick(240,True)
  def put(name,value):p.memory[syms['_'+name]]=value
  def call(name):
   addr=syms['_'+name];assert addr>>16==4
   code=bytes([0x3e,4,0xea,0,0x20,0xcd,addr&255,(addr>>8)&255,0x18,0xfe])
-  p.memory[0xd810:0xd810+len(code)]=code;p.register_file.PC=0xd810;p.tick(30,True)
-  assert p.register_file.PC in [0xd818,0xd819],hex(p.register_file.PC)
+  p.memory[0xdb10:0xdb10+len(code)]=code;p.register_file.PC=0xdb10;p.tick(30,True)
+  assert p.register_file.PC in [0xdb18,0xdb19],hex(p.register_file.PC)
  def record(frames=150):
   chunks=[]
   for _ in range(frames):p.tick(1,True);chunks.append(p.sound.ndarray.copy())

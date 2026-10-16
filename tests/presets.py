@@ -10,7 +10,7 @@ for test in range(3,8):
    f=Path(td)/'test.gbc';shutil.copy(ROOT/'build/bacon-bits.gbc',f);p=PyBoy(str(f),window='null',sound_emulated=False);p.set_emulation_speed(0)
    def get(n,size=1):return int.from_bytes(bytes(p.memory[syms['_'+n]:syms['_'+n]+size]),'little')
    def press(k):p.button_press(k);p.tick(8,True);p.button_release(k);p.tick(30,True)
-   def text():return '\n'.join(''.join(chr(t+32) if t<64 else '#' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
+   def text():return '\n'.join(''.join(chr(t+32).upper() if t<96 else '#' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
    try:
     p.tick(240,True)
     for _ in range(test):press('right')

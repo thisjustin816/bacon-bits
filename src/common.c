@@ -1,24 +1,32 @@
 #include "bb.h"
 #include "crc_table.h"
+#include <string.h>
 uint8_t bb_fast;
 char *ui_decimal(char *out,uint32_t n) {
  char digits[10];uint8_t count=0;
  do {digits[count++]=(char)('0'+n%10UL);n/=10UL;}while(n);
  while(count)*out++=digits[--count];*out=0;return out;
 }
-void ui_number(uint8_t x,uint8_t y,uint32_t n) {char s[11];ui_decimal(s,n);ui_text(x,y,s);}
+void ui_number(uint8_t x,uint8_t y,uint32_t n) {
+ static const uint32_t limit[]={1UL,10UL,100UL,1000UL,10000UL,100000UL,1000000UL,10000000UL,100000000UL,1000000000UL};
+ char s[12],*end;uint8_t unit=0,width=19u-x;if(x>=19u)return;
+ while(width<10u && n>=limit[width-(unit!=0)]){
+  if(width<3u || unit==3){ui_cell(x,y,'+'-32u);return;}n/=1000u;++unit;
+ }
+ end=ui_decimal(s,n);if(unit)*end++=" KMG"[unit];*end=0;ui_text(x,y,s);
+}
 void ui_screen(const char *title,const char *page) {ui_init();ui_text(1,4,title);ui_text(16,4,page);ui_box(5,14);}
 void ui_field(uint8_t row,const char *label,const char *value,uint8_t selected) {
- uint8_t y=6u+2u*row;fill_bkg_rect(1,y,18,1,0);
- ui_cell(1,y,selected?71:0);ui_text(2,y,label);ui_text(11,y,value);
+ uint8_t x,y=6u+2u*row;fill_bkg_rect(1,y,18,1,0);
+ ui_cell(1,y,selected?UI_CURSOR:0);ui_text(2,y,label);for(x=11;*value && x<19;++x)ui_cell(x,y,(uint8_t)*value++-32u);
 }
 void ui_value(uint8_t row,const char *label,uint32_t value,uint8_t selected) {char s[11];if(value>99999999UL){ui_field(row,label,"99M+",selected);return;}ui_decimal(s,value);ui_field(row,label,s,selected);}
 void ui_status(const char *text) {fill_bkg_rect(0,16,20,1,0);ui_text(1,16,text);}
 uint8_t ui_confirm(const char *message) {
  uint8_t key,old=0,yes=0;
- ui_screen("CONFIRM","");ui_text(2,6,message);ui_text(5,9,"NO");ui_text(5,12,"YES");
+ ui_screen("Confirm","");ui_text((20u-strlen(message))/2u,6,message);ui_text(5,9,"No");ui_text(5,12,"Yes");
  while(joypad())vsync();
- for(;;){vsync();key=joypad();ui_cell(3,9,yes?0:71);ui_cell(3,12,yes?71:0);
+ for(;;){vsync();key=joypad();ui_cell(3,9,yes?0:UI_CURSOR);ui_cell(3,12,yes?UI_CURSOR:0);
   if((key&~old)&(J_UP|J_DOWN))yes^=1u;
   if((key&~old)&J_B){yes=0;break;}if((key&~old)&J_A)break;old=key;}
  while(joypad())vsync();return yes;
@@ -45,11 +53,11 @@ void bb_cpu(uint8_t fast) NONBANKED {
 uint8_t ui_presets(const char *title,const char *const *names,const char *const *notes,uint8_t seen) {
  uint8_t i,pick=seen?0:1,key,old=0,n;
  ui_init();ui_text(1,4,title);ui_box(5,16);
- for(i=0;i<5;++i)ui_text(3,6+i*2,i?names[i]:(seen?"CONTINUE":"MANUAL"));
- ui_cell(1,6+pick*2,71);ui_text(1,17,notes[pick]);while(joypad())vsync();
+ for(i=0;i<5;++i)ui_text(3,6+i*2,i?names[i]:(seen?"Continue":"Manual"));
+ ui_cell(1,6+pick*2,UI_CURSOR);ui_text(1,17,notes[pick]);while(joypad())vsync();
  for(;;){vsync();key=joypad();n=key&~old;old=key;
   if(n&J_B){pick=255;break;}if(n&J_A)break;
-  if(n&(J_UP|J_DOWN)){ui_cell(1,6+pick*2,0);pick=(pick+((n&J_UP)?4u:1u))%5u;ui_cell(1,6+pick*2,71);fill_bkg_rect(0,17,20,1,0);ui_text(1,17,notes[pick]);}
+  if(n&(J_UP|J_DOWN)){ui_cell(1,6+pick*2,0);pick=(pick+((n&J_UP)?4u:1u))%5u;ui_cell(1,6+pick*2,UI_CURSOR);fill_bkg_rect(0,17,20,1,0);ui_text(1,17,notes[pick]);}
  }while(joypad())vsync();return pick;
 }
 

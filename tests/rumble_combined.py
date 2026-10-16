@@ -1,6 +1,6 @@
 """Replay the original timing suite against the banked assembly bytes."""
 from pathlib import Path
-import json,runpy,sys
+import json,runpy,sys,re
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'vendor/rumble-pulse'))
 import build
@@ -26,7 +26,17 @@ rom=(ROOT/'build/bacon-bits.gbc').read_bytes()
 flat=bytearray(0x8000)
 flat[0x100:0x103]=bytes([0xc3,0,0x40])
 flat[0x4000:]=rom[3*0x4000:4*0x4000]
-build.a.rom=flat
 build.a.labels=json.loads((ROOT/'build/rumble-labels.json').read_text())
+# The flat timing interpreter cannot enter the banked C renderer. Use the
+# retained standalone renderer at the same draw boundaries; motor, delay and
+# input code remain the actual combined-bank bytes. PyBoy/SameBoy cover the C UI.
+syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'build/bacon-bits.noi').read_text(),re.M)}
+needle=b'\xcd'+syms['_rumble_draw_gate'].to_bytes(2,'little')
+for name in ['draw_all','draw_footer']:
+ start=build.a.labels[name];end=build.a.labels['legacy_'+name]
+ at=flat.find(needle,start,end)
+ assert at>=0,(name,'missing graphical render bridge')
+ flat[at+1:at+3]=end.to_bytes(2,'little')
+build.a.rom=flat
 runpy.run_path(str(ROOT/'vendor/rumble-pulse/test.py'),run_name='__main__')
 print('Original rumble timing suite passed against the combined ROM bank')

@@ -7,7 +7,7 @@ from pyboy import PyBoy
 ROOT=Path(__file__).resolve().parents[1]
 rom=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'build/bacon-bits.gbc'
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',rom.with_suffix('.noi').read_text(),re.M)}
-def text(p):return '\n'.join(''.join(chr(t+32) if t<64 else '#' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
+def text(p):return '\n'.join(''.join(chr(t+32).upper() if t<96 else '#' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
 with tempfile.TemporaryDirectory() as td:
  f=Path(td)/'test.gbc';shutil.copy(rom,f)
  p=PyBoy(str(f),window='null',sound_emulated=True);p.set_emulation_speed(0)

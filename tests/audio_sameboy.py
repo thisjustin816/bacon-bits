@@ -12,7 +12,7 @@ def row(n):
  while get('audio_row')!=n:p.press('down')
 def io(n):return p.read(0xff00+n)[0]
 def text():
- v=p.vram();return '\n'.join(''.join(chr(t+32) if t<64 else '#' for t in v[0x1800+y*32:0x1800+y*32+20]) for y in range(18))
+ v=p.vram();return '\n'.join(''.join(chr(t+32).upper() if t<96 else '#' for t in v[0x1800+y*32:0x1800+y*32+20]) for y in range(18))
 def capture(frames=30):
  p.capture=True;p.samples.clear();p.tick(frames)
  data=np.frombuffer(b''.join(p.samples),dtype=np.int16).reshape(-1,2).astype(float)
