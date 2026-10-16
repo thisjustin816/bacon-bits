@@ -1,0 +1,13 @@
+build/
+__pycache__/
+*.ram
+*.sav
+*.srm
+*.state
+*.o
+
+.venv/
+*.gb
+*.gbc
+*.rtc
+!Bacon Bits (World).gbc
