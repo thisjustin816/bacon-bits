@@ -20,31 +20,31 @@ with tempfile.TemporaryDirectory() as td:
   for _ in range(frames):p.tick(1,True);chunks.append(p.sound.ndarray.copy())
   return np.concatenate(chunks,axis=0).astype(float)
  try:
-  p.tick(240,True);press('left');press('a');p.tick(60,True)
+  p.tick(240,True);press('right');press('right');press('right');press('a');p.tick(60,True);press('up');press('a');p.tick(60,True)
   assert '64.00' in text(p),text(p)
   assert 'SILENT' in text(p) and get('tone_playing')==0
   press('a');assert 'PLAYING' in text(p)
   endpoints=[]
-  for voice in range(6):
+  for voice in range(4):
    assert get('tone_voice')==voice
    row(1)
    while get('tone_index'):press('left')
-   count=34 if voice<4 else 60
+   count=34 if voice<3 else 60
    first=get('tone_hundredths',4)
-   assert first==(6400 if voice<2 else 3200 if voice<4 else 457)
+   assert first==(6400 if voice<2 else 3200 if voice<3 else 457)
    for i in range(1,count):
     before=get('tone_hundredths',4);press('right')
-    assert get('tone_index')==i and get('tone_hundredths',4)>before
+    assert get('tone_index')==i and get('tone_hundredths',4)>before,(voice,i,get('tone_index'),get('audio_row'),get('audio_page'))
    last=get('tone_hundredths',4)
-   assert last==(13107200 if voice<2 else 6553600 if voice<4 else 52428800)
+   assert last==(13107200 if voice<2 else 6553600 if voice<3 else 52428800)
    assert str(last//100) in text(p),text(p)
    press('right');assert get('tone_index')==count-1,'Stepping past the end wrapped to an unexpected pitch'
    endpoints.append({'voice':voice,'first_hundredths':first,'last_hundredths':last,'steps':count})
-   row(2);maximum=3 if 2<=voice<4 else 15
+   row(2);maximum=3 if 2<=voice<3 else 15
    for level in range(maximum-1,-1,-1):press('left');assert get('tone_level')==level
    assert np.std(record(5))<0.1,'Zero level produced audio samples'
    for level in range(1,maximum+1):press('right');assert get('tone_level')==level
-   if voice<5:row(0);press('right')
+   if voice<3:row(0);press('right')
   # Use a midrange pulse for independent stereo sample checks.
   row(0);press('right');row(1)
   while get('tone_index')>22:press('left')
@@ -59,7 +59,7 @@ with tempfile.TemporaryDirectory() as td:
   press('b');assert get('tone_playing')==0 and p.memory[0xff26]&0x80==0
   assert 'BACON BITS' in text(p)
   # Platform detection must still find an idle APU after playing every voice.
-  press('right');press('a');p.tick(180,True)
+  press('left');press('left');press('left');press('a');p.tick(180,True)
   assert p.memory[0xff76]==0 and p.memory[0xff77]==0
   (ROOT/'build/audio-ui-results.json').write_text(json.dumps(endpoints,indent=2)+'\n')
   print('Audio UI: exact displayed endpoints, 34/60 steps, every level, clamps, stereo samples, safe exit, and idle APU passed')

@@ -27,11 +27,11 @@ with tempfile.TemporaryDirectory() as td:
  def level(a):return float(np.std(a.astype(float)))
  results=[]
  try:
-  for voice in range(6):
-   put('tone_voice',voice);put('tone_index',0);put('tone_level',3 if 2<=voice<4 else 15);put('tone_output',0);put('tone_playing',1)
-   call('tone_apply');a=record(480 if voice>=4 else 150);print('capture',voice,a.shape,level(a),flush=True)
+  for voice in range(4):
+   put('tone_voice',voice);put('tone_index',0);put('tone_level',3 if 2<=voice<3 else 15);put('tone_output',0);put('tone_playing',1);put('tone_gate',1)
+   call('tone_apply');a=record(480 if voice>=3 else 150);print('capture',voice,a.shape,level(a),flush=True)
    assert level(a)>0.1,(voice,'silent capture')
-   if voice<4:
+   if voice<3:
     # Nyquist-safe fundamentals at the lowest stepped frequency.
     mono=a.astype(float).mean(axis=1);mono-=mono.mean();spectrum=np.abs(np.fft.rfft(mono*np.hanning(len(mono))))
     freqs=np.fft.rfftfreq(len(mono),1/p.sound.sample_rate);expected=64 if voice<2 else 32
@@ -41,5 +41,5 @@ with tempfile.TemporaryDirectory() as td:
    put('tone_level',0);call('tone_apply');silent=record(60)
    assert level(silent)<0.1,(voice,'mute was audible in capture',level(silent))
   (ROOT/'build/audio-backend-results.json').write_text(json.dumps(results,indent=2)+'\n')
-  print('Compiled APU: six voices produce emulator samples, mute is silent, pulse/wave low endpoints have the expected fundamental')
+  print('Compiled APU: four channels produce emulator samples, mute is silent, pulse/wave low endpoints have the expected fundamental')
  finally:p.stop(save=False)

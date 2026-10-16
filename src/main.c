@@ -2,16 +2,17 @@
 #include "art.h"
 #include <string.h>
 
-uint8_t selected_test;
+extern const unsigned char bb_icon_0[],bb_icon_1[],bb_icon_2[],bb_icon_3[],bb_icon_4[],bb_icon_5[],bb_icon_6[],bb_icon_7[];
+uint8_t selected_test,bb_keys;
 static uint8_t saved_tiles[360], saved_attrs[360], saved_patterns[1280];
 static palette_color_t saved_palette[4];
 static const palette_color_t breakfast[8] = {
  RGB(31,30,27),RGB(31,24,6),RGB(23,9,7),RGB(8,5,4),
  RGB(19,26,30),RGB(31,27,9),RGB(31,30,27),RGB(8,5,4)
 };
-static const char * const labels[] = {"PLATFORM","LINK SUSTAIN","RUMBLE","AUDIO RANGE"};
-static const char * const details[] = {"IDENTIFY HARDWARE","CHECK BOTH SIDES","COMPARE PULSES","CHECK TONE RANGE"};
-static const unsigned char * const pictures[]={bb_icon_0,bb_icon_1,bb_icon_2,bb_icon_3};
+static const char * const labels[] = {"PLATFORM","LINK SUSTAIN","RUMBLE","AUDIO RANGE","BUTTONS","DISPLAY","SRAM TEST","BURN IN"};
+static const char * const details[] = {"IDENTIFY HARDWARE","CHECK BOTH SIDES","COMPARE PULSES","CHECK TONE RANGE","CHECK EVERY BUTTON","CHECK THE SCREEN","CHECK SAVED DATA","RUN REPEATED CHECKS"};
+static const unsigned char * const pictures[]={bb_icon_0,bb_icon_1,bb_icon_2,bb_icon_3,bb_icon_4,bb_icon_5,bb_icon_6,bb_icon_7};
 
 void ui_cell(uint8_t x,uint8_t y,uint8_t tile) {set_bkg_tile_xy(x,y,tile);}
 void ui_text(uint8_t x,uint8_t y,const char *s) {while(*s) ui_cell(x++,y,(uint8_t)*s++-32u);}
@@ -30,8 +31,9 @@ void ui_box(uint8_t top,uint8_t bottom) {
 void ui_header(void) {
  uint8_t x,y;
  ui_text(1,1,"BACON BITS");
+ fill_bkg_rect(0,2,20,1,74);
  for(y=0;y<3;++y) for(x=0;x<8;++x) ui_cell(12+x,y,128+y*8+x);
- if(_cpu==CGB_TYPE) {VBK_REG=1;fill_bkg_rect(0,0,20,4,1);VBK_REG=0;}
+ if(_cpu==CGB_TYPE) {VBK_REG=1;fill_bkg_rect(0,0,20,3,1);VBK_REG=0;}
 }
 void ui_init(void) {
  uint8_t i;
@@ -41,7 +43,7 @@ void ui_init(void) {
  vsync();
  if(_cpu==CGB_TYPE) set_bkg_palette(0,2,breakfast);
  BGP_REG=0xe4;
- set_bkg_data(0,64,bb_font);set_bkg_data(64,10,bb_chrome);set_bkg_data(128,24,bb_sunrise);
+ set_bkg_data(0,64,bb_font);set_bkg_data(64,11,bb_chrome);set_bkg_data(128,24,bb_sunrise);
  ui_clear();ui_header();DISPLAY_ON;
 }
 static uint8_t icon_slot;
@@ -50,17 +52,19 @@ static void browser(uint8_t fresh) {
  if(fresh) { ui_init();ui_box(4,14);icon_slot=80; }
  else {icon_slot=240u-icon_slot;fill_bkg_rect(1,5,18,1,0);fill_bkg_rect(0,16,20,1,0);}
  ui_text((20-strlen(labels[selected_test]))/2,5,labels[selected_test]);
- set_bkg_data(icon_slot,48,pictures[selected_test]);
+ SWITCH_ROM(1);set_bkg_data(icon_slot,48,pictures[selected_test]);
  for(y=0;y<6;++y)for(x=0;x<8;++x)ui_cell(6+x,7+y,icon_slot+y*8+x);
  ui_cell(1,9,70);ui_cell(18,9,71);
- for(x=0;x<4;++x)ui_cell(6+x*2,13,selected_test==x?72:73);
+ for(x=0;x<4;++x)ui_cell(6+x*2,13,(selected_test&3u)==x?72:73);
  ui_text((20-strlen(details[selected_test]))/2,16,details[selected_test]);
+ ui_number(8,3,selected_test+1u);ui_text(9,3,"/8");
 }
 
 /* The modal borrows tiles 128-207 and restores both patterns and maps. */
 uint8_t bb_exit(void) NONBANKED {
  uint8_t keys,previous=0,choice=0,y,x,sprites;
- if((joypad()&(J_A|J_B|J_START|J_SELECT))!=(J_A|J_B|J_START|J_SELECT)) return 0;
+ bb_keys=joypad();
+ if((bb_keys&(J_A|J_B|J_START|J_SELECT))!=(J_A|J_B|J_START|J_SELECT)) return 0;
  sprites=LCDC_REG&2u;HIDE_SPRITES;
  VBK_REG=0;get_bkg_tiles(0,0,20,18,saved_tiles);get_bkg_data(128,80,saved_patterns);
  if(_cpu==CGB_TYPE) {
@@ -118,13 +122,17 @@ void main(void) {
  if(selected_test==0)platform_run();
  else if(selected_test==1)link_run();
  else if(selected_test==2)rumble_run();
- else audio_run();
+ else if(selected_test==3)audio_run();
+   else if(selected_test==4)buttons_run();
+   else if(selected_test==5)display_run();
+   else if(selected_test==6)sram_run();
+   else burn_run();
  browser(1);
 #endif
  for(;;) {
   vsync();keys=joypad();pressed=keys&~previous;previous=keys;
   if(pressed&(J_LEFT|J_RIGHT)) {
-   selected_test=(selected_test+((pressed&J_RIGHT)?1u:3u))&3u;
+   selected_test=(selected_test+((pressed&J_RIGHT)?1u:7u))&7u;
    browser(0);
   }
   if(pressed&J_A) {
@@ -132,7 +140,11 @@ void main(void) {
    if(selected_test==0)platform_run();
    else if(selected_test==1)link_run();
    else if(selected_test==2)rumble_run();
-   else audio_run();
+   else if(selected_test==3)audio_run();
+   else if(selected_test==4)buttons_run();
+   else if(selected_test==5)display_run();
+   else if(selected_test==6)sram_run();
+   else burn_run();
    NR52_REG=0;browser(1);previous=0;
   }
  }

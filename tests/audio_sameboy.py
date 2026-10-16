@@ -20,29 +20,29 @@ def capture(frames=30):
  return data
 checks=0
 try:
- p.tick(600);p.press('left');p.press('a');p.tick(60)
+ p.tick(600);p.press('right');p.press('right');p.press('right');p.press('a');p.tick(60);p.press('up');p.press('a');p.tick(60)
  assert '64.00' in text(),text();assert not get('tone_playing')
  p.press('a')
- for voice in range(6):
+ for voice in range(4):
   assert get('tone_voice')==voice
   row(1)
   while get('tone_index'):p.press('left')
-  count=34 if voice<4 else 60
+  count=34 if voice<3 else 60
   for index in range(count):
    if index:p.press('right')
-   if voice<4:
+   if voice<3:
     reg=get('tone_register',2);lo,hi=(0x13,0x14) if voice==0 else (0x18,0x19) if voice==1 else (0x1d,0x1e)
     assert io(lo)==reg&255 and io(hi)&7==reg>>8,(voice,index,reg,io(lo),io(hi))
-   else:assert io(0x22)==get('tone_noise_clock')|(8 if voice==5 else 0)
+   else:assert io(0x22)==get('tone_noise_clock')
    checks+=1
-  row(2);maximum=3 if voice in [2,3] else 15
+  row(2);maximum=3 if voice==2 else 15
   for level in range(maximum,-1,-1):
    if level<maximum:p.press('left')
-   if voice in [2,3]:assert io(0x1c)&0x60==[0,0x60,0x40,0x20][level]
+   if voice==2:assert io(0x1c)&0x60==[0,0x60,0x40,0x20][level]
    else:assert io(0x12 if voice==0 else 0x17 if voice==1 else 0x21)==level<<4
    checks+=1
   for _ in range(maximum):p.press('right')
-  if voice<5:row(0);p.press('right')
+  if voice<3:row(0);p.press('right')
  # The real UI drives both stereo routing and the audio samples.
  row(0);p.press('right');row(1)
  while get('tone_index')>22:p.press('left')

@@ -1,0 +1,43 @@
+#pragma bank 7
+#include "bb.h"
+#include "tones.h"
+#include "sram.h"
+extern const uint16_t burn_expected[8];
+uint32_t burn_seconds,burn_cycles,burn_errors;
+uint16_t burn_first_expected,burn_first_read,burn_first_offset;
+uint8_t burn_first_kind,burn_first_bank,burn_running,burn_bank,burn_ram_status;
+static uint8_t scratch[256];
+static uint16_t expected[8],crc,offset;
+static uint8_t duration=1,load=1,fast,onfail,output,motor,ram_check;
+static uint8_t seen;
+static const char *const presets[]={"","QUICK CHECK","LONG SOAK","OUTPUT LOAD","SRAM WATCH"};
+static const char *const notes[]={"KEEP SETTINGS","1 MIN / MEDIUM","30 MIN / HIGH LOAD","AUDIO + RUMBLE","READ ONLY SRAM"};
+static const uint8_t minutes[]={1,5,10,30,60,0};
+static void fail(uint8_t kind,uint8_t b,uint16_t a,uint16_t want,uint16_t got){if(!burn_errors){burn_first_kind=kind;burn_first_bank=b;burn_first_offset=a;burn_first_expected=want;burn_first_read=got;}++burn_errors;}
+static void outputs_off(void){burn_audio(255);*(volatile uint8_t *)0x4000=0;bb_cpu(0);}
+static void settings(uint8_t page,uint8_t row){ui_screen("BURN IN",page?"2/2":"1/2");if(!page){if(minutes[duration])ui_value(0,"MINUTES",minutes[duration],row==0);else ui_field(0,"MINUTES","LOOP",row==0);ui_field(1,"LOAD",load==0?"LIGHT":load==1?"MEDIUM":"HIGH",row==1);ui_field(2,"CPU",fast?"DOUBLE":"NORMAL",row==2);ui_field(3,"ON FAIL",onfail?"CONTINUE":"STOP",row==3);}else{ui_field(0,"AUDIO",output==0?"OFF":output==1?"PULSE":output==2?"WAVE":"NOISE",row==0);ui_value(1,"RUMBLE F",motor,row==1);ui_field(2,"SRAM",ram_check?"VERIFY":"SKIP",row==2);ui_field(3,"SCRATCH","256 BYTE",0);}ui_status("READY");}
+static void status_body(uint8_t page){if(!page){ui_value(0,"SECONDS",burn_seconds,0);ui_value(1,"CYCLES",burn_cycles,0);ui_value(2,"ERRORS",burn_errors,0);ui_value(3,"ROM BANK",burn_bank,0);}else{ui_value(0,"BANK",burn_first_bank,0);ui_value(1,"OFFSET",burn_first_offset,0);ui_value(2,"EXPECTED",burn_first_expected,0);ui_value(3,"READ",burn_first_read,0);}ui_text(1,15,burn_ram_status==4?"SRAM NO RECORD":burn_ram_status==3?"SRAM FAIL":burn_ram_status==2?"SRAM CHECKED":burn_ram_status==1?"SRAM VERIFY":"SRAM SKIPPED");ui_status(burn_running?"RUNNING":"STOPPED");}
+static void status(uint8_t page){ui_screen(page?(burn_first_kind==1?"ROM FAILURE":burn_first_kind==2?"SCRATCH FAILURE":burn_first_kind==3?"SRAM FAILURE":"NO FAILURE"):(burn_running?"BURN RUN":"BURN STOP"),page?"2/2":"1/2");status_body(page);}
+void burn_run(void) BANKED {uint8_t row=0,page=0,key,old=0,n,finished=0,i,pattern=0,ram_active=0;uint16_t last=0,delta,chunk,a,now;uint32_t phase=0;
+ {uint8_t preset=ui_presets("BURN PRESETS",presets,notes,seen);if(preset==255)return;seen=1;
+ if(preset){duration=0;load=1;fast=onfail=output=motor=ram_check=0;
+ if(preset==2){duration=3;load=2;fast=(_cpu==CGB_TYPE);}if(preset==3){duration=1;load=2;output=1;motor=1;page=1;}if(preset==4){duration=2;ram_check=1;}}}
+ burn_running=0;settings(page,row);
+ for(;;){vsync();key=joypad();n=key&~old;old=key;
+ if(burn_running){now=bb_frame();delta=now-last;last=now;phase+=(uint32_t)delta*70224UL;while(phase>=4194304UL){phase-=4194304UL;++burn_seconds;}
+  chunk=load==0?32:load==1?128:256;crc=bb_rom_crc(burn_bank,offset,chunk,crc);offset+=chunk;
+  if(offset==16384){if(crc!=expected[burn_bank])fail(1,burn_bank,0,expected[burn_bank],crc);crc=0xffff;offset=0;if(++burn_bank==8){burn_bank=0;++burn_cycles;}}
+  for(a=0;a<256;++a)scratch[a]=(uint8_t)a^pattern;
+  for(a=0;a<256;++a){uint8_t got=*(volatile uint8_t *)&scratch[a];if(got!=((uint8_t)a^pattern))fail(2,0,a,(uint8_t)a^pattern,got);}++pattern;
+  if(ram_active && sram_step()){ram_active=0;burn_ram_status=ram_errors?3:2;if(ram_errors)fail(3,ram_first_bank,ram_first_address,ram_want,ram_got);}
+  if(ram_check && !ram_active && !offset && !burn_bank)ram_active=sram_begin(0);
+  *(volatile uint8_t *)0x4000=(motor && (bb_frame()%60u)<motor)?8:0;
+  if((n&J_B) || (burn_errors && !onfail) || (minutes[duration] && burn_seconds>=(uint32_t)minutes[duration]*60UL)){burn_running=0;finished=1;if(ram_active)sram_end();outputs_off();status(page);}
+  else if((n&J_SELECT) || !(bb_frame()&31u)){if(n&J_SELECT){page^=1;status(page);}else status_body(page);}continue;
+ }
+ if(finished){if(n&J_B)return;if(n&J_SELECT){page^=1;status(page);}if(n&J_START){finished=0;settings(page,row);}continue;}
+ if(n&J_B)return;if(n&J_SELECT){page^=1;row=0;}if(n&J_UP)row=(row+(page?2u:3u))%(page?3u:4u);if(n&J_DOWN)row=(row+1u)%(page?3u:4u);
+ if(n&(J_LEFT|J_RIGHT)){uint8_t add=(n&J_RIGHT)?1:255;if(!page){if(!row)duration=(duration+((add==1)?1:5))%6;else if(row==1)load=(load+((add==1)?1:2))%3;else if(row==2 && _cpu==CGB_TYPE)fast^=1;else if(row==3)onfail^=1;}else {if(!row)output=(output+add)&3;else if(row==1){if(add==1 && motor<6)++motor;if(add!=1 && motor)--motor;}else if(row==2)ram_check^=1;}}
+ if(n&J_A){for(i=0;i<8;++i)expected[i]=burn_expected[i];burn_seconds=burn_cycles=burn_errors=phase=0;burn_first_kind=burn_first_bank=burn_first_expected=burn_first_read=burn_first_offset=0;burn_bank=0;offset=0;crc=0xffff;last=bb_frame();burn_running=1;if(output)burn_audio(output==1?0:output==2?2:3);bb_cpu(fast);ram_active=ram_check?sram_begin(0):0;burn_ram_status=ram_check?(ram_active?1:4):0;page=0;status(page);}else if(n)settings(page,row);
+ }
+}

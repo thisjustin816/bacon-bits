@@ -27,7 +27,7 @@ for cgb in [True,False]:
    p.tick(240,True);assert 'BACON BITS' in text(p),text(p)
    assert 'PLATFORM' in text(p)
    assert len(p.screen.image.convert('RGB').getcolors(65536))>=4
-   press('left');assert 'AUDIO RANGE' in text(p);press('right');assert 'PLATFORM' in text(p)
+   press('left');assert 'BURN IN' in text(p);press('right');assert 'PLATFORM' in text(p)
    press('a');p.tick(240,True)
    assert ('NAME   PYBOY' if cgb else 'CGB ONLY') in platform_text(p),platform_text(p)
    modal();leave();assert 'PLATFORM' in text(p)
@@ -39,7 +39,7 @@ for cgb in [True,False]:
    modal();leave();assert 'RUMBLE' in text(p)
    # Rumble shares $C000 with shadow OAM. Every sprite must be hidden again.
    assert all(p.memory[0xfe00+i*4]==0 for i in range(40)), 'Rumble left stale sprites in OAM'
-   press('right');press('a');p.tick(60,True)
+   press('right');press('a');p.tick(60,True);press('up');press('a');p.tick(60,True)
    assert 'AUDIO RANGE' in text(p) and 'SILENT' in text(p),text(p)
    press('a');assert 'PLAYING' in text(p);press('b');assert 'AUDIO RANGE' in text(p)
    assert p.memory[0xff26]&15==0,'Audio remained active on exit'
