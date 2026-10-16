@@ -17,10 +17,13 @@ static const char * const labels[] = {"Platform","Link cable","Rumble","Audio ra
 void ui_cell(uint8_t x,uint8_t y,uint8_t tile) {set_bkg_tile_xy(x,y,tile);}
 void ui_text(uint8_t x,uint8_t y,const char *s) {while(*s) ui_cell(x++,y,(uint8_t)*s++-32u);}
 void ui_clear(void) {
- uint8_t y;
- VBK_REG=0;
- for(y=0;y!=18;++y) fill_bkg_rect(0,y,20,1,0);
- if(_cpu==CGB_TYPE) {VBK_REG=1;fill_bkg_rect(0,0,20,18,0);VBK_REG=0;}
+ uint8_t x,y;
+ /* Keep the brand visible while outgoing font references are removed. */
+ if(_cpu==CGB_TYPE){VBK_REG=1;fill_bkg_rect(0,0,20,4,1);VBK_REG=0;}
+ for(y=0;y<4;++y)for(x=0;x<4;++x)ui_cell(x,y,UI_BRAND+y*4+x);
+ fill_bkg_rect(4,0,16,4,0);
+ for(y=4;y!=18;++y) fill_bkg_rect(0,y,20,1,0);
+ if(_cpu==CGB_TYPE) {VBK_REG=1;fill_bkg_rect(0,4,20,14,0);VBK_REG=0;}
 }
 void ui_box(uint8_t top,uint8_t bottom) {
  uint8_t y;
@@ -44,13 +47,14 @@ void ui_init(void) {
  vsync();
  if(_cpu==CGB_TYPE) set_bkg_palette(0,4,breakfast);
  BGP_REG=0xe4;
- set_bkg_data(0,UI_FONT_COUNT,bb_font);set_bkg_data(UI_CHROME,11,bb_chrome);set_bkg_data(UI_PASS,3,bb_probes);set_bkg_data(UI_BRAND,16,bb_brand);
- ui_clear();ui_header();ui_scene_reset();DISPLAY_ON;
+ set_bkg_data(UI_BRAND,16,bb_brand);ui_clear();
+ set_bkg_data(0,UI_FONT_COUNT,bb_font);set_bkg_data(UI_CHROME,11,bb_chrome);set_bkg_data(UI_PASS,3,bb_probes);
+ ui_header();ui_scene_reset();DISPLAY_ON;
 }
 /* Menu-only punctuation slots hold half-cell shifts for odd-length labels.
    ui_init reloads the complete font before entering any test or dialog. */
 static void menu_label(uint8_t item,const char *label,uint8_t *borrowed) {
- static const uint8_t slots[]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,26,27,28,29,30,31,32,59,60,61,62,63,64};
+ static const uint8_t slots[]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,26,27,28,29,30,31,32,59,60};
  uint8_t count=strlen(label),x=(item&1u?10u:0u)+(10u-count)/2u,y=(item&2u)?15:9,i,r,tile[16],left,right;
  if(!(count&1u)){ui_text(x,y,label);return;}
  for(i=0;i<=count;++i){
@@ -74,10 +78,9 @@ static void browser(uint8_t fresh) {
  at==2?"Clock":
 #endif
  labels[at],&borrowed);
-  ui_cell((i&1u)?11:1,(i&2u)?14:8,(selected_test&3u)==i?UI_CURSOR:0);
-  if(_cpu==CGB_TYPE){VBK_REG=1;fill_bkg_rect((i&1u)?11:1,(i&2u)?11:5,8,5,(selected_test&3u)==i?3:0);VBK_REG=0;}
  }
- fill_bkg_rect(0,17,20,1,(UI_CHROME+10));ui_text(7,17,group==2?"3 of 3":group==1?"2 of 3":"1 of 3");
+ ui_focus(selected_test&3u,fresh);
+ if(fresh){fill_bkg_rect(0,17,20,1,(UI_CHROME+10));ui_text(7,17,group==2?"3 of 3":group==1?"2 of 3":"1 of 3");}
 }
 
 /* Every test shares the font and frame tiles, so the modal only borrows map cells. */
@@ -136,7 +139,7 @@ static void rumble_run(void) {
  SWITCH_ROM(1);
 }
 void main(void) {
- uint8_t keys,previous=0,pressed,phase=255,last_group=255;
+ uint8_t keys,previous=0,pressed,phase=255,last_group=0;
  NR52_REG=0;
  if(_cpu==CGB_TYPE){if(LCDC_REG&0x80u)vsync();set_bkg_palette(0,4,breakfast);}
  DISPLAY_ON;
@@ -162,7 +165,7 @@ void main(void) {
 #endif
  for(;;) {
   vsync();keys=joypad();pressed=keys&~previous;previous=keys;
-  if(pressed&(J_UP|J_DOWN)){selected_test=(selected_test+((pressed&J_DOWN)?2u:8u))%10u;browser(1);}
+  if(pressed&(J_UP|J_DOWN)){selected_test=(selected_test+((pressed&J_DOWN)?2u:8u))%10u;browser((selected_test/4u)!=last_group);}
   if(pressed&(J_LEFT|J_RIGHT)) {
    selected_test=(selected_test+((pressed&J_RIGHT)?1u:9u))%10u;
    browser((selected_test/4u)!=last_group);

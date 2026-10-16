@@ -35,6 +35,7 @@ for scene in range(4):
     m.append(0 if tile==bytes(16) else 112+union.index(tile)-1)
   maps.append(m)
  assert len(union)<129
+ assert max(sum(a!=b for a,b in zip(old,new)) for old in maps for new in maps)<=32, "Animation update queue too small"
  out+=array('hardware_tiles_'+str(scene),b''.join(union[1:]));sizes.append(len(union)-1)
  for phase,m in enumerate(maps):out+=array('hardware_map_'+str(scene)+'_'+str(phase),m)
  print('hardware',scene,'tiles',len(union)-1)

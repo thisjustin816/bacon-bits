@@ -41,7 +41,7 @@ def run(cgb):
    p.tick(8,True)
    for k in ['a','b','select','start']:p.button_release(k)
    p.tick(16,True);press('down');press('a')
-   launch(4);assert 'UP' in text() and 'HELD' in text(),'Initial button view was blank';base=get('button_presses',32).to_bytes(32,'little');press('a',12)
+   launch(4);assert all(label in text() for label in ['BUTTONS','SELECT','START','HELD']),'Initial button view was blank';base=get('button_presses',32).to_bytes(32,'little');press('a',12)
    counts=get('button_presses',32).to_bytes(32,'little');assert int.from_bytes(counts[16:20],'little')==int.from_bytes(base[16:20],'little')+1
    assert int.from_bytes(bytes(p.memory[syms['_button_longest']+8:syms['_button_longest']+10]),'little')>=12
    p.button_press('right');p.tick(1,True);p.button_release('right');p.tick(8,True)

@@ -1,6 +1,7 @@
 #pragma bank 7
 #include "bb.h"
 #include <string.h>
+#include "button_data.h"
 extern const unsigned char bb_font[];
 uint32_t button_presses[8],button_short[8],button_gaps[8];
 uint16_t button_held[8],button_longest[8],button_released[8];
@@ -11,8 +12,21 @@ static const uint8_t diagonal_bits[]={5,6,9,10};
 static const char *const diagonal_names[]={"Up right","Up left","Dn right","Dn left"};
 uint8_t button_page,button_pick,button_threshold=1,button_units,button_peak;
 static const char *const names[8]={"Right","Left","Up","Down","A","B","Select","Start"};
-static const uint8_t xs[8]={6,2,4,4,14,12,8,11},ys[8]={9,9,7,11,8,10,12,12};
-static const char *const labels[8]={"Rt","Lt","Up","Dn","A","B","SE","St"};
+static uint8_t drawn_directions=255;
+static uint8_t updates[32][3];
+static void live_dpad(uint8_t held) {
+ const uint8_t *map=button_maps[held&15u],*old;
+ uint8_t x,y,count=0,i;uint16_t n=0;
+ if(drawn_directions==255){set_bkg_data(UI_ART,37,button_tiles);old=0;}
+ else old=button_maps[drawn_directions];
+ for(y=6;y<14;++y)for(x=1;x<19;++x){
+  if(!old)ui_cell(x,y,map[n]);
+  else if(old[n]!=map[n]){updates[count][0]=x;updates[count][1]=y;updates[count++][2]=map[n];}
+  ++n;
+ }
+ if(count){vsync();for(i=0;i<count;++i)set_bkg_tile_xy(updates[i][0],updates[i][1],updates[i][2]);}
+ drawn_directions=held&15u;
+}
 static uint8_t initialized;
 static const char *const presets[]={"","Button check","Short events","Hold timing","Diagonals"};
 static const char *const notes[]={"Keep counters","Live button states","1 frame threshold","Hold milliseconds","D-pad corners"};
@@ -20,15 +34,15 @@ static void clear_counts(void) {
  uint8_t i;button_opposites=0;memset(button_diagonal,0,sizeof(button_diagonal));memset(button_diagonal_hold,0,sizeof(button_diagonal_hold));memset(button_diagonal_peak,0,sizeof(button_diagonal_peak));memset(button_presses,0,sizeof(button_presses));memset(button_short,0,sizeof(button_short));memset(button_gaps,0,sizeof(button_gaps));
  memset(button_longest,0,sizeof(button_longest));memset(button_held,0,sizeof(button_held));for(i=0;i<8;++i)button_released[i]=65535;button_peak=0;
 }
-static void screen(void) {ui_screen(button_page==3?"Diagonals":"Buttons",button_page==0?"1/4":button_page==1?"2/4":button_page==2?"3/4":"4/4");}
+static void screen(void) {drawn_directions=255;ui_screen(button_page==3?"Diagonals":"Buttons",button_page==0?"1/4":button_page==1?"2/4":button_page==2?"3/4":"4/4");}
 static void show(uint8_t held) {
- uint8_t i,n=0,x;uint32_t corner_value;const char *s;char str[12],*end;
+ uint8_t i,n=0;uint32_t corner_value;char str[12],*end;
  if(button_page==0){
-  ui_scene(4,0);
-  for(i=0;i<8;++i){s=labels[i];x=i<4?(i==0?8:i==1?2:5):xs[i];
-   {uint8_t y=i<4?(i==2?8:i==3?12:10):ys[i];ui_cell(x-1,y,(held&(1u<<i))?UI_ACTIVE:0);while(*s)ui_cell(x++,y,(uint8_t)*s++-32u);}
-   if(held&(1u<<i))++n;
-  }
+  static const uint8_t xs[]={15,13,11,11},ys[]={7,9,11,13};
+  static const char *const labels[]={"A","B","Select","Start"};
+  live_dpad(held);
+  for(i=0;i<8;++i)if(held&(1u<<i))++n;
+  for(i=0;i<4;++i){ui_cell(xs[i]-1,ys[i],(held&(16u<<i))?UI_ACTIVE:0);ui_text(xs[i],ys[i],labels[i]);}
   for(i=0;i<4;++i)ui_cell((i&1u)?2:8,(i&2u)?13:7,(held&15u)==diagonal_bits[i]?UI_PASS:UI_EMPTY);
   ui_status("Held");ui_number(6,16,n);ui_text(9,16,"Peak");ui_number(15,16,button_peak);
  }else if(button_page==1){for(i=0;i<4;++i)ui_value(i,names[(button_pick+i)&7u],button_presses[(button_pick+i)&7u],i==0);ui_status("Press counts");}

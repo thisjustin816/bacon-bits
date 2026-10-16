@@ -12,6 +12,8 @@
 #define UI_ACTIVE 109
 #define UI_LINK_BALL 110
 #define UI_ART 112
+#define UI_FOCUS 232
+#define UI_FOCUS_EXTRA 61
 #define UI_BRAND 240
 #ifdef BB_MBC3
 #define BB_RAM_BANKS 4
@@ -55,5 +57,7 @@ void rumble_view(void) BANKED;
 void rumble_ui_reset(void) BANKED;
 void ui_scene(uint8_t scene,uint8_t frame) BANKED;
 void ui_scene_reset(void) BANKED;
+void ui_scene_border(uint8_t item) BANKED;
+void ui_focus(uint8_t item,uint8_t fresh) BANKED;
 void ui_scene_redraw(void) BANKED;
 #endif

@@ -41,15 +41,15 @@ def picture(scene,phase):
      d.rectangle((x+17,y+5,x+56,y+27),fill=3);d.rectangle((x+20,y+8,x+53,y+24),fill=1)
      for yy in range(y+8,y+24,4):
       for xx in range(x+20,x+53,4):
-       if ((xx-x)//4+(yy-y)//4)&1:d.rectangle((xx,yy,xx+2,yy+2),fill=0)
-    elif i==2:chip(d,x+24 if i==0 else x+26,y+6)
+       if ((xx-x)//4+(yy-y)//4)&1:d.rectangle((xx,yy,min(xx+2,x+53),yy+2),fill=0)
+    elif i==2:chip(d,x+24,y+6)
     else:clock(d,x+25,y+3,phase)
    elif scene==6:
     if i==0:
      d.ellipse((x+26,y+4,x+45,y+23),fill=3);d.ellipse((x+29,y+7,x+42,y+20),fill=2 if phase&1 else 1);d.line((x+31,y+23,x+31,y+29),fill=3);d.line((x+40,y+23,x+40,y+29),fill=3)
     else:
      d.rectangle((x+18,y+9,x+28,y+22),fill=3);d.rectangle((x+48,y+9,x+58,y+22),fill=3)
-     for xx in range(x+31,x+47,5):d.line((xx,y+13,xx+2,y+16),fill=2)
+     for xx in range(x+31,x+45,5):d.line((xx,y+13,xx+2,y+16),fill=2)
    elif i==0:chip(d,x+24 if i==0 else x+26,y+6)
    elif i==1:
     d.rectangle((x+13,y+9,x+24,y+26),fill=3);d.rectangle((x+47,y+9,x+58,y+26),fill=3);d.line((x+24,y+17,x+47,y+17),fill=2,width=2)
@@ -60,9 +60,9 @@ def picture(scene,phase):
    else:
     for j,h in enumerate([7,15,23,13,9]):d.rectangle((x+23+j*6,y+28-h,x+26+j*6,y+27),fill=2 if (j+phase)%3 else 3)
  elif scene==1:
-  chip(d,68,73)
   for i in range(12):
    x=16+i%6*24;y=56 if i<6 else 104;d.line((x+4,y+8 if i<6 else y-1,79,76 if i<6 else 101),fill=1)
+  chip(d,68,73)
  elif scene==2:
   handheld(d,15,62);handheld(d,117,62);d.line([(28,62),(28,56),(130,56),(130,62)],fill=3,width=2)
   for j in range(3):
@@ -96,7 +96,8 @@ def main():
      if tile not in union:union.append(tile)
      m.append(0 if tile==bytes(16) else 112+union.index(tile)-1)
    maps.append(m)
-  assert len(union)-1<=128,(scene,len(union))
+  assert len(union)-1<=120,(scene,len(union))
+  assert max(sum(a!=b for a,b in zip(old,new)) for old in maps for new in maps)<=32, "Animation update queue too small"
   output+=array('scene_tiles_'+str(scene),b''.join(union[1:]))
   for phase,m in enumerate(maps):output+=array('scene_map_'+str(scene)+'_'+str(phase),m)
   sizes.append((len(union)-1,rect));print('scene',scene,'tiles',len(union)-1)

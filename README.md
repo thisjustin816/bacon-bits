@@ -6,6 +6,8 @@ are original. The interface also works in monochrome.
 
 ![Cartridge screens](assets/review.png)
 
+[Menu and live button views](assets/controls.png)
+
 | Release | Cartridge hardware | Test in the third slot |
 | --- | --- | --- |
 | [MBC5 Rumble](<Bacon Bits Test Cartridge (MBC5 Rumble).gbc>) | MBC5, rumble, up to 64 KiB RAM | Rumble |
@@ -17,6 +19,7 @@ RGB LED cartridge. Its LED page is disabled in the MBC3 release because the
 same writes control the RTC latch on that mapper.
 
 Left/Right browses tests, Up/Down moves between card rows, and A opens one.
+The selected card has a thicker border and a gold fill on color hardware.
 Settings use Up/Down to select a field and Left/Right to change it. Presets
 open with outputs stopped; later visits select Continue. Destructive actions
 start on No. [The manual](MANUAL.md) covers controls, presets, and limits.
@@ -65,7 +68,11 @@ to measure their cycle spacing.
 
 SameBoy checks palettes, maps and attributes, dialogs, wave RAM, stereo audio
 captures, rumble-control output, IR control, RTC halt and restore, and CPU-speed
-cleanup. Paired link tests use synthetic byte transport. These checks do not
+cleanup. Frame-by-frame replays check launcher labels during focus and page
+changes, all menu animation poses, and return from Buttons. PyBoy checks all
+16 direction combinations; SameBoy checks the nine ordinary states because
+it filters opposing directions before they reach the cartridge. Paired link
+tests use synthetic byte transport. These checks do not
 establish physical cable timing, speaker response, motor strength, infrared
 range, LED brightness, battery retention, or RTC oscillator accuracy.
 
@@ -73,9 +80,11 @@ SameBoy 26a56bd builds with `make libretro`, RGBDS, and `hexdump`.
 `vendor/README.md` records the imported source revisions. The vendored files
 remain unchanged. Build checks enforce ROM-bank bounds, a fixed serial
 interrupt handler, current assembly bridges, and the per-bank CRC manifest.
-The busiest browser page uses 245 resident background tiles and no sprites.
+The busiest browser page uses 253 resident background tiles and no sprites.
 The shared font has 96 glyphs; instruments start at tile 112 and the brand uses
-240-255. The launcher borrows unused punctuation patterns to center odd-length
-labels by half a tile, then restores them before entering a test. Buttons marks
-pressed inputs with a separate shape. The return dialog uses the shared font
-and frames.
+240-255. The focus border uses 232-239 and four unused punctuation slots;
+the live D-pad uses 37 instrument patterns. Odd-length labels use other
+punctuation slots for a half-tile shift. Focus moves leave those label patterns
+in place. Screen changes clear outgoing map references before restoring the
+font. Button feedback includes a separate shape. The return dialog uses the
+shared font and frames.

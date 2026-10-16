@@ -54,3 +54,19 @@ with tempfile.TemporaryDirectory() as td:
  board=Image.new('RGB',(840,160),(227,219,200))
  for i,im in enumerate(preset_shots):board.paste(im,(8+i*168,8))
  board.resize((1680,320),Image.Resampling.NEAREST).save(ROOT/'assets/presets.png')
+ # Native menu focus and live controls, in both display modes.
+ controls=[]
+ for cgb in [True,False]:
+  f=Path(td)/f'controls-{cgb}.gbc';shutil.copy(ROOT/'build/bacon-bits.gbc',f)
+  p=PyBoy(str(f),window='null',sound_emulated=False,cgb=cgb);p.set_emulation_speed(0)
+  try:
+   p.tick(240,True)
+   for _ in range(4):press('right')
+   controls.append(p.screen.image.convert('RGB'))
+   press('a');press('a');p.button_press('up');p.button_press('right');p.tick(24,True)
+   controls.append(p.screen.image.convert('RGB'))
+  finally:p.stop(save=False)
+ board=Image.new('RGB',(336,328),(227,219,200));d=ImageDraw.Draw(board)
+ for i,im in enumerate(controls):
+  x=4+i%2*168;y=4+i//2*164;board.paste(im,(x,y));d.text((x,y+146),('Color' if i<2 else 'Monochrome')+(' menu' if i%2==0 else ' live buttons'),fill=(64,40,32))
+ board.resize((1008,984),Image.Resampling.NEAREST).save(ROOT/'assets/controls.png')

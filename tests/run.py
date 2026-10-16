@@ -8,7 +8,7 @@ commands['build_check']=[sys.executable,'tools/check_build.py']
 commands['mbc3_additions']=[sys.executable,'tests/additions.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio_backend']=[sys.executable,'tests/audio_backend.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio']=[sys.executable,'tests/audio_ui.py','build/mbc3/bacon-bits.gbc']
-for name in ['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy']:commands[name]=[sys.executable,'tests/'+name+'.py','--core',str(args.core)]
+for name in ['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art']:commands[name]=[sys.executable,'tests/'+name+'.py','--core',str(args.core)]
 paths=[('mbc5','build/bacon-bits.gbc'),('mbc3','build/mbc3/bacon-bits.gbc')]
 identities={name:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for name,path in paths}
 def run(item):

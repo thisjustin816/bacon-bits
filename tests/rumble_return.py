@@ -9,6 +9,10 @@ args=argparse.ArgumentParser();args.add_argument('--core',required=True,type=Pat
 p=SameBoy(a.core,a.rom)
 try:
  p.tick(600);p.press('right');p.press('right');p.press('a');p.tick(100)
+ # An idle instrument must keep its completed waveform visible every frame.
+ settled=p.vram()[0x1800:0x1a00]
+ for frame in range(60):
+  p.tick();assert p.vram()[0x1800:0x1a00]==settled,('Idle rumble redraw changed the map',frame)
  before=p.read(build.mode)[0];p.chord();p.press('b');p.tick(60);after=p.read(build.mode)[0]
  p.image.save(ROOT/'build'/('rumble-return-before.png' if 'before' in a.rom.name else 'rumble-return-after.png'))
  assert before==after,('Return chord changed the rumble mode',before,after)

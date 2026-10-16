@@ -48,6 +48,12 @@ scene_source=(ROOT/'src/scene_data.h').read_text()
 scene_sizes=re.search(r'scene_sizes\[8\]\[5\]=\{(.+)\};',scene_source)[1]
 counts=[int(row.split(',')[0]) for row in re.findall(r'\{([^{}]+)\}',scene_sizes)]
 assert len(counts)==8 and max(counts)<=128,counts
-assert 112+max(counts)<=240,'Instrument tiles overlap the brand'
+assert 112+max(counts)<=232,'Instrument tiles overlap the focus border'
+assert 232+8==240,'Focus border overlaps the brand'
+label_slots=set(map(int,re.search(r'slots\[\]=\{([^}]+)\}',(ROOT/'src/main.c').read_text())[1].split(',')))
+assert label_slots.isdisjoint(range(61,65)), 'Focus patterns overlap centered-label slots'
+controls=(ROOT/'src/button_data.h').read_text()
+button_bytes=re.search(r'button_tiles\[\]=\{([^}]+)\}',controls)[1].split(',')
+assert len(button_bytes)==37*16, 'Live D-pad tile budget changed'
 assert 96+11+3<=110 and 110<112,'Link sprite overlaps the font or instruments'
-print(f'Mixed-case font and instrument ranges passed; browser uses {96+11+3+max(counts)+16} resident tiles')
+print(f'Mixed-case font and instrument ranges passed; browser uses {96+11+3+max(counts)+8+16} resident tiles, including focus; live D-pad uses 37 tiles')
