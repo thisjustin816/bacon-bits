@@ -2,6 +2,7 @@
 from pathlib import Path
 import argparse,re,json
 import numpy as np
+from audio_navigation import select_row,lower_index
 from libretro import SameBoy
 ROOT=Path(__file__).resolve().parents[1]
 a=argparse.ArgumentParser();a.add_argument('--core',required=True,type=Path);args=a.parse_args()
@@ -9,7 +10,7 @@ syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'bu
 p=SameBoy(args.core,ROOT/'build/bacon-bits.gbc')
 def get(name,size=1):return int.from_bytes(p.read(syms['_'+name],size),'little')
 def row(n):
- while get('audio_row')!=n:p.press('down')
+ select_row(get,p.press,n)
 def io(n):return p.read(0xff00+n)[0]
 def text():
  v=p.vram();return '\n'.join(''.join(chr(t+32).upper() if t<96 else '#' for t in v[0x1800+y*32:0x1800+y*32+20]) for y in range(18))
@@ -26,7 +27,7 @@ try:
  for voice in range(4):
   assert get('tone_voice')==voice
   row(1)
-  while get('tone_index'):p.press('left')
+  lower_index(get,p.press)
   count=34 if voice<3 else 60
   for index in range(count):
    if index:p.press('right')
@@ -45,7 +46,7 @@ try:
   if voice<3:row(0);p.press('right')
  # The real UI drives both stereo routing and the audio samples.
  row(0);p.press('right');row(1)
- while get('tone_index')>22:p.press('left')
+ lower_index(get,p.press,22)
  row(3)
  for output in [1,2,0]:
   p.press('right');assert io(0x25)==[0x11,0x10,1][output]

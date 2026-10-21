@@ -3,18 +3,25 @@ from pathlib import Path
 import argparse,concurrent.futures,hashlib,json,os,subprocess,sys
 ROOT=Path(__file__).resolve().parents[1]
 a=argparse.ArgumentParser();a.add_argument('--core',required=True,type=Path);a.add_argument('--jobs',type=int,default=4);args=a.parse_args()
-commands={name:[sys.executable,'tests/'+name+'.py'] for name in ['smoke','modal_regression','rumble_combined','audio_ui','audio_backend','audio_shapes','audio_responsiveness','additions','sram_patterns','burn_faults','presets','feature_regression','lettering','menu_alignment','ui_spacing','diagonals','graphical_ui','serial_ui_bank','cartridge_features','ir_cycles','rtc','variants','flicker']}
+commands={name:[sys.executable,'tests/'+name+'.py'] for name in ['smoke','modal_regression','rumble_combined','audio_ui','audio_backend','audio_shapes','audio_responsiveness','additions','sram_patterns','burn_faults','presets','feature_regression','lettering','menu_alignment','ui_spacing','diagonals','graphical_ui','serial_ui_bank','cartridge_features','ir_cycles','rtc','variants','flicker','display_font']}
 commands['build_check']=[sys.executable,'tools/check_build.py']
+commands['mbc3_build_check']=[sys.executable,'tools/check_build.py']
 commands['mbc3_additions']=[sys.executable,'tests/additions.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio_backend']=[sys.executable,'tests/audio_backend.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio']=[sys.executable,'tests/audio_ui.py','build/mbc3/bacon-bits.gbc']
-for name in ['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art']:commands[name]=[sys.executable,'tests/'+name+'.py','--core',str(args.core)]
+for name in ['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art','raster_transitions']:commands[name]=[sys.executable,'tests/'+name+'.py','--core',str(args.core)]
 commands['flicker_sameboy']=[sys.executable,'tests/flicker.py','--core',str(args.core)]
 paths=[('mbc5','build/bacon-bits.gbc'),('mbc3','build/mbc3/bacon-bits.gbc')]
 identities={name:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for name,path in paths}
+if args.jobs<1:a.error('--jobs must be positive')
 def run(item):
- name,command=item;log=ROOT/'build'/('verify-'+name+'.log')
- with log.open('w') as out:code=subprocess.run(command,cwd=ROOT,stdout=out,stderr=subprocess.STDOUT).returncode
+ name,command=item;env=dict(os.environ)
+ if name=='mbc3_build_check':env['BB_BUILD_DIR']='build/mbc3'
+ log=ROOT/'build'/('verify-'+name+'.log')
+ with log.open('w') as out:
+  try:code=subprocess.run(command,cwd=ROOT,env=env,stdout=out,stderr=subprocess.STDOUT,timeout=1800 if name in ['link_combined','upstream'] else 600).returncode
+  except subprocess.TimeoutExpired:
+   out.write('\nSuite exceeded its time limit\n');code=124
  print(name,'PASS' if code==0 else 'FAIL',flush=True);return name,code
 with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:results=dict(pool.map(run,commands.items()))
 # Each paired suite owns its workers and temporary emulator, so run the two

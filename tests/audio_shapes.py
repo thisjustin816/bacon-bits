@@ -2,6 +2,7 @@
 from pathlib import Path
 import re,tempfile,shutil
 from pyboy import PyBoy
+from audio_navigation import select_row
 ROOT=Path(__file__).resolve().parents[1]
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'build/bacon-bits.noi').read_text(),re.M)}
 with tempfile.TemporaryDirectory() as td:
@@ -9,7 +10,7 @@ with tempfile.TemporaryDirectory() as td:
  def get(n,size=1):return int.from_bytes(bytes(p.memory[syms['_'+n]:syms['_'+n]+size]),'little')
  def press(k):p.button_press(k);p.tick(8,True);p.button_release(k);p.tick(24,True)
  def row(n):
-  while get('audio_row')!=n:press('down')
+  select_row(get,press,n)
  try:
   p.tick(240,True)
   for _ in range(3):press('right')

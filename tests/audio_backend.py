@@ -36,7 +36,9 @@ with tempfile.TemporaryDirectory() as td:
     # Nyquist-safe fundamentals at the lowest stepped frequency.
     mono=a.astype(float).mean(axis=1);mono-=mono.mean();spectrum=np.abs(np.fft.rfft(mono*np.hanning(len(mono))))
     freqs=np.fft.rfftfreq(len(mono),1/p.sound.sample_rate);expected=64 if voice<2 else 32
-    region=np.flatnonzero((freqs>expected*0.8)&(freqs<expected*1.2));peak=float(freqs[region[np.argmax(spectrum[region])]])
+    # Search the spectrum independently of the expected result; a
+    # narrow expected-frequency window can mistake leakage for the fundamental.
+    region=np.flatnonzero(freqs>=10);peak=float(freqs[region[np.argmax(spectrum[region])]])
     assert abs(peak-expected)<1,(voice,peak,expected)
     results.append({'voice':voice,'expected_hz':expected,'captured_peak_hz':peak})
    put('tone_level',0);call('tone_apply');silent=record(60)
