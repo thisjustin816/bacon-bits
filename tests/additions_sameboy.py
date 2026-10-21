@@ -2,6 +2,7 @@
 from pathlib import Path
 import re,argparse
 from libretro import SameBoy
+from display_assertions import check_pattern
 ROOT=Path(__file__).resolve().parents[1]
 a=argparse.ArgumentParser();a.add_argument('--core',required=True,type=Path);args=a.parse_args()
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'build/bacon-bits.noi').read_text(),re.M)}
@@ -36,7 +37,7 @@ try:
  assert get('button_diagonal',4)==1 and 'DIAGONALS' in text();p.image.save(ROOT/'build/sameboy-diagonals.png')
  p.held={0,2,3,8};p.tick(110);p.held=set();p.tick(20);press('down');press('a');launch(5)
  for pattern in range(7):
-  press('a');p.tick(100);assert get('display_ready');assert len(p.image.getcolors(65536))==(32 if pattern==4 else len(p.image.getcolors(65536)))
+  press('a');p.tick(100);assert get('display_ready');check_pattern(p.image,pattern,True)
   p.image.save(ROOT/'build'/f'sameboy-display-{pattern}.png');press('b');press('right')
  press('b');launch(6);press('a');assert 'UNKNOWN' in text();press('b');press('b');launch(7);press('down');press('down');press('right');press('a');p.tick(200)
  assert get('bb_fast')==1,(get('bb_fast'),get('burn_running'),text());assert get('burn_errors',4)==0;press('b');assert get('bb_fast')==0

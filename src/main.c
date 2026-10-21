@@ -21,7 +21,11 @@ void ui_clear(void) {
  /* Keep the brand visible while outgoing font references are removed. */
  if(_cpu==CGB_TYPE){VBK_REG=1;fill_bkg_rect(0,0,20,4,1);VBK_REG=0;}
  for(y=0;y<4;++y)for(x=0;x<4;++x)ui_cell(x,y,UI_BRAND+y*4+x);
- fill_bkg_rect(4,0,16,4,0);
+ /* The shared heading stays resident while the body is redrawn. Clearing
+    its map cells exposes a blank header for several LCD frames. */
+ fill_bkg_rect(4,0,16,1,0);fill_bkg_rect(4,3,16,1,0);
+ ui_cell(4,1,0);fill_bkg_rect(15,1,5,1,0);
+ ui_cell(4,2,0);ui_cell(19,2,0);
  for(y=4;y!=18;++y) fill_bkg_rect(0,y,20,1,0);
  if(_cpu==CGB_TYPE) {VBK_REG=1;fill_bkg_rect(0,4,20,14,0);VBK_REG=0;}
 }

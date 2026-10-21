@@ -3,6 +3,7 @@ from pathlib import Path
 from fractions import Fraction
 import re,json,tempfile,shutil,sys
 import numpy as np
+from audio_navigation import select_row,lower_index
 from pyboy import PyBoy
 ROOT=Path(__file__).resolve().parents[1]
 rom=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'build/bacon-bits.gbc'
@@ -14,7 +15,7 @@ with tempfile.TemporaryDirectory() as td:
  def get(name,size=1):return int.from_bytes(bytes(p.memory[syms['_'+name]:syms['_'+name]+size]),'little')
  def press(k):p.button_press(k);p.tick(8,True);p.button_release(k);p.tick(12,True)
  def row(n):
-  while get('audio_row')!=n:press('down')
+  select_row(get,press,n)
  def record(frames):
   chunks=[]
   for _ in range(frames):p.tick(1,True);chunks.append(p.sound.ndarray.copy())
@@ -28,7 +29,7 @@ with tempfile.TemporaryDirectory() as td:
   for voice in range(4):
    assert get('tone_voice')==voice
    row(1)
-   while get('tone_index'):press('left')
+   lower_index(get,press)
    count=34 if voice<3 else 60
    first=get('tone_hundredths',4)
    assert first==(6400 if voice<2 else 3200 if voice<3 else 457)
@@ -47,7 +48,7 @@ with tempfile.TemporaryDirectory() as td:
    if voice<3:row(0);press('right')
   # Use a midrange pulse for independent stereo sample checks.
   row(0);press('right');row(1)
-  while get('tone_index')>22:press('left')
+  lower_index(get,press,22)
   row(3)
   for expected in [1,2,0]:
    press('right');assert get('tone_output')==expected

@@ -93,3 +93,8 @@ punctuation slots for a half-tile shift. Focus moves leave those label patterns
 in place. Screen changes clear outgoing map references before restoring the
 font. Button feedback includes a separate shape. The return dialog uses the
 shared font and frames.
+
+The [verification coverage guide](TESTING.md) maps each diagnostic to its
+automated checks and remaining hardware checks. The runner checks header
+continuity during transitions, preserves UI glyphs while display patterns load,
+and checks the restored header after full-screen tests.

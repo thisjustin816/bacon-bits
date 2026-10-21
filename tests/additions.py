@@ -2,6 +2,7 @@
 from pathlib import Path
 import tempfile,shutil,re,json,sys
 import numpy as np
+from display_assertions import check_pattern
 from pyboy import PyBoy
 ROOT=Path(__file__).resolve().parents[1]
 rom=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'build/bacon-bits.gbc'
@@ -55,8 +56,7 @@ def run(cgb):
    for pattern in range(7):
     assert get('display_pattern')==pattern
     press('a');wait(100,lambda:get('display_ready'))
-    assert get('display_running') and len(p.screen.image.getcolors(65536))>=1
-    if pattern==4:assert len(p.screen.image.getcolors(65536))==(32 if cgb else 4),p.screen.image.getcolors(65536)
+    assert get('display_running');check_pattern(p.screen.image,pattern,cgb)
     p.screen.image.save(ROOT/'build'/f'display-{cgb}-{pattern}.png')
     press('b');press('right')
    press('b');launch(6);press('a');assert 'UNKNOWN' in text(),text();press('b')

@@ -29,10 +29,12 @@ static void prepare(void) {
    else on=((display_axis?py:px)%32u)<width;
    if(on)bits|=0x80u>>x;
   }patterns[tile*16u+y*2u]=patterns[tile*16u+y*2u+1u]=bits;
- }}set_bkg_data(80,16,patterns);
- if(display_pattern==4){for(tile=0;tile<2;++tile){for(y=0;y<8;++y){uint8_t c=tile*2u+y/4u;patterns[y*2u]=(c&1)?255:0;patterns[y*2u+1u]=(c&2)?255:0;}set_bkg_data(96+tile,1,patterns);}}
+ }}
+ /* Keep font/chrome resident until the outgoing settings map is replaced. */
+ set_bkg_data(UI_ART,16,patterns);
+ if(display_pattern==4){for(tile=0;tile<2;++tile){for(y=0;y<8;++y){uint8_t c=tile*2u+y/4u;patterns[y*2u]=(c&1)?255:0;patterns[y*2u+1u]=(c&2)?255:0;}set_bkg_data(UI_ART+16+tile,1,patterns);}}
  for(y=0;y<32;++y){
-  for(x=0;x<32;++x){row_tiles[x]=display_pattern==4?96+(y&1u):80+(x&3u)+((y&3u)<<2);row_attrs[x]=display_pattern==4?((y>>1)&7u):0;}
+  for(x=0;x<32;++x){row_tiles[x]=display_pattern==4?UI_ART+16+(y&1u):UI_ART+(x&3u)+((y&3u)<<2);row_attrs[x]=display_pattern==4?((y>>1)&7u):0;}
   VBK_REG=0;set_bkg_tiles(0,y,32,1,row_tiles);if(_cpu==CGB_TYPE){VBK_REG=1;set_bkg_tiles(0,y,32,1,row_attrs);VBK_REG=0;}
  }
  palettes(0);display_ready=1;
