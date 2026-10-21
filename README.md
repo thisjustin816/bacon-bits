@@ -56,6 +56,8 @@ Push a `vX.Y.Z` tag to run [Publish release](.github/workflows/release.yml).
 The workflow builds both variants with GBDK 4.5.0, checks their headers and
 bank layout, and runs the routing, mapper, and display-font regressions.
 It publishes versioned ROMs and `SHA256SUMS` as GitHub release assets.
+Asset names use dots between words so GitHub keeps the checksum filenames.
+The workflow downloads the published assets and checks their hashes again.
 Run the full verification suite and hardware checks before tagging a release.
 
 The workflow can also run from the Actions page with an existing tag, such as
