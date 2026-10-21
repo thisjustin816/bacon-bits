@@ -50,6 +50,19 @@ separate for each build. [SHA256SUMS](SHA256SUMS) identifies the release files.
 These original diagnostic ROMs are distributed with their source. Reference
 cartridges, saves, virtual environments, and test artifacts are excluded.
 
+## Publishing releases
+
+Push a `vX.Y.Z` tag to run [Publish release](.github/workflows/release.yml).
+The workflow builds both variants with GBDK 4.5.0, checks their headers and
+bank layout, and runs the routing, mapper, and display-font regressions.
+It publishes versioned ROMs and `SHA256SUMS` as GitHub release assets.
+Run the full verification suite and hardware checks before tagging a release.
+
+The workflow can also run from the Actions page with an existing tag, such as
+`v1.0.0`, to attach assets to that release. It builds the tagged source and
+keeps existing release notes. Re-running replaces assets with the same names.
+GitHub's built-in token supplies release access; no repository secret is needed.
+
 ## Verification
 
 ```sh
