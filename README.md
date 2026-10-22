@@ -1,38 +1,99 @@
-# Bacon Bits Test Cartridge
+# Bacon Bit Bench
 
-A Game Boy and Game Boy Color diagnostic cartridge with animated instruments,
-breakfast colors, and detailed results behind each test. The artwork and font
-are original. The interface also works in monochrome.
+A test bench for the Game Boy and Game Boy Color. It has eleven instruments,
+and each one exposes its settings: pulse lengths, frequencies, phase timing,
+memory patterns and loads. Set the exact condition, then watch what the
+hardware does with it. Everything works in color and in monochrome.
 
-![Cartridge screens](assets/review.png)
+![Bench screens](assets/review.png)
 
-[Menu and live button views](assets/controls.png) | [Flicker phases](assets/flicker.png)
+[Menu and live buttons](assets/controls.png) | [Flicker phases](assets/flicker.png)
 
-| Release | Cartridge hardware | Test in the third slot |
+## Why it exists
+
+I patch and build Game Boy games, and I kept needing to measure things that
+existing test cartridges could not be set to do. They check whether a part
+works. I needed to know how it behaves at a setting I chose:
+
+- How many frames a flash cart's rumble motor needs before it starts, and how
+  long a gap it coasts through.
+- Whether a link cable holds up under sustained traffic while each console
+  carries a different CPU load, at each wire clock and CPU speed.
+- How a display shows alternating frames at a set duty, next to a static
+  dither at the same average.
+- Which frequencies a speaker can still play, down to 32 Hz, one voice at a
+  time.
+
+Three of the instruments started as one-off ROMs for questions like these,
+and the rest were written for this cartridge. It puts them all on one menu
+with the same controls.
+
+## Downloads
+
+| ROM | Cartridge | Third test |
 | --- | --- | --- |
-| [MBC5 Rumble](<Bacon Bits Test Cartridge (MBC5 Rumble).gbc>) | MBC5, rumble, up to 64 KiB RAM | Rumble |
-| [MBC3 RTC](<Bacon Bits Test Cartridge (MBC3 RTC).gbc>) | MBC3, timer, 32 KiB RAM | Real Time Clock |
+| [Bacon Bit Bench (MBC5 Rumble)](<Bacon Bit Bench (MBC5 Rumble).gbc>) | MBC5 with rumble, up to 64 KiB SRAM | Rumble |
+| [Bacon Bit Bench (MBC3 RTC)](<Bacon Bit Bench (MBC3 RTC).gbc>) | MBC3 with clock, 32 KiB SRAM | Clock |
 
-Both releases contain Platform, Link Cable, Audio Range, Buttons, Display,
-SRAM, Burn In, Infrared, and Flicker. The MBC5 release also drives the
-insideGadgets RGB LED cartridge. Its LED page is disabled in the MBC3 release because the
-same writes control the RTC latch on that mapper.
+Both ROMs are 128 KiB and run on Game Boy, Game Boy Color and Game Boy
+Advance hardware. Choose the one that matches your flash cart's mapper. The
+MBC5 ROM also drives the insideGadgets RGB LED cartridge. The MBC3 ROM leaves
+that page off, because the same writes control its clock.
+[SHA256SUMS](SHA256SUMS) lists the release hashes.
 
-Left/Right browses tests, Up/Down moves between card rows, and A opens one.
-The selected card has a thicker border and a gold fill on color hardware.
-Settings use Up/Down to select a field and Left/Right to change it. Presets
-open with outputs stopped; later visits select Continue. Destructive actions
-start on No. [The manual](MANUAL.md) covers controls, presets, and limits.
+## The instruments
 
-The tests retain readings for comparison: the bytes behind an emulator
-signature, separate D-pad corner holds, all audio divisors and wave shapes,
-first memory failures, and a saved SRAM configuration. Link Cable checks
-sustained traffic and shared state under different loads. Burn In combines
-repeatable loads while keeping the first failure. Flicker compares alternating
-layers, shadows, detail, and color fields with a static dither reference. Its
-phase lengths, duty, motion clock, and single-frame step are adjustable.
+| Test | Settings and readings |
+| --- | --- |
+| Platform | Twelve CGB register probes with the bytes read back, the hardware class, and a match against known emulator signatures |
+| Link | Host or peer, five traffic profiles, pacing, wire clock and CPU speed. Keeps the first failure with its expected and received values |
+| Rumble (MBC5) | An 8-bit pattern, bit length in frames or milliseconds, on and off sweeps, prespin, burst length and gap |
+| Clock (MBC3) | Live ticks, a held latch, a temporary halt, and a day 511 rollover from a seeded time. Puts the clock back afterwards |
+| Audio | Four voices, every frequency register or 34 preset steps, all 60 noise clocks, levels, stereo routing, and timed bursts |
+| Buttons | Live state, press counts, hold times, short taps and gaps with a 1 to 8 frame threshold, diagonal corners and opposing directions |
+| Display | Seven full-screen patterns, six colors, widths from 1 to 16 pixels, scrolling, a 32-level ramp, and a 1 to 60 frame flicker |
+| SRAM | 1 to 8 banks, eight patterns with a seed, repeated passes, retention delays and power-cycle checks. Reports the first bad byte |
+| Burn In | Duration, load, CPU speed, audio and motor load, and a read-only SRAM watch. Keeps the first failure while it runs on |
+| Cart LED (MBC5) | 256 levels per color on the insideGadgets RGB cartridge, plus color and pulse sequences |
+| Infrared (CGB) | Counts received edges, or sends bursts with cycle-counted on and off widths |
+| Flicker | Alternating layers, shadows, fine detail and color fields beside a static dither, with each phase 1 to 60 frames |
 
-## Build
+Left and Right browse the tests, Up and Down move between rows, and A opens
+one. Each test opens on a list of presets, and Continue keeps the last
+settings. Anything that erases or changes the cartridge asks first, with No
+selected. [The manual](MANUAL.md) covers every control and limit.
+
+## What it cannot measure
+
+The cartridge reports what the console reads and writes. It cannot feel a
+motor, hear a speaker, see an LED or judge how a screen blends two frames.
+Those need someone watching or listening while it runs. It also cannot
+measure battery retention or clock drift by itself: run the SRAM or Clock
+test, power off, and check again later.
+
+## Where the tests came from
+
+- **Rumble** is Rumble Pulse, the motor calibration ROM from
+  [pokepinball-rumble-patch](https://github.com/thisjustin816/pokepinball-rumble-patch).
+  It measured how slow flash cart motors are, so Pokemon Pinball's
+  single-frame pulses could be stretched to fit them.
+- **Link** is Link Sustain, from
+  [gameboy-homebrew-patches](https://github.com/thisjustin816/gameboy-homebrew-patches).
+  It was built to chase link-cable faults in an unreleased game patch, which
+  needed sustained traffic, scene barriers and a shared ball between consoles.
+- **Platform** is Platform Detect, also from gameboy-homebrew-patches. It
+  checks for behavior a real Game Boy Color never shows, so a game can tell an
+  emulator from hardware.
+- The other tests were written for this cartridge. The Flicker patterns show
+  techniques used in games such as ZAS and Shantae, without their art or code.
+
+The original diagnostics are kept unchanged in `vendor/`. A build step adds
+the shared menu and return dialog around them. [vendor/README.md](vendor/README.md)
+records their source revisions. All artwork and the font are original.
+
+Made by CptBacon.
+
+## Building
 
 Requires GBDK-2020 4.5.0 and Python 3:
 
@@ -43,73 +104,29 @@ pip install Pillow pyboy==2.8.1 numpy
 make releases GBDK_HOME=/path/to/gbdk/ PYTHON=python
 ```
 
-`make` builds MBC5 into `build/`. `make mbc3` builds MBC3 into `build/mbc3/`.
-`make releases` checks both builds and updates the two release ROMs.
-Both are 128 KiB. Generated adapters, object caches, and CRC tables are
-separate for each build. [SHA256SUMS](SHA256SUMS) identifies the release files.
-These original diagnostic ROMs are distributed with their source. Reference
-cartridges, saves, virtual environments, and test artifacts are excluded.
+`make` builds the MBC5 ROM into `build/`, and `make mbc3` builds the MBC3 ROM
+into `build/mbc3/`. `make releases` builds both, checks their headers, banks,
+tile budgets and screen text widths, and updates the two release ROMs and
+`SHA256SUMS`.
 
-## Publishing releases
-
-Push a `vX.Y.Z` tag to run [Publish release](.github/workflows/release.yml).
-The workflow builds both variants with GBDK 4.5.0, checks their headers and
-bank layout, and runs the routing, mapper, and display-font regressions.
-It publishes versioned ROMs and `SHA256SUMS` as GitHub release assets.
-Asset names use dots between words so GitHub keeps the checksum filenames.
-The workflow downloads the published assets and checks their hashes again.
-Run the full verification suite and hardware checks before tagging a release.
-
-The workflow can also run from the Actions page with an existing tag, such as
-`v1.0.0`, to attach assets to that release. It builds the tagged source and
-keeps existing release notes. Re-running replaces assets with the same names.
-GitHub's built-in token supplies release access; no repository secret is needed.
-
-## Verification
+## Testing
 
 ```sh
 GBDK_HOME=/path/to/gbdk/ python tests/run.py --core /path/to/sameboy_libretro.so
 ```
 
-The runner rebuilds the three vendored diagnostics and runs their full suites.
-It also runs the combined Link Cable feature and paired suites, the original
-rumble timing suite against the combined bank, and the cartridge's PyBoy and
-SameBoy checks. Logs and ROM hashes are saved under `build/`.
+The suites drive both ROMs in PyBoy and SameBoy with scripted input, in color
+and monochrome. They also run the original suites of the three diagnostics it
+was built from. Without `--core`, the SameBoy suites are listed as not run.
+[TESTING.md](TESTING.md) says what each suite proves and what still needs
+hardware.
 
-PyBoy checks color and monochrome routes, presets, probe evidence, D-pad
-counters, audio settings and captures, display patterns, SRAM faults and saved
-files, burn-in, RGB command bits, and RTC restoration and recovery.
-A serial interrupt injected while the UI maps another bank checks the fixed
-interrupt handler. The infrared check executes the compiled burst instructions
-to measure their cycle spacing.
+## Publishing a release
 
-SameBoy checks palettes, maps and attributes, dialogs, wave RAM, stereo audio
-captures, rumble-control output, IR control, RTC halt and restore, and CPU-speed
-cleanup. Frame-by-frame replays check launcher labels during focus and page
-changes, all menu animation poses, and return from Buttons. PyBoy checks all
-16 direction combinations; SameBoy checks the nine ordinary states because
-it filters opposing directions before they reach the cartridge. Both emulators
-measure Flicker phase lengths, stationary reference patches, motion, pause,
-and single-frame steps on both mapper builds and display modes. Raw frames
-cannot establish physical screen persistence or frontend blending. Paired link
-tests use synthetic byte transport. These checks do not
-establish physical cable timing, speaker response, motor strength, infrared
-range, LED brightness, battery retention, or RTC oscillator accuracy.
-
-SameBoy 26a56bd builds with `make libretro`, RGBDS, and `hexdump`.
-`vendor/README.md` records the imported source revisions. The vendored files
-remain unchanged. Build checks enforce ROM-bank bounds, a fixed serial
-interrupt handler, current assembly bridges, and the per-bank CRC manifest.
-The busiest browser page uses 253 resident background tiles and no sprites.
-The shared font has 96 glyphs; instruments start at tile 112 and the brand uses
-240-255. The focus border uses 232-239 and four unused punctuation slots;
-the live D-pad uses 37 instrument patterns. Odd-length labels use other
-punctuation slots for a half-tile shift. Focus moves leave those label patterns
-in place. Screen changes clear outgoing map references before restoring the
-font. Button feedback includes a separate shape. The return dialog uses the
-shared font and frames.
-
-The [verification coverage guide](TESTING.md) maps each diagnostic to its
-automated checks and remaining hardware checks. The runner checks header
-continuity during transitions, preserves UI glyphs while display patterns load,
-and checks the restored header after full-screen tests.
+Push a `vX.Y.Z` tag to run [Publish release](.github/workflows/release.yml).
+It builds both ROMs with GBDK 4.5.0, checks them, and publishes versioned ROMs
+and `SHA256SUMS` as release assets. Asset names use dots between words so
+GitHub keeps the checksum filenames. The workflow downloads the published
+assets and checks their hashes again. It can also run from the Actions page
+for an existing tag, which rebuilds that tag and replaces its assets. Run the
+full suite and the hardware checks before tagging.

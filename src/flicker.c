@@ -110,7 +110,7 @@ static void settings(uint8_t page,uint8_t sel) {
   ui_field(3,"Compare",flicker_compare?"Split":"Off",sel==3);
  }
  if(page==1){
-  ui_text(1,16,"Duty");ui_number(6,16,100u*flicker_a/(flicker_a+flicker_b));ui_text(9,16,"%");
+  end=ui_decimal(v+5,100u*flicker_a/(flicker_a+flicker_b));v[0]='D';v[1]='u';v[2]='t';v[3]='y';v[4]=' ';*end++='%';*end=0;ui_text(1,16,v);
   hz=5973u/(flicker_a+flicker_b);ui_text(1,17,"Cycle");end=ui_decimal(v,hz/100u);*end++='.';*end++='0'+hz%100u/10u;*end++='0'+hz%10u;*end++=' ';*end++='H';*end++='z';*end=0;ui_text(7,17,v);
  }else{
   ui_status("Stopped");

@@ -12,11 +12,11 @@ with tempfile.TemporaryDirectory() as td:
   def press(k):p.button_press(k);p.tick(8,True);p.button_release(k);p.tick(30,True)
   try:
    p.tick(240,True);p.screen.image.save(ROOT/'build'/f'graphical-browser-{cgb}.png')
-   assert 'TEST CARTRIDGE' in row(p,2),'The complete cartridge brand is missing'
+   assert 'BACON BIT BENCH' in row(p,1),'The complete cartridge brand is missing'
    assert 'PLATFORM' in row(p,9) and 'LINK' in row(p,9),'The four-card menu is missing'
    assert 'RUMBLE' in row(p,15)
    press('a');p.tick(120,True)
-   assert 'TEST CARTRIDGE' in row(p,2),'Platform still uses the old interface'
+   assert 'BACON BIT BENCH' in row(p,1),'Platform lost the shared header'
    assert 'PLATFORM' in row(p,4)
    p.screen.image.save(ROOT/'build'/f'graphical-platform-{cgb}.png')
    if cgb:

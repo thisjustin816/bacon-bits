@@ -2,15 +2,16 @@
 from pathlib import Path
 import argparse,concurrent.futures,hashlib,json,os,subprocess,sys
 ROOT=Path(__file__).resolve().parents[1]
-a=argparse.ArgumentParser();a.add_argument('--core',required=True,type=Path);a.add_argument('--jobs',type=int,default=4);args=a.parse_args()
-commands={name:[sys.executable,'tests/'+name+'.py'] for name in ['smoke','modal_regression','rumble_combined','audio_ui','audio_backend','audio_shapes','audio_responsiveness','additions','sram_patterns','burn_faults','presets','feature_regression','lettering','menu_alignment','ui_spacing','diagonals','graphical_ui','serial_ui_bank','cartridge_features','ir_cycles','rtc','variants','flicker','display_font']}
+a=argparse.ArgumentParser();a.add_argument('--core',type=Path,help='SameBoy libretro core; without it the SameBoy suites are reported as not run');a.add_argument('--jobs',type=int,default=4);args=a.parse_args()
+commands={name:[sys.executable,'tests/'+name+'.py'] for name in ['smoke','modal_regression','rumble_combined','audio_ui','audio_backend','audio_shapes','audio_responsiveness','additions','sram_patterns','burn_faults','presets','lettering','menu_alignment','ui_spacing','diagonals','graphical_ui','serial_ui_bank','cartridge_features','ir_cycles','rtc','variants','flicker','display_font','screen_text','display_timing','buttons_chord','burn_cadence','sram_burn']}
 commands['build_check']=[sys.executable,'tools/check_build.py']
 commands['mbc3_build_check']=[sys.executable,'tools/check_build.py']
 commands['mbc3_additions']=[sys.executable,'tests/additions.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio_backend']=[sys.executable,'tests/audio_backend.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio']=[sys.executable,'tests/audio_ui.py','build/mbc3/bacon-bits.gbc']
-for name in ['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art','raster_transitions']:commands[name]=[sys.executable,'tests/'+name+'.py','--core',str(args.core)]
-commands['flicker_sameboy']=[sys.executable,'tests/flicker.py','--core',str(args.core)]
+sameboy=['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art','raster_transitions','burn_rumble','flicker_sameboy']
+if args.core:
+ for name in sameboy:commands[name]=[sys.executable,'tests/'+('flicker' if name=='flicker_sameboy' else name)+'.py','--core',str(args.core)]
 paths=[('mbc5','build/bacon-bits.gbc'),('mbc3','build/mbc3/bacon-bits.gbc')]
 identities={name:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for name,path in paths}
 if args.jobs<1:a.error('--jobs must be positive')
@@ -29,5 +30,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:result
 for name in ['link_combined','upstream']:results.update([run((name,[sys.executable,'tests/'+name+'.py']))])
 after={name:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for name,path in paths}
 if identities!=after:results['rom_changed_during_verification']=1
-(ROOT/'build/verification.json').write_text(json.dumps({'rom_sha256':identities,'results':results},indent=2)+'\n')
+skipped=[] if args.core else sameboy
+if skipped:print('NOT RUN (no --core):',', '.join(skipped),flush=True)
+(ROOT/'build/verification.json').write_text(json.dumps({'rom_sha256':identities,'results':results,'not_run':skipped},indent=2)+'\n')
 raise SystemExit(any(results.values()))

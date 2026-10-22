@@ -16,10 +16,10 @@ for variant in ['', 'mbc3']:
     return bool(p.memory[0,addr] & p.memory[0,addr+1] & (0x80>>(x&7)))
    try:
     p.tick(240,True)
-    header=''.join(chr(t+32) if t<96 else '#' for t in p.memory[0,0x9825:0x982f])
-    assert header=='Bacon Bits',header
+    header=[''.join(chr(t+32) if t<96 else '#' for t in p.memory[0,0x9804+y*32:0x9814+y*32]).rstrip() for y in (1,2)]
+    assert header==['Bacon Bit Bench','MBC3 RTC' if rom.read_bytes()[0x147]==0x10 else 'MBC5 Rumble'],header
     clock=rom.read_bytes()[0x147]==0x10
-    pages=[['Platform','Link','Clock' if clock else 'Rumble','Audio'],['Buttons','Display','Save RAM','Burn in'],['Cart LED','IR','Flicker']]
+    pages=[['Platform','Link','Clock' if clock else 'Rumble','Audio'],['Buttons','Display','SRAM','Burn in'],['Cart LED','Infrared','Flicker']]
     for page,labels in enumerate(pages):
      for i,label in enumerate(labels):
       center=120 if i&1 else 40;start=center-len(label)*4;y=120 if i&2 else 72

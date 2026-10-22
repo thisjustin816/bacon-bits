@@ -37,7 +37,7 @@ with tempfile.TemporaryDirectory() as td:
    p.screen.image.save(ROOT/'build'/f'review-test-{selected}.png');shots.append(p.screen.image.convert('RGB'))
   finally:p.stop(save=False)
  board=Image.new('RGB',(680,664),(227,219,200));d=ImageDraw.Draw(board)
- labels=['Platform','Link Cable','Rumble','Audio Range','D-pad diagonals','Display settings','SRAM pattern check','Burn In','Cartridge LED','Infrared','Flicker comparison','Real Time Clock']
+ labels=['Platform','Link','Rumble','Audio','D-pad diagonals','Display settings','SRAM pattern check','Burn in','Cart LED','Infrared','Flicker comparison','Clock']
  for i,(im,label) in enumerate(zip(shots,labels)):
   x=8+i%4*168;y=8+i//4*168;board.paste(im,(x,y));d.text((x,y+146),label,fill=(64,40,32))
  # Last row shows the three browser pages.

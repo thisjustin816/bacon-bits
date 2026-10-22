@@ -4,7 +4,7 @@ VARIANT ?= mbc5
 BUILD_DIR ?= build
 export BB_BUILD_DIR = $(BUILD_DIR)
 CC = $(GBDK_HOME)/bin/lcc
-FLAGS = -I$(BUILD_DIR) -Isrc -Ivendor/link-sustain -Wm-yc -Wm-yo8 -Wm-ynBACONBITS -Wl-m -Wl-j
+FLAGS = -I$(BUILD_DIR) -Isrc -Ivendor/link-sustain -Wm-yc -Wm-yo8 -Wm-ynBACONBENCH -Wl-m -Wl-j
 ifeq ($(VARIANT),mbc3)
 FLAGS += -DBB_MBC3 -Wm-yt0x10 -Wm-ya4
 else

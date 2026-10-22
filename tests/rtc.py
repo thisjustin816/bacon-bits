@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory() as td:
  def open_clock():
   press('right');press('right');assert get('selected_test')==2;press('a');p.tick(90,True)
  def preset(n):
-  assert 'RTC PRESETS' in text(),text()
+  assert 'CLOCK PRESETS' in text(),text()
   for _ in range(n if 'CONTINUE' in text() else n-1):press('down')
   press('a');p.tick(60,True)
  def journal():return bytes(p.memory[0,0xbff0:0xbfff])+bytes([p.memory[0,0xbfff]])
@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory() as td:
   # Persist a pending halt check, then recover on a fresh emulator instance.
   press('a');preset(3);press('a');press('down');press('a');saved=bytes(p.memory[syms['_rtc_saved']:syms['_rtc_saved']+5]);assert get('rtc_dirty')
   p.stop(save=True);boot();open_clock();assert 'RESTORE SAVED RTC?' in text();assert p.memory[0,0x98d3]==97,'Recovery prompt overwrote its frame';press('a');assert get('selected_test')==2
-  press('a');assert 'RESTORE SAVED RTC?' in text();press('down');press('a');assert 'RTC PRESETS' in text() and journal()[:2]!=b'RT'
+  press('a');assert 'RESTORE SAVED RTC?' in text();press('down');press('a');assert 'CLOCK PRESETS' in text() and journal()[:2]!=b'RT'
   press('a');assert get('rtc_valid') and not snapshot()[4]&64
   assert snapshot()[3:]==saved[3:],'Recovery did not restore day / halt / carry'
   # Standard MBC3 must never offer an eighth SRAM bank or an MBC5 LED output.

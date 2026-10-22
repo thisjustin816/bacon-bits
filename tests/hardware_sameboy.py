@@ -17,7 +17,7 @@ for variant,rom in [('mbc5',ROOT/'build/bacon-bits.gbc'),('mbc3',ROOT/'build/mbc
  try:
   p.tick(600)
   if variant=='mbc3':
-   go(2);assert 'RTC PRESETS' in text();p.press('down');p.press('down');p.press('a');p.press('a');assert 'CONFIRM' in text();p.press('down');p.press('a');assert get('rtc_dirty') and get('rtc_data',5).to_bytes(5,'little')[4]&64
+   go(2);assert 'CLOCK PRESETS' in text();p.press('down');p.press('down');p.press('a');p.press('a');assert 'CONFIRM' in text();p.press('down');p.press('a');assert get('rtc_dirty') and get('rtc_data',5).to_bytes(5,'little')[4]&64
    frozen=p.read(syms['_rtc_data'],5);p.tick(180);assert p.read(syms['_rtc_data'],5)==frozen and not get('rtc_halt_errors',2)
    p.image.save(ROOT/'build/sameboy-rtc.png');p.press('b');assert not get('rtc_dirty');go(8);assert 'MBC5 RGB CART' in text();p.press('b')
   else:

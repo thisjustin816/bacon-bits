@@ -17,7 +17,7 @@ for variant,rom in [('mbc5',ROOT/'build/bacon-bits.gbc'),('mbc3',ROOT/'build/mbc
      for _ in range(selected):press('right')
      assert get('selected_test')==selected;press('a');p.tick(90,True)
      if 'PRESETS' in text():press('a');p.tick(60,True)
-     assert 'TEST CARTRIDGE' in text(),(variant,cgb,selected,text())
+     assert 'BACON BIT BENCH' in text() and ('MBC3 RTC' if variant=='mbc3' else 'MBC5 RUMBLE') in text(),(variant,cgb,selected,text())
      assert len(p.screen.image.convert('RGB').getcolors(65536))>=3,(variant,cgb,selected)
      if selected==1:assert not get('running')
      if selected==2:assert 'CLOCK' in text() if variant=='mbc3' else 'RUMBLE' in text()

@@ -10,5 +10,5 @@ __pycache__/
 *.gb
 *.gbc
 *.rtc
-!Bacon Bits Test Cartridge (MBC5 Rumble).gbc
-!Bacon Bits Test Cartridge (MBC3 RTC).gbc
+!Bacon Bit Bench (MBC5 Rumble).gbc
+!Bacon Bit Bench (MBC3 RTC).gbc

@@ -46,7 +46,7 @@ for variant in ['', 'mbc3']:
      tick()
     assert get('flicker_ready'),('Full view did not finish preparing',get('flicker_cell'),get('flicker_running'))
     tick(5)
-   def stop():press('b');assert not get('flicker_ready') and not get('flicker_running');assert 'Test Cartridge' in text()
+   def stop():press('b');assert not get('flicker_ready') and not get('flicker_running');assert 'Bacon Bit Bench' in text()
    dma=[]
    if not args.core:
     def dma_hook(_):dma.append((p.memory[0xff44],p.memory[0xff41]&3))

@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory() as td:
    press('right')
   assert get('selected_test')==n,('Missing cartridge test',n,get('selected_test'))
  try:
-  p.tick(240,True);go(8);press('a');assert 'LED PRESETS' in text(),text()
+  p.tick(240,True);go(8);press('a');assert 'CART LED PRESETS' in text(),text()
   # Find actual write instructions relative to the compiled banked function.
   addr=syms['_led_send'];bank=addr>>16;base=addr&65535;data=rom.read_bytes();at=bank*16384+base-0x4000;code=data[at:at+128]
   start=code.index(b'\x21\x00\x60\x36\x08\x36\x00')+3
@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory() as td:
   press('a');assert get('led_active') and transactions[0]==tuple([6]*8+[2]*16),transactions
   p.tick(130,True);assert tuple([2]*8+[6]*8+[2]*8) in transactions and tuple([2]*16+[6]*8) in transactions
   press('b');assert transactions[-1]==tuple([2]*24) and not get('led_active'),'LED did not receive OFF on exit'
-  go(9);press('a');assert 'IR PRESETS' in text();press('down');press('a');assert 'INFRARED' in text() and not get('ir_running')
+  go(9);press('a');assert 'INFRARED PRESETS' in text();press('down');press('a');assert 'INFRARED' in text() and not get('ir_running')
   assert get('ir_on')==2 and get('ir_off')==3 and get('ir_pulses')==32
   press('a');p.tick(90,True);assert get('ir_running');press('select');assert 'ON US' in text();before=get('ir_on');press('right');assert get('ir_on')==before+1
   press('b');assert not get('ir_running') and not p.memory[0xff4d]&128

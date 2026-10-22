@@ -9,7 +9,7 @@ static const char *const notes[]={"Keep settings","Read saved record","32k bank 
 static const char *const patterns[]={"Zero","Ones","55","AA","Walk 1","Walk 0","Address","Random"};
 static uint8_t rd(uint16_t address) __naked {address;__asm ld a,(de)
  ret __endasm;}
-static void bank(uint8_t n){*(volatile uint8_t *)0x4000=n;}
+static void bank(uint8_t n){bb_ram_bank=n;*(volatile uint8_t *)0x4000=n|bb_rumble_bit;}
 static uint8_t value(uint8_t b,uint16_t a){uint16_t x;
  /* Bank tags remain distinct even for constant data patterns. */
  if(a<16)return (uint8_t)(0x39u+b*23u+a*7u);
@@ -41,18 +41,18 @@ void sram_run(void) BANKED {uint8_t key,old=0,n,sel=0,page=0,active=0,done=0,red
  if(preset){ram_banks=BB_RAM_BANKS;ram_seed=1;ram_pattern=6;limit=ram_delay=0;ram_mode=preset==1?0:1;
  if(preset==2)ram_banks=4;
  if(preset==3){ram_mode=2;ram_pattern=4;limit=1;}if(preset==4){ram_pattern=7;ram_delay=30;limit=2;}}}
- for(;;){if(!active && !done && redraw){redraw=0;ui_screen("SRAM test",page?"2/2":"1/2");if(!page){ui_field(0,"Mode",ram_mode==0?"Verify":ram_mode==1?"Write":"Cycle",sel==0);ui_value(1,"Banks",ram_banks,sel==1);ui_field(2,"Pattern",patterns[ram_pattern],sel==2);ui_field(3,"Passes",limit==0?"1":limit==1?"10":limit==2?"100":"Loop",sel==3);}else{ui_value(0,"Seed",ram_seed,sel==0);ui_value(1,"Delay s",ram_delay,sel==1);ui_field(2,"Tags","16/bank",0);ui_field(3,"Record","32 bytes",0);}ui_status(ram_mode?"Erases test SRAM":"Read only");}
+ for(;;){if(!active && !done && redraw){redraw=0;ui_screen("SRAM",page?"2/2":"1/2");if(!page){ui_field(0,"Mode",ram_mode==0?"Verify":ram_mode==1?"Write":"Cycle",sel==0);ui_value(1,"Banks",ram_banks,sel==1);ui_field(2,"Pattern",patterns[ram_pattern],sel==2);ui_field(3,"Passes",limit==0?"1":limit==1?"10":limit==2?"100":"Loop",sel==3);}else{ui_value(0,"Seed",ram_seed,sel==0);ui_value(1,"Delay s",ram_delay,sel==1);ui_field(2,"Tags","16/bank",0);ui_field(3,"Record","32 B",0);}ui_status(ram_mode?"Erases test SRAM":"Read only");}
  vsync();key=joypad();n=key&~old;old=key;
  if(active){if(n&J_B){sram_end();active=0;done=1;result(page,passes);continue;}
   if(ram_stage){if(sram_step()){++passes;since=bb_frame();}}
   else if((uint16_t)(bb_frame()-since)>=(uint16_t)ram_delay*60u){if(ram_errors || (limit<3 && passes>=(limit==0?1UL:limit==1?10UL:100UL))){active=0;done=1;result(page,passes);}else sram_begin(ram_mode==2);}
   if(active && (uint16_t)(bb_frame()-last_draw)>=16u){
    last_draw=bb_frame();
-   ui_hardware(3,0);fill_bkg_rect(10,6,8,1,0);ui_text(10,6,ram_stage==1?"Write":ram_stage==2?"Verify":"Pause");
+   ui_hardware(3,0);ui_pad(10,6,ram_stage==1?"Write":ram_stage==2?"Verify":"Pause",8);
    {uint8_t i;for(i=0;i<ram_banks;++i)ui_cell(1+i,7,ram_errors && ram_first_bank==i?UI_FAIL:ram_bank==i?UI_ACTIVE:ram_bank>i?UI_PASS:UI_EMPTY);}
-   fill_bkg_rect(10,8,8,1,0);ui_text(10,8,"Bank");ui_number(15,8,ram_bank);
-   fill_bkg_rect(10,10,8,1,0);ui_text(10,10,"Errors");ui_number(10,12,ram_errors);
-   fill_bkg_rect(1,15,18,1,0);progress=ram_stage==1?(uint32_t)ram_bank*8192u+ram_address-(ram_bank?32u:0u):ram_checked;ui_number(1,15,progress);ui_text(10,15,ram_stage==1?"Written":"Verified");
+   ui_pad(10,8,"Bank",5);ui_count(15,8,ram_bank,3);
+   ui_pad(10,10,"Errors",8);ui_count(10,12,ram_errors,8);
+   progress=ram_stage==1?(uint32_t)ram_bank*8192u+ram_address-(ram_bank?32u:0u):ram_checked;ui_cell(0,15,0);ui_count(1,15,progress,9);ui_pad(10,15,ram_stage==1?"Written":"Verified",10);
    ui_status(ram_stage==1?"Writing pattern":ram_stage==2?"Verifying data":"Waiting");
   }continue;
  }

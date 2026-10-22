@@ -22,7 +22,7 @@ def capture(frames=30):
 checks=0
 try:
  p.tick(600);p.press('right');p.press('right');p.press('right');p.press('a');p.tick(60);p.press('up');p.press('a');p.tick(60)
- assert '64.00' in text(),text();assert not get('tone_playing')
+ assert ' 64.0 HZ' in text(),text();assert not get('tone_playing')
  p.press('a')
  for voice in range(4):
   assert get('tone_voice')==voice

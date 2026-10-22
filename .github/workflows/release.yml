@@ -52,11 +52,12 @@ jobs:
       - name: Build and check both cartridges
         run: make releases GBDK_HOME=/tmp/gbdk/ PYTHON=python
 
-      - name: Check routing, mapper variants, and display fonts
+      - name: Check routing, mapper variants, display fonts and screen text
         run: |
           python tests/smoke.py
           python tests/variants.py
           python tests/display_font.py
+          python tests/screen_text.py
           sha256sum --check SHA256SUMS
 
       - name: Package release files
@@ -64,8 +65,8 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
         run: |
           mkdir -p dist
-          cp 'Bacon Bits Test Cartridge (MBC5 Rumble).gbc' "dist/Bacon.Bits.Test.Cartridge.MBC5.Rumble.$TAG.gbc"
-          cp 'Bacon Bits Test Cartridge (MBC3 RTC).gbc' "dist/Bacon.Bits.Test.Cartridge.MBC3.RTC.$TAG.gbc"
+          cp 'Bacon Bit Bench (MBC5 Rumble).gbc' "dist/Bacon.Bit.Bench.MBC5.Rumble.$TAG.gbc"
+          cp 'Bacon Bit Bench (MBC3 RTC).gbc' "dist/Bacon.Bit.Bench.MBC3.RTC.$TAG.gbc"
           cd dist
           sha256sum -- *.gbc > SHA256SUMS
           sha256sum --check SHA256SUMS
@@ -98,7 +99,7 @@ jobs:
         run: |
           sha256sum --check SHA256SUMS
           if ! gh release view "$TAG" > /dev/null 2>&1; then
-            gh release create "$TAG" --verify-tag --draft --title "Bacon Bits $TAG" --generate-notes
+            gh release create "$TAG" --verify-tag --draft --title "Bacon Bit Bench $TAG" --generate-notes
           fi
           gh release upload "$TAG" --clobber -- '*.gbc' SHA256SUMS
           gh release edit "$TAG" --draft=false

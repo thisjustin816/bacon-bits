@@ -8,13 +8,15 @@ static const char *const presets[]={"","Pixel check","Color range","Motion check
 static const char *const notes[]={"Keep settings","1 pixel checker","32 gray levels","2 px per frame","30 frame interval"};
 static const char *const names[]={"Solid","Grid","Checker","Stripes","Ramps","Scroll","Flicker"};
 static const char *const colors[]={"White","Black","Gray","Red","Green","Blue"};
-static void palettes(uint8_t flip) {
+/* wait is 0 only straight after the loop's own vsync, where a second wait
+   would add a frame to every flicker phase. */
+static void palettes(uint8_t flip,uint8_t wait) {
  palette_color_t p[4];uint8_t i,j,k;uint16_t c;
  if(_cpu!=CGB_TYPE){BGP_REG=(flip^display_invert)?0x1b:0xe4;return;}
  if(display_pattern==4){for(i=0;i<8;++i){for(j=0;j<4;++j){k=i*4u+j;if(display_invert)k=31u-k;p[j]=display_color==3?RGB(k,0,0):display_color==4?RGB(0,k,0):display_color==5?RGB(0,0,k):RGB(k,k,k);}vsync();set_bkg_palette(i,1,p);}return;}
  switch(display_color){case 1:c=RGB_BLACK;break;case 2:c=RGB(16,16,16);break;case 3:c=RGB_RED;break;case 4:c=RGB_GREEN;break;case 5:c=RGB_BLUE;break;default:c=RGB_WHITE;}
  p[0]=(flip^display_invert)?RGB_BLACK:c;p[1]=p[0];p[2]=p[3]=(flip^display_invert)?c:RGB_BLACK;
- vsync();set_bkg_palette(0,1,p);
+ if(wait)vsync();set_bkg_palette(0,1,p);
 }
 static void prepare(void) {
  uint8_t tile,x,y,px,py,on,kind,width=1u<<display_width;
@@ -37,12 +39,12 @@ static void prepare(void) {
   for(x=0;x<32;++x){row_tiles[x]=display_pattern==4?UI_ART+16+(y&1u):UI_ART+(x&3u)+((y&3u)<<2);row_attrs[x]=display_pattern==4?((y>>1)&7u):0;}
   VBK_REG=0;set_bkg_tiles(0,y,32,1,row_tiles);if(_cpu==CGB_TYPE){VBK_REG=1;set_bkg_tiles(0,y,32,1,row_attrs);VBK_REG=0;}
  }
- palettes(0);display_ready=1;
+ palettes(0,1);display_ready=1;
 }
 static void settings(uint8_t page,uint8_t selected) {
  char v[8],*end;ui_screen("Display",page?"2/2":"1/2");
  if(!page){ui_field(0,"Pattern",names[display_pattern],selected==0);ui_field(1,"Color",colors[display_color],selected==1);
-  end=ui_decimal(v,1u<<display_width);*end++=' ';*end++='P';*end++='X';*end=0;ui_field(2,"Width",v,selected==2);ui_field(3,"Axis",display_axis?"Vert":"Horiz",selected==3);
+  end=ui_decimal(v,1u<<display_width);*end++=' ';*end++='p';*end++='x';*end=0;ui_field(2,"Width",v,selected==2);ui_field(3,"Axis",display_axis?"Vert":"Horiz",selected==3);
  }else {ui_value(0,"Px/frame",display_speed,selected==0);ui_value(1,"Every fr",display_interval,selected==1);ui_field(2,"Invert",display_invert?"Yes":"No",selected==2);ui_field(3,"Mode","Full LCD",0);}
 }
 void display_run(void) BANKED {
@@ -60,10 +62,10 @@ void display_run(void) BANKED {
    }
    if(press&J_A){display_running=1;phase=0;prepare();since=bb_frame();}else if(press)settings(page,sel);
   }else {if(press&J_B){display_running=display_ready=0;SCX_REG=SCY_REG=0;settings(page,sel);continue;}
-   if(press&J_SELECT){display_invert^=1;palettes(phase);}
+   if(press&J_SELECT){display_invert^=1;palettes(phase,1);}
    if(press&(J_LEFT|J_RIGHT)){display_pattern=(display_pattern+((press&J_RIGHT)?1u:6u))%7u;prepare();since=bb_frame();}
    if(display_pattern==5){if(display_axis)SCY_REG+=display_speed;else SCX_REG+=display_speed;}
-   if(display_pattern==6 && (uint16_t)(bb_frame()-since)>=display_interval){phase^=1;palettes(phase);since=bb_frame();}
+   if(display_pattern==6 && (uint16_t)(bb_frame()-since)>=display_interval){since=bb_frame();phase^=1;palettes(phase,0);}
   }
  }
 }
