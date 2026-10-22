@@ -1,21 +1,27 @@
-name: Publish release
+name: Build and release
 
+# Every push and pull request builds both ROMs and uploads them as an artifact.
+# A vX.Y.Z tag also publishes them as a GitHub release.
 on:
   push:
+    branches: ['**']
     tags: ['v*']
+    paths-ignore: ['**.md', 'assets/**', 'LICENSE']
+  pull_request:
+    paths-ignore: ['**.md', 'assets/**', 'LICENSE']
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing release tag (vX.Y.Z)'
-        required: true
+        description: 'Existing release tag (vX.Y.Z) to rebuild and republish. Leave empty to build the selected branch.'
+        required: false
         type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ inputs.tag || github.ref_name }}
-  cancel-in-progress: false
+  group: build-${{ inputs.tag || github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' && !inputs.tag }}
 
 jobs:
   build:
@@ -23,19 +29,37 @@ jobs:
     timeout-minutes: 20
     outputs:
       tag: ${{ steps.version.outputs.tag }}
+      name: ${{ steps.name.outputs.name }}
     steps:
-      - name: Validate version
+      - name: Choose what to build
         id: version
         env:
-          TAG: ${{ inputs.tag || github.ref_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
         run: |
-          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Expected vX.Y.Z'; exit 1; }
+          TAG=''
+          if [[ -n "$INPUT_TAG" ]]; then TAG=$INPUT_TAG; elif [[ "$REF_TYPE" == tag ]]; then TAG=$REF_NAME; fi
+          if [[ -n "$TAG" ]]; then
+            [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Expected vX.Y.Z'; exit 1; }
+            echo "ref=refs/tags/$TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$SHA" >> "$GITHUB_OUTPUT"
+          fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: refs/tags/${{ steps.version.outputs.tag }}
+          ref: ${{ steps.version.outputs.ref }}
+          fetch-depth: 0
           persist-credentials: false
+
+      - name: Name the build
+        id: name
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: echo "name=${TAG:-$(git describe --tags --always)}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -59,29 +83,30 @@ jobs:
           python tests/display_font.py
           python tests/screen_text.py
 
-      - name: Check the tag rebuilds the committed hashes
+      - name: Check the build matches the committed hashes
         run: git diff --exit-code -- SHA256SUMS
 
-      - name: Package release files
+      - name: Package ROMs
         env:
-          TAG: ${{ steps.version.outputs.tag }}
+          NAME: ${{ steps.name.outputs.name }}
         run: |
           mkdir -p dist
-          cp 'Bacon Bit Bench (MBC5+Rumble).gbc' "dist/Bacon.Bit.Bench.MBC5.Rumble.$TAG.gbc"
-          cp 'Bacon Bit Bench (MBC3+RTC).gbc' "dist/Bacon.Bit.Bench.MBC3.RTC.$TAG.gbc"
+          cp 'Bacon Bit Bench (MBC5).gbc' "dist/Bacon.Bit.Bench.MBC5.$NAME.gbc"
+          cp 'Bacon Bit Bench (MBC3).gbc' "dist/Bacon.Bit.Bench.MBC3.$NAME.gbc"
           cd dist
           sha256sum -- *.gbc > SHA256SUMS
           sha256sum --check SHA256SUMS
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: release-roms
+          name: Bacon.Bit.Bench.${{ steps.name.outputs.name }}
           path: dist/
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
 
   publish:
     needs: build
+    if: needs.build.outputs.tag != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -89,7 +114,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-roms
+          name: Bacon.Bit.Bench.${{ needs.build.outputs.name }}
           path: dist
 
       - name: Publish ROMs and checksums

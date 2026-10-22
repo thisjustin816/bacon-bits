@@ -36,12 +36,14 @@ join them on one menu with the same controls.
 ## Downloads
 
 The [latest release](https://github.com/thisjustin816/bacon-bits/releases/latest)
-has both ROMs and their hashes.
+has both ROMs and their hashes. Builds of every push are on the
+[Actions page](https://github.com/thisjustin816/bacon-bits/actions/workflows/build.yml),
+where signed-in GitHub users can download them.
 
 | ROM | Cartridge | Third test |
 | --- | --- | --- |
-| Bacon.Bit.Bench.MBC5.Rumble.vX.Y.Z.gbc | MBC5 with rumble, up to 64 KiB SRAM | Rumble |
-| Bacon.Bit.Bench.MBC3.RTC.vX.Y.Z.gbc | MBC3 with clock, 32 KiB SRAM | Clock |
+| Bacon.Bit.Bench.MBC5.vX.Y.Z.gbc | MBC5 with rumble, up to 64 KiB SRAM | Rumble |
+| Bacon.Bit.Bench.MBC3.vX.Y.Z.gbc | MBC3 with clock, 32 KiB SRAM | Clock |
 
 Both ROMs are 128 KiB and run on Game Boy, Game Boy Color and Game Boy
 Advance hardware. Both include every other test. Choose the one that matches
@@ -117,12 +119,14 @@ Naming suites runs only those, as in `python tests/run.py audio_dacs stack_depth
 [TESTING.md](TESTING.md) says what each suite proves and what still needs
 hardware.
 
-## Publishing a release
+## Builds and releases
 
-Push a `vX.Y.Z` tag to run [Publish release](.github/workflows/release.yml).
-It builds both ROMs with GBDK 4.5.0, checks them, fails if their hashes differ
-from the committed SHA256SUMS, and publishes versioned ROMs and their hashes as
-release assets. Asset names use dots between words so
+Every push and pull request that changes more than docs or media runs
+[Build and release](.github/workflows/build.yml). It builds both ROMs with
+GBDK 4.5.0, checks them, fails if their hashes differ from the committed
+SHA256SUMS, and uploads the ROMs and their hashes as an artifact named by
+`git describe`. Pushing a `vX.Y.Z` tag runs the same build and also publishes
+the ROMs and their hashes as a release. Asset names use dots between words so
 GitHub keeps the checksum filenames. The workflow downloads the published
 assets and checks their hashes again. It can also run from the Actions page
 for an existing tag, which rebuilds that tag and replaces its assets. Run the

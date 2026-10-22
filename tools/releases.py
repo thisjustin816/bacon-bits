@@ -6,7 +6,7 @@ from pathlib import Path
 import hashlib,os,shutil,subprocess,sys
 ROOT=Path(__file__).resolve().parents[1]
 lines=[]
-for build,name in [('build','Bacon Bit Bench (MBC5+Rumble).gbc'),('build/mbc3','Bacon Bit Bench (MBC3+RTC).gbc')]:
+for build,name in [('build','Bacon Bit Bench (MBC5).gbc'),('build/mbc3','Bacon Bit Bench (MBC3).gbc')]:
  env=dict(os.environ,BB_BUILD_DIR=build)
  subprocess.run([sys.executable,'tools/check_build.py'],cwd=ROOT,env=env,check=True)
  source=ROOT/build/'bacon-bits.gbc';shutil.copyfile(source,ROOT/name)
