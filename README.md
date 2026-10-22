@@ -131,8 +131,8 @@ GBDK 4.5.0, checks them, fails if their hashes differ from the committed
 SHA256SUMS, and uploads the ROMs and their hashes as an artifact named by
 `git describe`.
 
-To release, run the workflow from the Actions page on `main` with a new
-version such as `v1.2.0`. After the build passes, it tags that commit and
+To release, run the workflow from the Actions page on the default branch with
+a new version such as `v1.2.0`. After the build passes, it tags that commit and
 publishes the ROMs and their hashes as a release. Naming an existing version,
 or pushing its tag, rebuilds that tag and replaces its files. Asset names use
 dots between words so GitHub keeps the checksum filenames. The workflow
