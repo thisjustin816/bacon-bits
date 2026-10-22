@@ -51,6 +51,12 @@ cover flicker phase lengths, the Buttons return chord, and Burn In timing.
 `sram_burn` covers browser Up/Down order, SRAM cycle passes, a stopped write,
 and Burn In's SRAM watch passing and then catching a flipped bit.
 
+`stack_depth` fills the WRAM between static data and the stack with `$A5`,
+opens and runs every instrument in each build and model, and requires the
+lowest changed byte to stay above the static RAM limit in
+`tools/check_build.py`. It writes the measured depths to
+`build/stack-depth.json`.
+
 `screen_tour` walks every screen of both builds in SameBoy, in color and
 monochrome, and judges each frame as shown. It rejects a font slot showing
 anything but its glyph, a cell that blinks off and back within four frames, a
@@ -81,12 +87,19 @@ Neither proves physical serial timing or motor performance.
 PyBoy reads the sound registers as zero unless it emulates sound, so every
 suite that checks the APU is off afterwards runs with sound emulated.
 `audio_backend` redirects startup to a call stub; `audio_ui`, `audio_shapes`
-and `audio_sameboy` additionally exercise ordinary cartridge inputs. Frequency
+and `audio_sameboy` additionally exercise ordinary cartridge inputs.
+`audio_dacs` reads all four DAC enables on every frame through bursts, voice
+changes, frequency steps, level 0 and stop/start, since a DAC switched off and
+on pops on hardware and PyBoy does not reproduce the pop.
+`audio_responsiveness` taps Right for one frame at twelve animation phases and
+requires each tap to step the frequency. It also requires the scrolling graph's
+map copy to finish before line 48, where the graph starts. Frequency
 measurements find the strongest spectral peak above 10 Hz before comparing it
 with the requested frequency; they do not restrict the search to that frequency.
 `cart`, `libretro`, `audio_navigation` and `display_assertions` are helpers,
 not standalone test suites. `capture_review` and `capture_flicker` generate review
-media and do not establish a pass by themselves.
+media and do not establish a pass by themselves. They record each image's ROM
+hashes, the commit it was built from and the emulator in `assets/media.json`.
 
 When adding a regression, retain the prior ROM and matching symbols. Reproduce
 the failure there first, then run the same inputs against the fixed build.

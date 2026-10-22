@@ -58,7 +58,9 @@ jobs:
           python tests/variants.py
           python tests/display_font.py
           python tests/screen_text.py
-          sha256sum --check SHA256SUMS
+
+      - name: Check the tag rebuilds the committed hashes
+        run: git diff --exit-code -- SHA256SUMS
 
       - name: Package release files
         env:

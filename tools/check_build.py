@@ -1,5 +1,7 @@
 """Reject a moved assembly entry, stale return gate, or an overflowing ROM bank."""
 from pathlib import Path
+# Static WRAM ends below this; tests/stack_depth.py measures the stack above it.
+STACK_FLOOR=0xdc00
 import os
 import re,json
 ROOT=Path(__file__).resolve().parents[1]
@@ -38,7 +40,7 @@ print(str(32 if rom[0x147]==0x10 else 64)+' KiB SRAM header and independent per-
 
 for name,start,size in re.findall(r'^(_DATA|_INITIALIZED)\s+([\dA-F]+)\s+([\dA-F]+)',(BUILD/'bacon-bits.map').read_text(),re.M):
  start=int(start,16);size=int(size,16)
- assert start+size<=0xdc00,(name,start,size)
+ assert start+size<=STACK_FLOOR,(name,start,size)
  print(f'{name}: {size} bytes, ends {start+size:04x}; stack reserve remains')
 
 # Verify the compiled font and every scene's tile range against the shared layout.

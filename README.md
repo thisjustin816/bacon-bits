@@ -35,17 +35,19 @@ join them on one menu with the same controls.
 
 ## Downloads
 
+The [latest release](https://github.com/thisjustin816/bacon-bits/releases/latest)
+has both ROMs and their hashes.
+
 | ROM | Cartridge | Third test |
 | --- | --- | --- |
-| [Bacon Bit Bench (MBC5+Rumble)](<Bacon Bit Bench (MBC5+Rumble).gbc>) | MBC5 with rumble, up to 64 KiB SRAM | Rumble |
-| [Bacon Bit Bench (MBC3+RTC)](<Bacon Bit Bench (MBC3+RTC).gbc>) | MBC3 with clock, 32 KiB SRAM | Clock |
+| Bacon.Bit.Bench.MBC5.Rumble.vX.Y.Z.gbc | MBC5 with rumble, up to 64 KiB SRAM | Rumble |
+| Bacon.Bit.Bench.MBC3.RTC.vX.Y.Z.gbc | MBC3 with clock, 32 KiB SRAM | Clock |
 
 Both ROMs are 128 KiB and run on Game Boy, Game Boy Color and Game Boy
 Advance hardware. Both include every other test. Choose the one that matches
 your flash cart's mapper. The third card reads Rumble or Clock. The
 MBC5 ROM also drives the insideGadgets RGB LED cartridge. The MBC3 ROM leaves
 that page off, because the same writes control its clock.
-[SHA256SUMS](SHA256SUMS) lists the release hashes.
 
 ## The instruments
 
@@ -92,8 +94,9 @@ make releases GBDK_HOME=/path/to/gbdk/ PYTHON=python
 
 `make` builds the MBC5 ROM into `build/`, and `make mbc3` builds the MBC3 ROM
 into `build/mbc3/`. `make releases` builds both, checks their headers, banks,
-tile budgets and screen text widths, and updates the two release ROMs and
-`SHA256SUMS`.
+static RAM, tile budgets and screen text widths, copies them to their release
+names and writes their hashes to [SHA256SUMS](SHA256SUMS). The ROMs stay out
+of git. SHA256SUMS is committed with each change to the build.
 
 Platform, Link and Rumble are earlier standalone ROMs, kept unchanged in
 `vendor/` with their source revisions in [vendor/README.md](vendor/README.md).
@@ -110,14 +113,16 @@ GBDK_HOME=/path/to/gbdk/ python tests/run.py --core /path/to/sameboy_libretro.so
 The suites drive both ROMs in PyBoy and SameBoy with scripted input, in color
 and monochrome. They also run the original suites of the three diagnostics it
 was built from. Without `--core`, the SameBoy suites are listed as not run.
+Naming suites runs only those, as in `python tests/run.py audio_dacs stack_depth`.
 [TESTING.md](TESTING.md) says what each suite proves and what still needs
 hardware.
 
 ## Publishing a release
 
 Push a `vX.Y.Z` tag to run [Publish release](.github/workflows/release.yml).
-It builds both ROMs with GBDK 4.5.0, checks them, and publishes versioned ROMs
-and `SHA256SUMS` as release assets. Asset names use dots between words so
+It builds both ROMs with GBDK 4.5.0, checks them, fails if their hashes differ
+from the committed SHA256SUMS, and publishes versioned ROMs and their hashes as
+release assets. Asset names use dots between words so
 GitHub keeps the checksum filenames. The workflow downloads the published
 assets and checks their hashes again. It can also run from the Actions page
 for an existing tag, which rebuilds that tag and replaces its assets. Run the

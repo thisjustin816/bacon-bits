@@ -25,8 +25,10 @@ with tempfile.TemporaryDirectory() as td:
     shape=p.memory[syms['_tone_shape']+voice];shapes.append(shape)
     if voice<2:assert p.memory[0xff11 if voice==0 else 0xff16]>>6==shape,(voice,shape,p.memory[0xff11 if voice==0 else 0xff16],get("tone_playing"),get("audio_page"))
     elif voice==2:
-     # Wave RAM is read after stopping its DAC, through the real stop control.
-     press('a');samples=bytes(p.memory[0xff30:0xff40]);waveforms.append(samples);press('a')
+     # Stop mutes the wave channel with its DAC on, and wave RAM reads back
+     # only while the channel is off, so the harness turns the DAC off to read it.
+     press('a');assert p.memory[0xff1a]&0x80 and not p.memory[0xff1c]&0x60
+     p.memory[0xff1a]=0;samples=bytes(p.memory[0xff30:0xff40]);p.memory[0xff1a]=0x80;waveforms.append(samples);press('a')
      if shape==1:assert samples==bytes([0xff]*8+[0]*8)
      if shape==2:assert samples==bytes([(i<<4)|(i+1) for i in range(0,16,2)]+[(i<<4)|(i-1) for i in range(15,0,-2)])
      if shape==3:assert samples==bytes([i*17 for i in range(16)])

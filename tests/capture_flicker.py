@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse,re
 from PIL import Image,ImageDraw
 from libretro import SameBoy
+from media import record
 ROOT=Path(__file__).resolve().parents[1]
 a=argparse.ArgumentParser();a.add_argument('--core',required=True,type=Path);args=a.parse_args()
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'build/bacon-bits.noi').read_text(),re.M)}
@@ -28,4 +29,5 @@ board=Image.new('RGB',(672,328),(227,219,200));d=ImageDraw.Draw(board)
 for i,(model,label,im) in enumerate(shots):
  x=4+i%4*168;y=4+i//4*164;board.paste(im,(x,y));d.text((x,y+146),('GBC ' if model.endswith('Color') else 'GB ')+label,fill=(64,40,32))
 board.resize((1344,656),Image.Resampling.NEAREST).save(ROOT/'assets/flicker.png')
+record(['flicker.png'],{'mbc5':'build/bacon-bits.gbc'},'SameBoy')
 print('Captured separate raw frames in SameBoy; no frame averaging or simulated persistence')

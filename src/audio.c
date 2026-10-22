@@ -95,7 +95,7 @@ void audio_run(void) BANKED {
   if(preset==3){tone_output=1;tone_level=8;}
   if(preset==4){tone_voice=2;tone_level=3;tone_shape[2]=2;tone_on=tone_gap=30;}
  }audio_row=1;audio_page=0;
- preview_voice=255;preview_phase=255;preview_level=255;memset(graph_previous,0xff,sizeof(graph_previous));NR52_REG=0x80;tone_stop();ui_screen("Audio","");draw_audio();
+ preview_voice=255;preview_phase=255;preview_level=255;memset(graph_previous,0xff,sizeof(graph_previous));tone_power();ui_screen("Audio","");draw_audio();
  for(;;) {
   /* Poll before the graph copy, which runs about 48 lines; polling after it
      leaves a gap long enough to miss a one-frame tap. */

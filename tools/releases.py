@@ -1,4 +1,7 @@
-"""Check and copy both original diagnostic releases and their SHA-256 list."""
+"""Check both release builds, copy them to the release names, and record their hashes.
+
+The ROMs stay out of git; SHA256SUMS is committed so a tag build can prove it
+reproduces them."""
 from pathlib import Path
 import hashlib,os,shutil,subprocess,sys
 ROOT=Path(__file__).resolve().parents[1]
