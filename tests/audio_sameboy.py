@@ -40,7 +40,8 @@ try:
   for level in range(maximum,-1,-1):
    if level<maximum:p.press('left')
    if voice==2:assert io(0x1c)&0x60==[0,0x60,0x40,0x20][level]
-   else:assert io(0x12 if voice==0 else 0x17 if voice==1 else 0x21)==level<<4
+   # Bit 3 keeps the DAC on at level 0.
+   else:assert io(0x12 if voice==0 else 0x17 if voice==1 else 0x21)==level<<4|8
    checks+=1
   for _ in range(maximum):p.press('right')
   if voice<3:row(0);p.press('right')
@@ -49,7 +50,8 @@ try:
  lower_index(get,p.press,22)
  row(3)
  for output in [1,2,0]:
-  p.press('right');assert io(0x25)==[0x11,0x10,1][output]
+  # Every channel stays routed to the chosen sides; the samples show only the selected voice sounds.
+  p.press('right');assert io(0x25)==[0xff,0xf0,0x0f][output]
   energy=np.std(capture(),axis=0)
   if output==1:assert energy[0]>1 and energy[1]<1,energy
   elif output==2:assert energy[1]>1 and energy[0]<1,energy

@@ -24,7 +24,7 @@ try:
  p.press('b');leave()
  p.press('right');p.press('a');p.tick(60);p.press('up');p.press('a');p.tick(60);shot('audio')
  p.capture=True;p.samples.clear();p.press('a');p.tick(30)
- assert p.read(0xff12)[0]==0xf0 and p.read(0xff25)[0]==0x11,'Pulse setup/routing did not reach the APU'
+ assert p.read(0xff12)[0]==0xf8 and p.read(0xff25)[0]==0xff,'Pulse setup/routing did not reach the APU'
  assert np.std(np.frombuffer(b''.join(p.samples),dtype=np.int16))>1,'Pulse produced no SameBoy audio samples'
  p.press('b');assert p.read(0xff26)[0]&0x80==0,'APU remained active on return'
  def visible(core):assert len(core.image.getcolors(65536))>1,'Blank browser frame'
