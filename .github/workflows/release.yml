@@ -65,8 +65,8 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
         run: |
           mkdir -p dist
-          cp 'Bacon Bit Bench (MBC5 Rumble).gbc' "dist/Bacon.Bit.Bench.MBC5.Rumble.$TAG.gbc"
-          cp 'Bacon Bit Bench (MBC3 RTC).gbc' "dist/Bacon.Bit.Bench.MBC3.RTC.$TAG.gbc"
+          cp 'Bacon Bit Bench (MBC5+Rumble).gbc' "dist/Bacon.Bit.Bench.MBC5.Rumble.$TAG.gbc"
+          cp 'Bacon Bit Bench (MBC3+RTC).gbc' "dist/Bacon.Bit.Bench.MBC3.RTC.$TAG.gbc"
           cd dist
           sha256sum -- *.gbc > SHA256SUMS
           sha256sum --check SHA256SUMS

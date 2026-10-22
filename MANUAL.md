@@ -1,8 +1,9 @@
 # Controls and tests
 
-A opens a browser card. The header shows which release is running, MBC5
-Rumble or MBC3 RTC. Settings use Up/Down to select a field, Left/Right to
-change it, and Select to change pages. A starts an activity; B stops it or
+A opens a browser card. The third card shows which release is running: Rumble
+on MBC5 or Clock on MBC3. Settings use Up/Down to select a field, Left/Right to
+change it, and Select to change pages. Changing a setting rewrites it in place;
+a new screen appears once it is fully drawn. A starts an activity; B stops it or
 returns. Presets configure a test without starting it. Continue preserves
 custom settings. A confirmation starts on No.
 

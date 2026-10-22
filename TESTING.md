@@ -51,6 +51,12 @@ cover flicker phase lengths, the Buttons return chord, and Burn In timing.
 `sram_burn` covers browser Up/Down order, SRAM cycle passes, a stopped write,
 and Burn In's SRAM watch passing and then catching a flipped bit.
 
+`screen_tour` walks every screen of both builds in SameBoy, in color and
+monochrome, and judges each frame as shown. It rejects a font slot showing
+anything but its glyph, a cell that blinks off and back within four frames, a
+change that takes more than three frames to land, and a blank body longer than
+18 frames. `--frames` keeps every other frame for review.
+
 `raster_transitions` compares the displayed header on every frame during
 navigation, diagnostic entry, settings-page changes and return, in CGB/DMG
 and both mapper variants. It retains inputs, ROM identities and review frames.

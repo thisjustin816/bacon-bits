@@ -19,9 +19,9 @@ static void live_dpad(uint8_t held) {
  uint8_t x,y,count=0,i;uint16_t n=0;
  if(drawn_directions==255){set_bkg_data(UI_ART,37,button_tiles);old=0;}
  else old=button_maps[drawn_directions];
- for(y=6;y<14;++y)for(x=1;x<19;++x){
-  if(!old)ui_cell(x,y,map[n]);
-  else if(old[n]!=map[n]){updates[count][0]=x;updates[count][1]=y;updates[count++][2]=map[n];}
+ if(!old)set_bkg_tiles(1,6,18,8,map);
+ else for(y=6;y<14;++y)for(x=1;x<19;++x){
+  if(old[n]!=map[n]){updates[count][0]=x;updates[count][1]=y;updates[count++][2]=map[n];}
   ++n;
  }
  if(count){vsync();for(i=0;i<count;++i)set_bkg_tile_xy(updates[i][0],updates[i][1],updates[i][2]);}

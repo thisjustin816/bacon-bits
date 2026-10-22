@@ -17,7 +17,7 @@ for variant in ['', 'mbc3']:
    try:
     p.tick(240,True)
     header=[''.join(chr(t+32) if t<96 else '#' for t in p.memory[0,0x9804+y*32:0x9814+y*32]).rstrip() for y in (1,2)]
-    assert header==['Bacon Bit Bench','MBC3 RTC' if rom.read_bytes()[0x147]==0x10 else 'MBC5 Rumble'],header
+    assert header==['Bacon Bit Bench',''],header
     clock=rom.read_bytes()[0x147]==0x10
     pages=[['Platform','Link','Clock' if clock else 'Rumble','Audio'],['Buttons','Display','SRAM','Burn in'],['Cart LED','Infrared','Flicker']]
     for page,labels in enumerate(pages):

@@ -28,7 +28,7 @@ static void outputs_off(void){burn_audio(255);
  bb_rumble_stop();
 #endif
  bb_cpu(0);}
-static void settings(uint8_t page,uint8_t row){ui_screen("Burn in",page?"2/2":"1/2");if(!page){if(minutes[duration])ui_value(0,"Minutes",minutes[duration],row==0);else ui_field(0,"Minutes","Loop",row==0);ui_field(1,"Load",load==0?"Light":load==1?"Medium":"High",row==1);ui_field(2,"CPU",fast?"Double":"Normal",row==2);ui_field(3,"On fail",onfail?"Continue":"Stop",row==3);}else{ui_field(0,"Audio",output==0?"Off":output==1?"Pulse":output==2?"Wave":"Noise",row==0);
+static void settings(uint8_t page,uint8_t row){ui_page("Burn in",page?"2/2":"1/2",0x70u|page);if(!page){if(minutes[duration])ui_value(0,"Minutes",minutes[duration],row==0);else ui_field(0,"Minutes","Loop",row==0);ui_field(1,"Load",load==0?"Light":load==1?"Medium":"High",row==1);ui_field(2,"CPU",fast?"Double":"Normal",row==2);ui_field(3,"On fail",onfail?"Continue":"Stop",row==3);}else{ui_field(0,"Audio",output==0?"Off":output==1?"Pulse":output==2?"Wave":"Noise",row==0);
 #ifdef BB_MBC3
 ui_field(1,"RTC",motor?"Watch":"Skip",row==1);
 #else

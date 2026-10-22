@@ -5,6 +5,18 @@
 
 uint8_t selected_test,bb_keys,bb_raw_rumble;
 uint16_t ui_revision;
+uint8_t bb_tiles_dirty=UI_TILES_ALL,bb_cover_dirty=1;
+static uint8_t covered;
+/* A blank window over rows 4-17 hides a screen while it is rebuilt, so a
+   change shows the old screen, then the finished new one. */
+void ui_cover(void) NONBANKED {
+ if(bb_cover_dirty){LCDC_REG|=0x40u;fill_win_rect(0,0,20,14,0);if(_cpu==CGB_TYPE){VBK_REG=1;fill_win_rect(0,0,20,14,0);VBK_REG=0;}bb_cover_dirty=0;}
+ LCDC_REG|=0x40u;WX_REG=7;WY_REG=32;
+ /* Inside VBlank the change already lands on a frame boundary. */
+ if(LY_REG<144u)vsync();
+ SHOW_WIN;covered=1;
+}
+void ui_reveal(void) NONBANKED {if(covered){if(LY_REG<144u)vsync();HIDE_WIN;covered=0;}}
 static uint8_t saved_tiles[360], saved_attrs[360];
 static palette_color_t saved_palette[4];
 static const palette_color_t breakfast[16] = {
@@ -15,10 +27,8 @@ static const palette_color_t breakfast[16] = {
 };
 #define BRAND_NAME "Bacon Bit Bench"
 #ifdef BB_MBC3
-#define BRAND_VARIANT "MBC3 RTC"
 #define CARD_2 "Clock"
 #else
-#define BRAND_VARIANT "MBC5 Rumble"
 #define CARD_2 "Rumble"
 #endif
 #define CARD_0 "Platform"
@@ -49,9 +59,8 @@ void ui_clear(void) {
  for(y=0;y<4;++y)for(x=0;x<4;++x)ui_cell(x,y,UI_BRAND+y*4+x);
  /* The shared heading stays resident while the body is redrawn. Clearing
     its map cells exposes a blank header for several LCD frames. */
- fill_bkg_rect(4,0,16,1,0);fill_bkg_rect(4,3,16,1,0);
+ fill_bkg_rect(4,0,16,1,0);fill_bkg_rect(4,2,16,2,0);
  fill_bkg_rect(3+sizeof(BRAND_NAME),1,17-sizeof(BRAND_NAME),1,0);
- fill_bkg_rect(3+sizeof(BRAND_VARIANT),2,17-sizeof(BRAND_VARIANT),1,0);
  for(y=4;y!=18;++y) fill_bkg_rect(0,y,20,1,0);
  if(_cpu==CGB_TYPE) {VBK_REG=1;fill_bkg_rect(0,4,20,14,0);VBK_REG=0;}
 }
@@ -64,46 +73,57 @@ void ui_box(uint8_t top,uint8_t bottom) {
 void ui_header(void) {
  uint8_t x,y;
  for(y=0;y<4;++y)for(x=0;x<4;++x)ui_cell(x,y,UI_BRAND+y*4+x);
- ui_text(4,1,BRAND_NAME);ui_text(4,2,BRAND_VARIANT);
+ ui_text(4,1,BRAND_NAME);
  for(y=4;y<18;++y)if(y==4 || y>=15)fill_bkg_rect(0,y,20,1,(UI_CHROME+10));
  if(_cpu==CGB_TYPE){VBK_REG=1;fill_bkg_rect(0,0,20,4,1);fill_bkg_rect(0,15,20,3,2);VBK_REG=0;}
 }
 void ui_init(void) {
  ++ui_revision;
  uint8_t i;
- HIDE_SPRITES;HIDE_WIN;SHOW_BKG;
+ HIDE_SPRITES;SHOW_BKG;
  if(!bb_raw_rumble)for(i=0;i!=40;++i)move_sprite(i,0,0);
  SCX_REG=SCY_REG=0;VBK_REG=0;LCDC_REG|=0x10u;
- vsync();
+ ui_cover();
  if(_cpu==CGB_TYPE) set_bkg_palette(0,4,breakfast);
  BGP_REG=0xe4;
- set_bkg_data(UI_BRAND,16,bb_brand);ui_clear();
- set_bkg_data(0,UI_FONT_COUNT,bb_font);set_bkg_data(UI_CHROME,11,bb_chrome);set_bkg_data(UI_PASS,3,bb_probes);
+ /* Reloading unchanged tiles keeps the body blank for frames, so only what
+    was overwritten is restored. */
+ if(bb_tiles_dirty&UI_TILES_ALL)set_bkg_data(UI_BRAND,16,bb_brand);
+ ui_clear();
+ if(bb_tiles_dirty&UI_TILES_ALL){set_bkg_data(0,UI_FONT_COUNT,bb_font);set_bkg_data(UI_CHROME,11,bb_chrome);set_bkg_data(UI_PASS,3,bb_probes);}
+ else if(bb_tiles_dirty){for(i=0;i!=sizeof(label_slots);++i)set_bkg_data(label_slots[i],1,bb_font+label_slots[i]*16u);set_bkg_data(UI_FOCUS_EXTRA,4,bb_font+UI_FOCUS_EXTRA*16u);}
+ bb_tiles_dirty=0;
  ui_header();ui_scene_reset();DISPLAY_ON;
 }
+static const uint8_t blank_tile[16];
 static void menu_label(uint8_t item,const char *label,uint8_t *borrowed) {
- uint8_t count=strlen(label),x=(item&1u?10u:0u)+(10u-count)/2u,y=(item&2u)?15:9,i,r,tile[16],left,right;
+ uint8_t count=strlen(label),x=(item&1u?10u:0u)+(10u-count)/2u,y=(item&2u)?15:9,i,r,tile[16];
  if(!(count&1u)){ui_text(x,y,label);return;}
  for(i=0;i<=count;++i){
-  for(r=0;r<16;++r){left=i?bb_font[((uint8_t)label[i-1]-32u)*16u+r]:0;right=i<count?bb_font[((uint8_t)label[i]-32u)*16u+r]:0;tile[r]=(left<<4)|(right>>4);}
-  set_bkg_data(label_slots[*borrowed],1,tile);ui_cell(x+i,y,label_slots[*borrowed]);++*borrowed;
+  /* Row pointers keep the per-row work to a shift and an OR. */
+  {const uint8_t *l=i?bb_font+((uint16_t)((uint8_t)label[i-1]-32u)<<4):blank_tile,*rt=i<count?bb_font+((uint16_t)((uint8_t)label[i]-32u)<<4):blank_tile;
+   for(r=0;r<16;++r)tile[r]=(uint8_t)(l[r]<<4)|(rt[r]>>4);}
+  set_bkg_data(label_slots[*borrowed],1,tile);bb_tiles_dirty|=UI_TILES_BORROWED;ui_cell(x+i,y,label_slots[*borrowed]);++*borrowed;
  }
 }
 static void browser(uint8_t fresh) {
- uint8_t i,at,borrowed=0,group=selected_test/4u;
- if(fresh)ui_init();
- ui_scene(group==2?6:group==1?5:
+ uint8_t i,at,borrowed=0,group=selected_test/4u,scene=group==2?6:group==1?5:
 #ifdef BB_MBC3
- 7,
+ 7;
 #else
- 0,
+ 0;
 #endif
-(uint8_t)(bb_frame()/12u)&3u);
+ if(fresh)ui_init();
+ ui_scene(scene,(uint8_t)(bb_frame()/12u)&3u);
  for(i=0;i<4;++i){
   at=group*4u+i;if(at>=11)continue;if(fresh)menu_label(i,labels[at],&borrowed);
  }
  ui_focus(selected_test&3u,fresh);
- if(fresh){fill_bkg_rect(0,17,20,1,(UI_CHROME+10));ui_text(7,17,group==2?"3 of 3":group==1?"2 of 3":"1 of 3");}
+ if(fresh){
+  fill_bkg_rect(0,17,20,1,(UI_CHROME+10));ui_text(7,17,group==2?"3 of 3":group==1?"2 of 3":"1 of 3");
+  /* A redraw outlasts one animation pose, so show the current one when uncovering. */
+  ui_scene(scene,(uint8_t)(bb_frame()/12u)&3u);ui_reveal();
+ }
 }
 
 /* Every test shares the font and frame tiles, so the modal only borrows map cells. */
@@ -152,11 +172,12 @@ uint8_t rumble_gate(void) NONBANKED {
 void rumble_draw_gate(void) NONBANKED {
  set_interrupts(VBL_IFLAG);enable_interrupts();rumble_view();disable_interrupts();IE_REG=0;
 }
+/* The assembly program may load its own tiles, so restore every UI tile around it. */
 static void rumble_run(void) {
- rumble_ui_reset();bb_raw_rumble=1;
+ bb_tiles_dirty=UI_TILES_ALL;rumble_ui_reset();bb_raw_rumble=1;
  SWITCH_ROM(3);
  ((void (*)(void))0x4000u)();
- bb_raw_rumble=0;TAC_REG=0;SC_REG=0;
+ bb_raw_rumble=0;bb_tiles_dirty=UI_TILES_ALL;TAC_REG=0;SC_REG=0;
  *(volatile uint8_t *)0x4000u=0;
  set_interrupts(VBL_IFLAG);enable_interrupts();
  SWITCH_ROM(1);

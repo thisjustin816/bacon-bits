@@ -1,7 +1,7 @@
 /* Included in the link engine's bank so serial state stays directly accessible. */
 static uint8_t link_detail,link_view=255;
 static void link_body(void) {
- uint8_t y;for(y=4;y<16;++y){fill_bkg_rect(0,y,20,1,0);if(running)service();}
+ uint8_t y;ui_cover();for(y=4;y<16;++y){fill_bkg_rect(0,y,20,1,0);if(running)service();}
  ui_text(1,4,"Link");ui_box(5,14);ui_number(16,4,page+1);ui_text(17,4,"/4");
 }
 static void link_begin(void) {link_view=255;link_detail=0;ui_scene(2,0);}

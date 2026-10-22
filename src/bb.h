@@ -2,6 +2,10 @@
 #define BB_H
 #include <gb/gb.h>
 #include <gb/cgb.h>
+/* Every screen polls input only after it is fully drawn, so the first poll
+   uncovers a screen that ui_init hid while it was rebuilt. */
+uint8_t bb_joypad(void) NONBANKED;
+#define joypad() bb_joypad()
 #define UI_FONT_COUNT 96
 #define UI_CHROME 96
 #define UI_RULE 106
@@ -55,6 +59,15 @@ void ui_box(uint8_t top,uint8_t bottom);
 void ui_cell(uint8_t x,uint8_t y,uint8_t tile);
 void ui_header(void);
 extern uint16_t ui_revision;
+/* Tiles ui_init must reload: every UI tile, or only the font slots the browser borrows. */
+#define UI_TILES_BORROWED 1u
+#define UI_TILES_ALL 2u
+extern uint8_t bb_tiles_dirty;
+/* Set when the window map (9C00) holds something other than the blank cover. */
+extern uint8_t bb_cover_dirty;
+void ui_reveal(void) NONBANKED;
+void ui_cover(void) NONBANKED;
+uint8_t ui_page(const char *title,const char *page,uint8_t key);
 void ui_hardware(uint8_t scene,uint8_t frame) BANKED;
 void rtc_run(void) BANKED;
 void rtc_read(uint8_t latch) BANKED;

@@ -9,7 +9,7 @@ static uint8_t audio_seen;
 static const char *const presets[]={"","Low end","Pulse pair","Stereo check","Burst check"};
 static const char *const preset_notes[]={"Keep settings","32 Hz sine / full","440 Hz / 50% duty","440 Hz / left","Triangle / 30f gap"};
 static uint16_t gate_started;
-static uint8_t preview_voice=255,preview_shape=255;
+static uint8_t preview_voice=255,preview_shape=255,scroll_pending,scroll_map[96];
 static const char * const voices[]={"Pulse 1","Pulse 2","Wave","Noise"};
 static const char * const outputs[]={"Both","Left","Right"};
 static const char * const wave_names[]={"Sine","Square","Triangle","Saw up","Saw down","Pulse 25"};
@@ -37,7 +37,10 @@ static void preview(void) {
   for(i=0;i<96;++i)if(memcmp(graph+i*16u,graph_previous+i*16u,16)){set_bkg_data(UI_ART+i,1,graph+i*16u);memcpy(graph_previous+i*16u,graph+i*16u,16);}
  }
  preview_phase=phase;
- for(y=0;y<6;++y)for(x=0;x<16;++x)ui_cell(2+x,6+y,UI_ART+y*16+((x+phase)&15u));
+ /* The loop copies this right after VBlank, before the beam reaches the
+    graph, so a scroll step never shows half old and half new. */
+ for(y=0;y<6;++y)for(x=0;x<16;++x)scroll_map[y*16u+x]=UI_ART+y*16+((x+phase)&15u);
+ scroll_pending=1;
 }
 static void audio_front(void) {
  char value[12],*end;uint8_t i;
@@ -94,7 +97,11 @@ void audio_run(void) BANKED {
  }audio_row=1;audio_page=0;
  preview_voice=255;preview_phase=255;preview_level=255;memset(graph_previous,0xff,sizeof(graph_previous));NR52_REG=0x80;tone_stop();ui_screen("Audio","");draw_audio();
  for(;;) {
-  vsync();keys=joypad();pressed=keys&~previous;directions=keys&15u;dirty=0;
+  /* Poll before the graph copy, which runs about 48 lines; polling after it
+     leaves a gap long enough to miss a one-frame tap. */
+  vsync();keys=joypad();
+  if(scroll_pending && !audio_page){set_bkg_tiles(2,6,16,6,scroll_map);scroll_pending=0;}
+  pressed=keys&~previous;directions=keys&15u;dirty=0;
   if(directions && directions==(previous&15u)){if(++repeat>=24u){pressed|=directions;repeat=18u;}}else repeat=0;previous=keys;
   if(pressed&J_B){tone_playing=0;tone_stop();NR52_REG=0;return;}
   if(pressed&J_SELECT){audio_page^=1;audio_row=0;ui_screen("Audio",audio_page?"Set":"");preview_voice=255;memset(graph_previous,0xff,sizeof(graph_previous));}

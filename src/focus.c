@@ -10,6 +10,7 @@ void ui_focus(uint8_t item,uint8_t fresh) BANKED {
   if(_cpu==CGB_TYPE){VBK_REG=1;fill_bkg_rect((prior_item&1u)?11:1,(prior_item&2u)?11:5,8,5,0);VBK_REG=0;}
  }
  tiles=focus_tiles[variant];
+ bb_tiles_dirty|=UI_TILES_BORROWED;
  if(_cpu==CGB_TYPE){set_bkg_data(UI_FOCUS,8,tiles);set_bkg_data(UI_FOCUS_EXTRA,4,tiles+128);}
  else for(y=0;y<12;++y){
   for(i=0;i<16;i+=2){tile[i+1]=tiles[y*16u+i+1];tile[i]=tiles[y*16u+i]&tile[i+1];}

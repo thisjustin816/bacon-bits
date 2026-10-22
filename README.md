@@ -5,6 +5,8 @@ and each one exposes its settings: pulse lengths, frequencies, phase timing,
 memory patterns and loads. Set the exact condition, then watch what the
 hardware does with it. Everything works in color and in monochrome.
 
+> Developed with Claude and Codex.
+
 ![Bench screens](assets/review.png)
 
 [Menu and live buttons](assets/controls.png) | [Flicker phases](assets/flicker.png)
@@ -24,19 +26,23 @@ works. I needed to know how it behaves at a setting I chose:
 - Which frequencies a speaker can still play, down to 32 Hz, one voice at a
   time.
 
-Three of the instruments started as one-off ROMs for questions like these,
-and the rest were written for this cartridge. It puts them all on one menu
-with the same controls.
+Some of these started as one-off test ROMs for a single game. One measured
+flash cart motors while I patched Pokemon Pinball's rumble. Another stressed
+the link cable while I tried patches for an unreleased game. A third told
+emulators from real hardware. Each made sense on its own, and together they
+made sense as one cartridge, so the rest of the instruments were written to
+join them on one menu with the same controls.
 
 ## Downloads
 
 | ROM | Cartridge | Third test |
 | --- | --- | --- |
-| [Bacon Bit Bench (MBC5 Rumble)](<Bacon Bit Bench (MBC5 Rumble).gbc>) | MBC5 with rumble, up to 64 KiB SRAM | Rumble |
-| [Bacon Bit Bench (MBC3 RTC)](<Bacon Bit Bench (MBC3 RTC).gbc>) | MBC3 with clock, 32 KiB SRAM | Clock |
+| [Bacon Bit Bench (MBC5+Rumble)](<Bacon Bit Bench (MBC5+Rumble).gbc>) | MBC5 with rumble, up to 64 KiB SRAM | Rumble |
+| [Bacon Bit Bench (MBC3+RTC)](<Bacon Bit Bench (MBC3+RTC).gbc>) | MBC3 with clock, 32 KiB SRAM | Clock |
 
 Both ROMs are 128 KiB and run on Game Boy, Game Boy Color and Game Boy
-Advance hardware. Choose the one that matches your flash cart's mapper. The
+Advance hardware. Both include every other test. Choose the one that matches
+your flash cart's mapper. The third card reads Rumble or Clock. The
 MBC5 ROM also drives the insideGadgets RGB LED cartridge. The MBC3 ROM leaves
 that page off, because the same writes control its clock.
 [SHA256SUMS](SHA256SUMS) lists the release hashes.
@@ -71,26 +77,6 @@ Those need someone watching or listening while it runs. It also cannot
 measure battery retention or clock drift by itself: run the SRAM or Clock
 test, power off, and check again later.
 
-## Where the tests came from
-
-- **Rumble** is Rumble Pulse, the motor calibration ROM from
-  [pokepinball-rumble-patch](https://github.com/thisjustin816/pokepinball-rumble-patch).
-  It measured how slow flash cart motors are, so Pokemon Pinball's
-  single-frame pulses could be stretched to fit them.
-- **Link** is Link Sustain, from
-  [gameboy-homebrew-patches](https://github.com/thisjustin816/gameboy-homebrew-patches).
-  It was built to chase link-cable faults in an unreleased game patch, which
-  needed sustained traffic, scene barriers and a shared ball between consoles.
-- **Platform** is Platform Detect, also from gameboy-homebrew-patches. It
-  checks for behavior a real Game Boy Color never shows, so a game can tell an
-  emulator from hardware.
-- The other tests were written for this cartridge. The Flicker patterns show
-  techniques used in games such as ZAS and Shantae, without their art or code.
-
-The original diagnostics are kept unchanged in `vendor/`. A build step adds
-the shared menu and return dialog around them. [vendor/README.md](vendor/README.md)
-records their source revisions. All artwork and the font are original.
-
 Made by CptBacon.
 
 ## Building
@@ -108,6 +94,12 @@ make releases GBDK_HOME=/path/to/gbdk/ PYTHON=python
 into `build/mbc3/`. `make releases` builds both, checks their headers, banks,
 tile budgets and screen text widths, and updates the two release ROMs and
 `SHA256SUMS`.
+
+Platform, Link and Rumble are earlier standalone ROMs, kept unchanged in
+`vendor/` with their source revisions in [vendor/README.md](vendor/README.md).
+A build step wraps them in the shared menu and return dialog. All artwork and
+the font are original. The font is also published as
+[assets/font.png](assets/font.png): ASCII 32 to 127 in 8x8 cells, 16 per row.
 
 ## Testing
 

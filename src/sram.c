@@ -41,7 +41,7 @@ void sram_run(void) BANKED {uint8_t key,old=0,n,sel=0,page=0,active=0,done=0,red
  if(preset){ram_banks=BB_RAM_BANKS;ram_seed=1;ram_pattern=6;limit=ram_delay=0;ram_mode=preset==1?0:1;
  if(preset==2)ram_banks=4;
  if(preset==3){ram_mode=2;ram_pattern=4;limit=1;}if(preset==4){ram_pattern=7;ram_delay=30;limit=2;}}}
- for(;;){if(!active && !done && redraw){redraw=0;ui_screen("SRAM",page?"2/2":"1/2");if(!page){ui_field(0,"Mode",ram_mode==0?"Verify":ram_mode==1?"Write":"Cycle",sel==0);ui_value(1,"Banks",ram_banks,sel==1);ui_field(2,"Pattern",patterns[ram_pattern],sel==2);ui_field(3,"Passes",limit==0?"1":limit==1?"10":limit==2?"100":"Loop",sel==3);}else{ui_value(0,"Seed",ram_seed,sel==0);ui_value(1,"Delay s",ram_delay,sel==1);ui_field(2,"Tags","16/bank",0);ui_field(3,"Record","32 B",0);}ui_status(ram_mode?"Erases test SRAM":"Read only");}
+ for(;;){if(!active && !done && redraw){redraw=0;ui_page("SRAM",page?"2/2":"1/2",0x60u|page);if(!page){ui_field(0,"Mode",ram_mode==0?"Verify":ram_mode==1?"Write":"Cycle",sel==0);ui_value(1,"Banks",ram_banks,sel==1);ui_field(2,"Pattern",patterns[ram_pattern],sel==2);ui_field(3,"Passes",limit==0?"1":limit==1?"10":limit==2?"100":"Loop",sel==3);}else{ui_value(0,"Seed",ram_seed,sel==0);ui_value(1,"Delay s",ram_delay,sel==1);ui_field(2,"Tags","16/bank",0);ui_field(3,"Record","32 B",0);}ui_status(ram_mode?"Erases test SRAM":"Read only");}
  vsync();key=joypad();n=key&~old;old=key;
  if(active){if(n&J_B){sram_end();active=0;done=1;result(page,passes);continue;}
   if(ram_stage){if(sram_step()){++passes;since=bb_frame();}}

@@ -26,6 +26,13 @@ void ui_count(uint8_t x,uint8_t y,uint32_t n,uint8_t width) {
 }
 void ui_line(uint8_t y,const char *text) {ui_cell(0,y,0);ui_pad(1,y,text,19);}
 void ui_screen(const char *title,const char *page) {ui_init();ui_text(1,4,title);ui_text(16,4,page);ui_box(5,14);}
+/* A settings page redraws only when another screen or page was shown since;
+   otherwise its fields are rewritten in place. Returns 1 after a redraw. */
+uint8_t ui_page(const char *title,const char *page,uint8_t key) {
+ static uint16_t revision;static uint8_t shown=255;
+ if(revision==ui_revision && shown==key)return 0;
+ ui_screen(title,page);revision=ui_revision;shown=key;return 1;
+}
 void ui_field(uint8_t row,const char *label,const char *value,uint8_t selected) {
  uint8_t y=6u+2u*row;
  ui_cell(1,y,selected?UI_CURSOR:0);ui_pad(2,y,label,9);ui_pad(11,y,value,8);
@@ -86,3 +93,6 @@ static void rumble_tick(void) NONBANKED {
 }
 void bb_rumble_start(uint8_t frames) NONBANKED {rumble_frames=frames;rumble_phase=59;CRITICAL{add_VBL(rumble_tick);}}
 void bb_rumble_stop(void) NONBANKED {CRITICAL{remove_VBL(rumble_tick);}bb_rumble_bit=0;*(volatile uint8_t *)0x4000u=bb_ram_bank;}
+
+#undef joypad
+uint8_t bb_joypad(void) NONBANKED {ui_reveal();return joypad();}
