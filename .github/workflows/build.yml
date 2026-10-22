@@ -1,7 +1,9 @@
 name: Build and release
 
 # Every push and pull request builds both ROMs and uploads them as an artifact.
-# A vX.Y.Z tag also publishes them as a GitHub release.
+# A release runs from the Actions page with a new vX.Y.Z on the default branch:
+# the workflow builds it, tags that commit and publishes the release. Pushing a
+# tag, or naming an existing one, rebuilds it and replaces its release files.
 on:
   push:
     branches: ['**']
@@ -12,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing release tag (vX.Y.Z) to rebuild and republish. Leave empty to build the selected branch.'
+        description: 'Release version (vX.Y.Z). A new one tags the default branch after the build passes; an existing one is rebuilt. Leave empty for a plain build.'
         required: false
         type: string
 
@@ -29,31 +31,36 @@ jobs:
     timeout-minutes: 20
     outputs:
       tag: ${{ steps.version.outputs.tag }}
+      new: ${{ steps.version.outputs.new }}
+      sha: ${{ steps.version.outputs.sha }}
       name: ${{ steps.name.outputs.name }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
       - name: Choose what to build
         id: version
         env:
           INPUT_TAG: ${{ inputs.tag }}
+          REF: ${{ github.ref }}
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
-          SHA: ${{ github.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          TAG=''
+          TAG='';NEW=false
           if [[ -n "$INPUT_TAG" ]]; then TAG=$INPUT_TAG; elif [[ "$REF_TYPE" == tag ]]; then TAG=$REF_NAME; fi
           if [[ -n "$TAG" ]]; then
             [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Expected vX.Y.Z'; exit 1; }
-            echo "ref=refs/tags/$TAG" >> "$GITHUB_OUTPUT"
-          else
-            echo "ref=$SHA" >> "$GITHUB_OUTPUT"
+            if git rev-parse -q --verify "refs/tags/$TAG" > /dev/null; then
+              git checkout --quiet --detach "refs/tags/$TAG"
+            else
+              [[ "$REF" == "refs/heads/$DEFAULT_BRANCH" ]] || { echo "Create new releases from $DEFAULT_BRANCH"; exit 1; }
+              NEW=true
+            fi
           fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ steps.version.outputs.ref }}
-          fetch-depth: 0
-          persist-credentials: false
+          { echo "tag=$TAG"; echo "new=$NEW"; echo "sha=$(git rev-parse HEAD)"; } >> "$GITHUB_OUTPUT"
 
       - name: Name the build
         id: name
@@ -123,9 +130,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ needs.build.outputs.tag }}
+          NEW: ${{ needs.build.outputs.new }}
+          SHA: ${{ needs.build.outputs.sha }}
         run: |
           sha256sum --check SHA256SUMS
-          if ! gh release view "$TAG" > /dev/null 2>&1; then
+          # A new release's tag is created on the built commit when the draft is published.
+          if gh release view "$TAG" > /dev/null 2>&1; then :
+          elif [[ "$NEW" == true ]]; then
+            gh release create "$TAG" --target "$SHA" --draft --title "Bacon Bit Bench $TAG" --generate-notes
+          else
             gh release create "$TAG" --verify-tag --draft --title "Bacon Bit Bench $TAG" --generate-notes
           fi
           gh release upload "$TAG" --clobber -- '*.gbc' SHA256SUMS
