@@ -35,23 +35,43 @@ void tone_measure(void) {
   tone_hundredths=52428800UL/((uint32_t)divisors[tone_noise_clock&7u]<<(tone_noise_clock>>4));
  }
 }
-void tone_stop(void) {NR12_REG=NR22_REG=NR30_REG=NR42_REG=0;NR51_REG=0;}
+/* Silence keeps every DAC on: pulse and noise at volume 0 (NRx2 bit 3 set),
+   and wave muted through NR32. Switching a DAC off and on pops on hardware. */
+static uint8_t live_voice=255,live_shape,live_level,wave_loaded=255;
+void tone_stop(void) {
+ NR12_REG=NR22_REG=NR42_REG=0x08;NR14_REG=NR24_REG=NR44_REG=0x80;
+ NR32_REG=0;NR30_REG=0x80;live_voice=255;
+}
+void tone_power(void) {NR52_REG=0x80;NR50_REG=0x77;NR51_REG=0xff;wave_loaded=255;tone_stop();}
 void tone_apply(void) {
- uint8_t i,mask;
- tone_stop();tone_measure();
- if(!tone_playing || !tone_gate)return;
- NR52_REG=0x80;NR50_REG=0x77;
- mask=tone_voice==0?0x11:tone_voice==1?0x22:tone_voice==2?0x44:0x88;
- if(tone_output==1)mask&=0xf0;else if(tone_output==2)mask&=0x0f;NR51_REG=mask;
- if(tone_voice<2) {
-  if(tone_voice==0){NR10_REG=0;NR11_REG=tone_shape[0]<<6;NR12_REG=tone_level<<4;NR13_REG=tone_register;NR14_REG=0x80|(tone_register>>8);}
-  else {NR21_REG=tone_shape[1]<<6;NR22_REG=tone_level<<4;NR23_REG=tone_register;NR24_REG=0x80|(tone_register>>8);}
- } else if(tone_voice==2) {
-  NR30_REG=0;
-  for(i=0;i<16;++i)*(volatile uint8_t *)(0xff30u+i)=(tone_sample(i*2u)<<4)|tone_sample(i*2u+1u);
-  NR30_REG=0x80;NR32_REG=tone_level==0?0:tone_level==1?0x60:tone_level==2?0x40:0x20;
-  NR33_REG=tone_register;NR34_REG=0x80|(tone_register>>8);
- } else {NR41_REG=0;NR42_REG=tone_level<<4;NR43_REG=tone_noise_clock|(tone_shape[3]?8:0);NR44_REG=0x80;}
+ uint8_t i,mask,low,high;
+ tone_measure();low=(uint8_t)tone_register;high=(uint8_t)(tone_register>>8);
+ if(!(NR52_REG&0x80))tone_power();
+ /* Every channel stays routed, so a voice change leaves the mix unchanged. */
+ mask=tone_output==1?0xf0:tone_output==2?0x0f:0xff;if(NR51_REG!=mask)NR51_REG=mask;
+ if(!tone_playing || !tone_gate){if(live_voice!=255)tone_stop();return;}
+ if(live_voice==tone_voice && live_shape==tone_shape[tone_voice] && live_level==tone_level) {
+  /* A trigger restarts the envelope and clicks, so a sounding voice only retunes. */
+  if(tone_voice==0){NR13_REG=low;NR14_REG=high;}
+  else if(tone_voice==1){NR23_REG=low;NR24_REG=high;}
+  else if(tone_voice==2){NR33_REG=low;NR34_REG=high;}
+  else NR43_REG=tone_noise_clock|(tone_shape[3]?8:0);
+  return;
+ }
+ if(live_voice!=255 && live_voice!=tone_voice)tone_stop();
+ live_voice=tone_voice;live_shape=tone_shape[tone_voice];live_level=tone_level;
+ if(tone_voice==0){NR10_REG=0;NR11_REG=tone_shape[0]<<6;NR12_REG=(tone_level<<4)|8;NR13_REG=low;NR14_REG=0x80|high;}
+ else if(tone_voice==1){NR21_REG=tone_shape[1]<<6;NR22_REG=(tone_level<<4)|8;NR23_REG=low;NR24_REG=0x80|high;}
+ else if(tone_voice==2) {
+  /* Wave RAM is written with the DAC off, so reload it only for a new shape. */
+  if(wave_loaded!=tone_shape[2]){
+   NR30_REG=0;
+   for(i=0;i<16;++i)*(volatile uint8_t *)(0xff30u+i)=(tone_sample(i*2u)<<4)|tone_sample(i*2u+1u);
+   NR30_REG=0x80;wave_loaded=tone_shape[2];
+  }
+  NR32_REG=tone_level==0?0:tone_level==1?0x60:tone_level==2?0x40:0x20;
+  NR33_REG=low;NR34_REG=0x80|high;
+ } else {NR41_REG=0;NR42_REG=(tone_level<<4)|8;NR43_REG=tone_noise_clock|(tone_shape[3]?8:0);NR44_REG=0x80;}
 }
 void burn_audio(uint8_t voice) BANKED {
  if(voice==255){tone_playing=0;tone_stop();NR52_REG=0;return;}

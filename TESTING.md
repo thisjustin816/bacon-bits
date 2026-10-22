@@ -10,8 +10,13 @@ python tests/run.py --core /path/to/sameboy_libretro.so
 Export `GBDK_HOME` for the subprocess builds. Use the Python environment with
 PyBoy 2.8.1, Pillow and NumPy installed. `--jobs` sets concurrency. Each suite
 has a timeout and a separate `build/verify-*.log`; `build/verification.json`
-records exit statuses and the SHA-256 of both ROMs. Both mapper builds receive
-the header, bank, symbol, tile-budget and CRC checks.
+records exit statuses, the SHA-256 of both ROMs, and any suites not run.
+Without `--core` the SameBoy suites are listed as not run, and the run is not
+a full verification. Both mapper builds receive the header, bank, symbol,
+tile-budget, CRC and screen-text width checks.
+
+SameBoy 26a56bd builds with `make libretro`, RGBDS and `hexdump`. Build it
+with `make -j1`: the parallel build can race on a helper program.
 
 ## What the checks establish
 
@@ -21,13 +26,13 @@ the header, bank, symbol, tile-budget and CRC checks.
 | Link cable | Original features and paired stress suites on standalone and banked ROMs; an interrupt during a graphics-bank switch must queue its byte | Two consoles and a cable for wire timing, disconnects and sustained operation |
 | Rumble | Compiled assembly timing, output transitions in SameBoy, retained settings and output cleanup | Motor response, strength and cartridge compatibility |
 | Audio | Compiled APU calls and ordinary UI inputs; frequencies, clocks, waveform bytes, levels, stereo samples, mute, bursts and input responsiveness | Speaker/headphone response and audible artifacts |
-| Buttons | Counts, short presses, hold durations, diagonals, opposing inputs, confirmations, live D-pad graphics and retained counters | Contacts, physical bounce and combinations the emulator filters |
-| Display | All seven default patterns checked as pixels, including checker parity, stripe spacing, scroll columns and ramp bands; preparation preserves font tiles on every sampled frame | Panel faults, response time, color accuracy and motion appearance |
+| Buttons | Counts, short presses, hold durations, diagonals, opposing inputs, confirmations, live D-pad graphics, retained counters, and staged or simultaneous return chords on every page | Contacts, physical bounce and combinations the emulator filters |
+| Display | All seven default patterns checked as pixels, including checker parity, stripe spacing, scroll columns and ramp bands; preparation preserves font tiles on every sampled frame; flicker phases of 1, 2 and 30 frames measured frame by frame; controls during the full view | Panel faults, response time, color accuracy and motion appearance |
 | SRAM | All patterns, confirmation defaults, bank limits, power cycling, injected data errors, copied bank tags and damaged records | Cartridge retention, banking and electrical reliability |
-| Burn in | Complete ROM checksums, an altered ROM, retained first-error details, duration, CPU switching and cleanup; scratch and SRAM paths run in the cartridge | Sustained hardware stability under load |
-| Clock (MBC3) | Live tick, held latch, halt, rollover, confirmation, journal recovery and restoration in PyBoy; halt/restore in SameBoy | Battery-backed accuracy and long-term retention |
+| Burn in | Complete ROM checksums, an altered ROM, retained first-error details, duration, CPU switching and cleanup; scratch and SRAM paths run in the cartridge; motor pulse width and spacing at every load from SameBoy's rumble output; RTC watch and redraw cadence at every load | Sustained hardware stability under load |
+| Clock (MBC3) | Live tick, held latch, halt, rollover, confirmation, journal recovery and restoration in PyBoy; halt/restore in SameBoy; displayed change counters | Battery-backed accuracy and long-term retention |
 | Cartridge LED (MBC5) | Actual compiled 24-bit command order, idle output, primary-color commands and OFF cleanup | Compatible cartridge protocol and visible light output |
-| Infrared | Compiled edge-cycle counts, burst count, presets, receiver controls and cleanup | Optical transmission/reception between real devices |
+| Infrared | Compiled edge-cycle counts, burst count, presets, receiver controls, mode-switch text and cleanup | Optical transmission/reception between real devices. PyBoy reads the IR port as idle, so receive counting is untested |
 | Flicker | Every-frame phase cadence, duty, movement, pause/step, reference stability, OAM DMA and cleanup in both emulators | Panel blending and perceived flicker |
 
 `smoke`, `variants` and `graphical_ui` cover entry routes and safe initial
@@ -36,6 +41,27 @@ states. Their broad checks supplement the diagnostic-specific suites.
 consumed input and shared-memory cleanup. `lettering`, `menu_alignment`,
 `menu_art`, `ui_spacing` and `ui_transitions` cover glyphs, layout, animation,
 focus changes and counter formatting.
+
+`screen_text` walks the settings pages and checks that no label touches its
+value, along with the Buttons footer, the Link timer, Infrared after a mode
+switch, the Audio frequency unit and the Clock counters. `tools/check_build.py`
+enforces the same eight-column limit on every settings label and value in the
+source. `display_timing`, `buttons_chord`, `burn_cadence` and `burn_rumble`
+cover flicker phase lengths, the Buttons return chord, and Burn In timing.
+`sram_burn` covers browser Up/Down order, SRAM cycle passes, a stopped write,
+and Burn In's SRAM watch passing and then catching a flipped bit.
+
+`stack_depth` fills the WRAM between static data and the stack with `$A5`,
+opens and runs every instrument in each build and model, and requires the
+lowest changed byte to stay above the static RAM limit in
+`tools/check_build.py`. It writes the measured depths to
+`build/stack-depth.json`.
+
+`screen_tour` walks every screen of both builds in SameBoy, in color and
+monochrome, and judges each frame as shown. It rejects a font slot showing
+anything but its glyph, a cell that blinks off and back within four frames, a
+change that takes more than three frames to land, and a blank body longer than
+18 frames. `--frames` keeps every other frame for review.
 
 `raster_transitions` compares the displayed header on every frame during
 navigation, diagnostic entry, settings-page changes and return, in CGB/DMG
@@ -58,13 +84,22 @@ uses a separate autorun build and synthetic paired byte transport.
 interpreter, substituting its supported standalone renderer at draw calls.
 Neither proves physical serial timing or motor performance.
 
+PyBoy reads the sound registers as zero unless it emulates sound, so every
+suite that checks the APU is off afterwards runs with sound emulated.
 `audio_backend` redirects startup to a call stub; `audio_ui`, `audio_shapes`
-and `audio_sameboy` additionally exercise ordinary cartridge inputs. Frequency
+and `audio_sameboy` additionally exercise ordinary cartridge inputs.
+`audio_dacs` reads all four DAC enables on every frame through bursts, voice
+changes, frequency steps, level 0 and stop/start, since a DAC switched off and
+on pops on hardware and PyBoy does not reproduce the pop.
+`audio_responsiveness` taps Right for one frame at twelve animation phases and
+requires each tap to step the frequency. It also requires the scrolling graph's
+map copy to finish before line 48, where the graph starts. Frequency
 measurements find the strongest spectral peak above 10 Hz before comparing it
 with the requested frequency; they do not restrict the search to that frequency.
-`libretro`, `audio_navigation` and `display_assertions` are helpers, not
-standalone test suites. `capture_review` and `capture_flicker` generate review
-media and do not establish a pass by themselves.
+`cart`, `libretro`, `audio_navigation` and `display_assertions` are helpers,
+not standalone test suites. `capture_review` and `capture_flicker` generate review
+media and do not establish a pass by themselves. They record each image's ROM
+hashes, the commit it was built from and the emulator in `assets/media.json`.
 
 When adding a regression, retain the prior ROM and matching symbols. Reproduce
 the failure there first, then run the same inputs against the fixed build.

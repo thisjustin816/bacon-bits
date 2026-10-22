@@ -10,16 +10,18 @@ with tempfile.TemporaryDirectory() as td:
  f=Path(td)/'test.gbc'
  data=bytearray(rom.read_bytes())
  # Enter a WRAM sentinel after GBDK startup instead of entering the browser.
- entry=syms['_main'];data[entry:entry+3]=bytes([0xc3,0,0xdb]);f.write_bytes(data)
+ # It sits on the first free page above the heap, where startup leaves it alone.
+ stub=(syms['s__HEAP_END']+0xff)&0xff00;assert stub<=0xdd00,('No free WRAM page for the call stub',hex(stub))
+ entry=syms['_main'];data[entry:entry+3]=bytes([0xc3,0,stub>>8]);f.write_bytes(data)
  p=PyBoy(str(f),window='null',sound_emulated=True);p.set_emulation_speed(0)
- def install(_):p.memory[0xdb00:0xdb03]=[0xf3,0x18,0xfe]
+ def install(_):p.memory[stub:stub+3]=[0xf3,0x18,0xfe]
  p.hook_register(0,0x100,install,None);p.tick(240,True)
  def put(name,value):p.memory[syms['_'+name]]=value
  def call(name):
   addr=syms['_'+name];assert addr>>16==4
   code=bytes([0x3e,4,0xea,0,0x20,0xcd,addr&255,(addr>>8)&255,0x18,0xfe])
-  p.memory[0xdb10:0xdb10+len(code)]=code;p.register_file.PC=0xdb10;p.tick(30,True)
-  assert p.register_file.PC in [0xdb18,0xdb19],hex(p.register_file.PC)
+  p.memory[stub+16:stub+16+len(code)]=code;p.register_file.PC=stub+16;p.tick(30,True)
+  assert p.register_file.PC in [stub+24,stub+25],hex(p.register_file.PC)
  def record(frames=150):
   chunks=[]
   for _ in range(frames):p.tick(1,True);chunks.append(p.sound.ndarray.copy())

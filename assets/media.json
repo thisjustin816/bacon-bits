@@ -1,0 +1,49 @@
+{
+ "audio.gif": {
+  "roms": {
+   "mbc5": "3d8c6bca8f6eecf43e57eba77210aa82fd1830e7dc74e9439f766c7e1b60fe11",
+   "mbc3": "0eb4705e27c92c991397afd768f084a7340ef7024d78cfda715f3290e09e1c35"
+  },
+  "built_from": "3d3602a",
+  "emulator": "PyBoy"
+ },
+ "browser.gif": {
+  "roms": {
+   "mbc5": "3d8c6bca8f6eecf43e57eba77210aa82fd1830e7dc74e9439f766c7e1b60fe11",
+   "mbc3": "0eb4705e27c92c991397afd768f084a7340ef7024d78cfda715f3290e09e1c35"
+  },
+  "built_from": "3d3602a",
+  "emulator": "PyBoy"
+ },
+ "controls.png": {
+  "roms": {
+   "mbc5": "3d8c6bca8f6eecf43e57eba77210aa82fd1830e7dc74e9439f766c7e1b60fe11",
+   "mbc3": "0eb4705e27c92c991397afd768f084a7340ef7024d78cfda715f3290e09e1c35"
+  },
+  "built_from": "3d3602a",
+  "emulator": "PyBoy"
+ },
+ "flicker.png": {
+  "roms": {
+   "mbc5": "3d8c6bca8f6eecf43e57eba77210aa82fd1830e7dc74e9439f766c7e1b60fe11"
+  },
+  "built_from": "3d3602a",
+  "emulator": "SameBoy"
+ },
+ "presets.png": {
+  "roms": {
+   "mbc5": "3d8c6bca8f6eecf43e57eba77210aa82fd1830e7dc74e9439f766c7e1b60fe11",
+   "mbc3": "0eb4705e27c92c991397afd768f084a7340ef7024d78cfda715f3290e09e1c35"
+  },
+  "built_from": "3d3602a",
+  "emulator": "PyBoy"
+ },
+ "review.png": {
+  "roms": {
+   "mbc5": "3d8c6bca8f6eecf43e57eba77210aa82fd1830e7dc74e9439f766c7e1b60fe11",
+   "mbc3": "0eb4705e27c92c991397afd768f084a7340ef7024d78cfda715f3290e09e1c35"
+  },
+  "built_from": "3d3602a",
+  "emulator": "PyBoy"
+ }
+}

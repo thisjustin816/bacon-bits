@@ -8,6 +8,7 @@ extern uint8_t tone_noise_clock;
 extern uint32_t tone_hundredths;
 void tone_apply(void);
 void tone_stop(void);
+void tone_power(void);
 uint8_t tone_count(void);
 void tone_measure(void);
 uint8_t tone_sample(uint8_t sample);

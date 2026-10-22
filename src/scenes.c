@@ -10,9 +10,10 @@ void ui_scene(uint8_t scene,uint8_t frame) BANKED {
  uint8_t x,y,count=0,i;uint16_t n=0;
  if(prior_scene!=scene){set_bkg_data(UI_ART,size[0],scene_tiles[scene]);old=0;}
  else old=prior_frame==255?0:scene_maps[scene][prior_frame];
- for(y=0;y<size[4];++y)for(x=0;x<size[3];++x){
-  if(!old)ui_cell(size[1]+x,size[2]+y,map[n]);
-  else if(map[n]!=old[n]){updates[count][0]=size[1]+x;updates[count][1]=size[2]+y;updates[count++][2]=map[n];}
+ /* Maps are stored row by row, so a full draw is one block copy. */
+ if(!old)set_bkg_tiles(size[1],size[2],size[3],size[4],map);
+ else for(y=0;y<size[4];++y)for(x=0;x<size[3];++x){
+  if(map[n]!=old[n]){updates[count][0]=size[1]+x;updates[count][1]=size[2]+y;updates[count++][2]=map[n];}
   ++n;
  }
  /* Compare poses before VBlank, leaving its short window for the writes. */

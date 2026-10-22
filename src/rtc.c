@@ -81,12 +81,15 @@ static uint8_t start(void){uint8_t seed[5];rtc_read(1);if(!rtc_valid)return 0;
 }
 static void pair(uint8_t x,uint8_t y,uint8_t n){ui_cell(x,y,'0'-32+n/10);ui_cell(x+1,y,'0'-32+n%10);}
 static void view(uint8_t page,uint8_t row){
+ /* SDCC 4.5 passes the wrong upper word when a ternary picks this 16-bit
+    count in a call that also takes a ternary string, so it gets a local. */
+ uint16_t changed=rtc_mode==2?rtc_halt_errors:rtc_latch_errors;
  if(last_page!=page){ui_screen("Clock",page?"Set":"");last_page=page;}
  if(!page){ui_hardware(2,rtc_data[0]&3u);pair(10,7,rtc_data[2]%24);ui_text(12,7,":");pair(13,7,rtc_data[1]%60);ui_text(15,7,":");pair(16,7,rtc_data[0]%60);
-  ui_text(10,9,"Day");fill_bkg_rect(14,9,3,1,0);ui_number(14,9,(uint16_t)rtc_data[3]+((uint16_t)(rtc_data[4]&1u)<<8));fill_bkg_rect(10,11,8,1,0);ui_text(10,11,!rtc_valid?"Unknown":rtc_data[4]&64?"Halted":"Ticking");fill_bkg_rect(0,15,20,1,0);ui_text(1,15,!rtc_valid?"Flags unknown":rtc_data[4]&128?"Carry set":"Carry clear");
+  ui_text(10,9,"Day");ui_count(14,9,(uint16_t)rtc_data[3]+((uint16_t)(rtc_data[4]&1u)<<8),3);ui_pad(10,11,!rtc_valid?"Unknown":rtc_data[4]&64?"Halted":"Ticking",8);ui_line(15,!rtc_valid?"Flags unknown":rtc_data[4]&128?"Carry set":"Carry clear");
  }else if(page==1){ui_field(0,"Mode",rtc_mode==0?"Live":rtc_mode==1?"Latch":rtc_mode==2?"Halt":"Rollover",row==0);ui_value(1,"Window s",rtc_window,row==1);ui_value(2,"Seed day",rtc_day,row==2);ui_value(3,rtc_mode==1 || rtc_mode==2?"Samples":"Ticks",rtc_mode==1 || rtc_mode==2?rtc_observations:rtc_ticks,0);}
  else if(page==2){ui_value(0,"Hour",rtc_hour,row==0);ui_value(1,"Minute",rtc_minute,row==1);ui_value(2,"Second",rtc_second,row==2);ui_field(3,"Halt",rtc_seed_halt?"Yes":"No",row==3);}
- else {ui_field(0,"Carry",rtc_seed_carry?"Set":"Clear",row==0);ui_value(1,rtc_mode==2?"Halt err":"Latch err",rtc_mode==2?rtc_halt_errors:rtc_latch_errors,0);ui_value(2,"Flags",rtc_data[4],0);ui_field(3,"Restore",rtc_dirty?"Pending":"Clean",0);}
+ else {ui_field(0,"Carry",rtc_seed_carry?"Set":"Clear",row==0);ui_value(1,"Changed",changed,0);ui_value(2,"Flags",rtc_data[4],0);ui_field(3,"Restore",rtc_dirty?"Pending":"Clean",0);}
  ui_status(!rtc_valid?"Invalid RTC data":rtc_halt_errors?"Halt changed":rtc_latch_errors?"Latch changed":rtc_rollover_seen?"Rollover seen":rtc_running?"Observing":rtc_mode==1 && rtc_observations>=2?"Latch held":rtc_mode==2 && rtc_observations>=2?"Halt held":rtc_ticks?"Tick observed":rtc_mode==3?"No wrap yet":(rtc_data[4]&64)?"RTC halted":"No tick yet");
 }
 void rtc_run(void) BANKED {
@@ -94,7 +97,7 @@ void rtc_run(void) BANKED {
  uint8_t preset,key,old=0,n,page=0,row=0,i,last_second,was_fast=KEY1_REG>>7;uint16_t since,updated;
  bb_cpu(0);rtc_running=rtc_dirty=0;
  if(journal_load()){if(ui_confirm("Restore saved RTC?")){write_clock(rtc_saved);journal_clear();}else{bb_cpu(was_fast);return;}}
- preset=ui_presets("RTC presets",presets,notes,seen);if(preset==255){bb_cpu(was_fast);return;}seen=1;
+ preset=ui_presets("Clock presets",presets,notes,seen);if(preset==255){bb_cpu(was_fast);return;}seen=1;
  if(preset){rtc_mode=preset-1;rtc_window=preset==2?3:10;rtc_day=511;rtc_hour=23;rtc_minute=59;rtc_second=58;rtc_seed_halt=rtc_seed_carry=0;clear_results();}
  rtc_read(1);last_second=rtc_data[0];updated=bb_frame();view(page,row);since=updated;
  for(;;){vsync();key=joypad();n=key&~old;old=key;

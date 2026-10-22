@@ -7,21 +7,38 @@ char *ui_decimal(char *out,uint32_t n) {
  do {digits[count++]=(char)('0'+n%10UL);n/=10UL;}while(n);
  while(count)*out++=digits[--count];*out=0;return out;
 }
-void ui_number(uint8_t x,uint8_t y,uint32_t n) {
+uint8_t ui_number(uint8_t x,uint8_t y,uint32_t n) {
  static const uint32_t limit[]={1UL,10UL,100UL,1000UL,10000UL,100000UL,1000000UL,10000000UL,100000000UL,1000000000UL};
- char s[12],*end;uint8_t unit=0,width=19u-x;if(x>=19u)return;
+ char s[12],*end;uint8_t unit=0,width=19u-x;if(x>=19u)return x;
  while(width<10u && n>=limit[width-(unit!=0)]){
-  if(width<3u || unit==3){ui_cell(x,y,'+'-32u);return;}n/=1000u;++unit;
+  if(width<3u || unit==3){ui_cell(x,y,'+'-32u);return x+1u;}n/=1000u;++unit;
  }
- end=ui_decimal(s,n);if(unit)*end++=" KMG"[unit];*end=0;ui_text(x,y,s);
+ end=ui_decimal(s,n);if(unit)*end++=" KMG"[unit];*end=0;ui_text(x,y,s);return x+(uint8_t)(end-s);
 }
+/* Live readings are rewritten in place and only the cells past the new text
+   are blanked. Clearing a field first shows it empty for a frame. */
+void ui_pad(uint8_t x,uint8_t y,const char *s,uint8_t width) {
+ uint8_t end=x;while(*s && end<x+width)ui_cell(end++,y,(uint8_t)*s++-32u);
+ if(end<x+width)fill_bkg_rect(end,y,x+width-end,1,0);
+}
+void ui_count(uint8_t x,uint8_t y,uint32_t n,uint8_t width) {
+ uint8_t end=ui_number(x,y,n);if(end<x+width)fill_bkg_rect(end,y,x+width-end,1,0);
+}
+void ui_line(uint8_t y,const char *text) {ui_cell(0,y,0);ui_pad(1,y,text,19);}
 void ui_screen(const char *title,const char *page) {ui_init();ui_text(1,4,title);ui_text(16,4,page);ui_box(5,14);}
+/* A settings page redraws only when another screen or page was shown since;
+   otherwise its fields are rewritten in place. Returns 1 after a redraw. */
+uint8_t ui_page(const char *title,const char *page,uint8_t key) {
+ static uint16_t revision;static uint8_t shown=255;
+ if(revision==ui_revision && shown==key)return 0;
+ ui_screen(title,page);revision=ui_revision;shown=key;return 1;
+}
 void ui_field(uint8_t row,const char *label,const char *value,uint8_t selected) {
- uint8_t x,y=6u+2u*row;fill_bkg_rect(1,y,18,1,0);
- ui_cell(1,y,selected?UI_CURSOR:0);ui_text(2,y,label);for(x=11;*value && x<19;++x)ui_cell(x,y,(uint8_t)*value++-32u);
+ uint8_t y=6u+2u*row;
+ ui_cell(1,y,selected?UI_CURSOR:0);ui_pad(2,y,label,9);ui_pad(11,y,value,8);
 }
 void ui_value(uint8_t row,const char *label,uint32_t value,uint8_t selected) {char s[11];if(value>99999999UL){ui_field(row,label,"99M+",selected);return;}ui_decimal(s,value);ui_field(row,label,s,selected);}
-void ui_status(const char *text) {fill_bkg_rect(0,16,20,1,0);ui_text(1,16,text);}
+void ui_status(const char *text) {ui_line(16,text);}
 uint8_t ui_confirm(const char *message) {
  uint8_t key,old=0,yes=0;
  ui_screen("Confirm","");ui_text((20u-strlen(message))/2u,6,message);ui_text(5,9,"No");ui_text(5,12,"Yes");
@@ -57,8 +74,25 @@ uint8_t ui_presets(const char *title,const char *const *names,const char *const 
  ui_cell(1,6+pick*2,UI_CURSOR);ui_text(1,17,notes[pick]);while(joypad())vsync();
  for(;;){vsync();key=joypad();n=key&~old;old=key;
   if(n&J_B){pick=255;break;}if(n&J_A)break;
-  if(n&(J_UP|J_DOWN)){ui_cell(1,6+pick*2,0);pick=(pick+((n&J_UP)?4u:1u))%5u;ui_cell(1,6+pick*2,UI_CURSOR);fill_bkg_rect(0,17,20,1,0);ui_text(1,17,notes[pick]);}
+  if(n&(J_UP|J_DOWN)){ui_cell(1,6+pick*2,0);pick=(pick+((n&J_UP)?4u:1u))%5u;ui_cell(1,6+pick*2,UI_CURSOR);ui_line(17,notes[pick]);}
  }while(joypad())vsync();return pick;
 }
 
 uint16_t bb_frame(void) NONBANKED {uint16_t value;CRITICAL {value=sys_time;}return value;}
+
+/* MBC5 drives the motor from bit 3 of the SRAM bank register. The VBlank
+   handler keeps the bank the main loop selected, so SRAM checks can run
+   while the motor pulses. It must stay in bank 0: Burn In maps other ROM
+   banks while it checksums them. */
+uint8_t bb_ram_bank,bb_rumble_bit;
+static uint8_t rumble_frames,rumble_phase;
+static void rumble_tick(void) NONBANKED {
+ if(++rumble_phase>=60u)rumble_phase=0;
+ bb_rumble_bit=rumble_phase<rumble_frames?8u:0u;
+ *(volatile uint8_t *)0x4000u=bb_ram_bank|bb_rumble_bit;
+}
+void bb_rumble_start(uint8_t frames) NONBANKED {rumble_frames=frames;rumble_phase=59;CRITICAL{add_VBL(rumble_tick);}}
+void bb_rumble_stop(void) NONBANKED {CRITICAL{remove_VBL(rumble_tick);}bb_rumble_bit=0;*(volatile uint8_t *)0x4000u=bb_ram_bank;}
+
+#undef joypad
+uint8_t bb_joypad(void) NONBANKED {ui_reveal();return joypad();}

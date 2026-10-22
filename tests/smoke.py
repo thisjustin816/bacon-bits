@@ -10,7 +10,7 @@ def text(p,mode="plain"):
 def platform_text(p):return '\n'.join(''.join(chr(t+32).upper() if t<96 else '-' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
 for cgb in [True,False]:
  with tempfile.TemporaryDirectory() as td:
-  f=Path(td)/'test.gbc';shutil.copy(rom,f);p=PyBoy(str(f),window='null',sound_emulated=False,cgb=cgb);p.set_emulation_speed(0)
+  f=Path(td)/'test.gbc';shutil.copy(rom,f);p=PyBoy(str(f),window='null',sound_emulated=True,cgb=cgb);p.set_emulation_speed(0)
   def press(k):p.button_press(k);p.tick(8,True);p.button_release(k);p.tick(20,True)
   def chord():
    for k in ['a','b','start','select']:p.button_press(k)
@@ -22,7 +22,7 @@ for cgb in [True,False]:
    before=bytes(p.memory[0,0x8800:0x8d00]);chord();assert 'CONTINUE' in text(p,'popup');press('b')
    assert before==bytes(p.memory[0,0x8800:0x8d00]),'CONTINUE did not restore borrowed tile patterns'
   try:
-   p.tick(240,True);assert 'BACON BITS' in text(p),text(p)
+   p.tick(240,True);assert 'BACON BIT BENCH' in text(p),text(p)
    assert 'PLATFORM' in text(p)
    assert len(p.screen.image.convert('RGB').getcolors(65536))>=4
    press('left');assert p.memory[syms['_selected_test']]==10;press('right');assert 'PLATFORM' in text(p)
@@ -38,7 +38,7 @@ for cgb in [True,False]:
    # Rumble shares $C000 with shadow OAM. Every sprite must be hidden again.
    assert all(p.memory[0xfe00+i*4]==0 for i in range(40)), 'Rumble left stale sprites in OAM'
    press('right');press('a');p.tick(60,True);press('up');press('a');p.tick(60,True)
-   assert 'AUDIO RANGE' in text(p) and 'SILENT' in text(p),text(p)
+   assert 'AUDIO' in text(p) and 'SILENT' in text(p),text(p)
    press('a');assert 'PLAYING' in text(p);press('b');assert p.memory[syms['_selected_test']]==3
    assert p.memory[0xff26]&15==0,'Audio remained active on exit'
    p.screen.image.save(ROOT/'build'/('smoke-cgb.png' if cgb else 'smoke-dmg.png'))

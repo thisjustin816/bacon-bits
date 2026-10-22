@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1]
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'build/bacon-bits.noi').read_text(),re.M)}
 with tempfile.TemporaryDirectory() as td:
  data=bytearray((ROOT/'build/bacon-bits.gbc').read_bytes());data[7*16384+16383]^=1
- f=Path(td)/'damaged.gbc';f.write_bytes(data);p=PyBoy(str(f),window='null',sound_emulated=False);p.set_emulation_speed(0)
+ f=Path(td)/'damaged.gbc';f.write_bytes(data);p=PyBoy(str(f),window='null',sound_emulated=True);p.set_emulation_speed(0)
  def get(n,size=1):return int.from_bytes(bytes(p.memory[syms['_'+n]:syms['_'+n]+size]),'little')
  def press(k):p.button_press(k);p.tick(8,True);p.button_release(k);p.tick(16,True)
  try:

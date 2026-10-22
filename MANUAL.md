@@ -1,14 +1,16 @@
 # Controls and tests
 
-A opens a browser card. Settings use Up/Down to select a field, Left/Right to
-change it, and Select to change pages. A starts an activity; B stops it or
+A opens a browser card. The third card shows which release is running: Rumble
+on MBC5 or Clock on MBC3. Settings use Up/Down to select a field, Left/Right to
+change it, and Select to change pages. Changing a setting rewrites it in place;
+a new screen appears once it is fully drawn. A starts an activity; B stops it or
 returns. Presets configure a test without starting it. Continue preserves
 custom settings. A confirmation starts on No.
 
-Platform, Link Cable, and Rumble use A+B+Start+Select to open a return dialog.
-Continue is selected first; Test menu returns to the browser. Stop Link Cable
-or Rumble before opening it. Buttons requires the chord to be held for at least
-60 frames so each of its buttons can be tested separately.
+Platform, Link, Rumble, Buttons and Flicker use A+B+Start+Select to open a
+return dialog. Continue is selected first; Test menu returns to the browser.
+Stop Link or Rumble before opening it. Buttons requires the chord to be held
+for at least 60 frames so each of its buttons can be tested separately.
 
 ## Platform
 
@@ -26,7 +28,7 @@ The classification follows Platform Detect v1.4's ordered rules. A named host
 can pass all twelve probes, and an unknown signature can still fail probes.
 These register signatures do not guarantee host identity.
 
-## Link Cable
+## Link
 
 Five profiles cover sustained packets, scene waits, unequal CPU load, a shared
 ball, and combined stress. Settings select host/peer, profile, pacing, wire
@@ -55,13 +57,14 @@ Select+B changes prespin. Select+Up/Down changes burst length, and
 Select+Right/Left changes the gap. A zero burst length runs continuously;
 a zero gap produces one burst. The instrument previews the pattern and its
 nominal period in milliseconds. An on/off sweep retains its Felt at reading.
+In the pattern editor, a bar under the waveform marks the selected bit.
 Rendering occurs outside the original motor-delay sections.
 
 The frame range is 1-16; millisecond mode offers 1-99. Sweep steps cover 1-32
 bits. Prespin, burst length, and gaps can be adjusted independently. The motor
 is commanded off on return. Its physical response requires observation.
 
-## Real Time Clock (MBC3)
+## Clock (MBC3)
 
 Presets cover live observation, a held latch, temporary halt, and day rollover.
 Live and latch tests leave clock registers unchanged. Select opens mode,
@@ -71,7 +74,9 @@ observation window, seed day/time, halt, and carry settings. The window is
 A starts or stops observation. Halt and rollover tests require confirmation.
 Halt checks whether the captured time stays fixed. Rollover starts from the
 configured seed, initially day 511 at 23:59:58, and observes the day carry.
-The display separates a tick observation from latch or halt changes.
+The display separates a tick observation from latch or halt changes. The last
+settings page counts Changed readings: in Latch mode, reads that differed while
+the latch was held; in Halt mode, reads that moved while the clock was halted.
 
 Before a clock-changing test, the ROM saves a recovery record. Stopping or
 returning restores the saved clock with elapsed software time added, unless
@@ -83,7 +88,7 @@ record and returns without changing the clock.
 Invalid RTC reads remain read-only. This test does not establish oscillator
 accuracy or battery retention.
 
-## Audio Range
+## Audio
 
 The waveform preview shows the selected shape, not measured sound. Up/Down
 moves the cursor among voice, frequency/clock, level, and stereo output.
@@ -99,7 +104,9 @@ Both pulse voices offer 12.5/25/50/75 percent duty. Wave offers sine, square,
 triangle, ascending saw, descending saw, and 25 percent pulse. Noise offers
 15-bit and 7-bit LFSR modes. Sweep and volume envelopes are disabled.
 
-Pulse spans 64-131,072 Hz and wave spans 32-65,536 Hz. Preset offers 34 steps,
+Pulse spans 64-131,072 Hz and wave spans 32-65,536 Hz. The front page shows
+the frequency to 0.1 Hz below 1 kHz, in whole hertz up to 99,999 Hz, and in kHz
+above that. Preset offers 34 steps,
 with more near the low end. Fine changes the 11-bit register through all 2,048
 settings. Pulse and noise have levels 0-15; wave has mute, quarter, half, and
 full. Output selects both stereo outputs, left, or right.
@@ -118,10 +125,14 @@ Listening on hardware is needed to judge low-frequency audibility.
 
 Presets cover live buttons, short events, hold timing, and diagonals. Select
 changes between live, press-count, timing, and diagonal views. Left/Right
-chooses a button on the count and timing pages. Short presses and short release
-gaps have separate counters; Up/Down changes their threshold from 1-8 frames.
-A changes hold units between frames and milliseconds. Start opens the
-clear-counts confirmation.
+chooses a button on the count and timing pages. Taps (short presses) and gaps
+(short releases) have separate counters; Up/Down changes their threshold from
+1-8 frames. A changes hold units between frames and milliseconds. Start opens
+the clear-counts confirmation.
+
+Select, A and Start act when the button is released, and only when no other
+button was held with it. Holding combinations, or the return chord, leaves the
+page, units and counters as they were.
 
 The D-pad diagram marks the current corner. Each of the four corners has an
 entry count and longest hold. A changes between counts, hold frames, and hold
@@ -137,7 +148,8 @@ interval. A diagonal report describes the button states the ROM received.
 
 Presets cover pixel, color, motion, and flicker checks. Settings offer six
 colors, widths of 1/2/4/8/16 pixels, either axis, scrolling at 1-8 pixels per
-frame, inversion, and a 1-60-frame flicker interval. A opens the full LCD
+frame, inversion, and a 1-60-frame flicker interval. Each flicker phase lasts
+exactly the set number of frames. A opens the full LCD
 pattern, Left/Right changes patterns, Select inverts, and B restores settings.
 
 The ramp covers all 32 component levels within 128 vertical pixels.
@@ -227,11 +239,16 @@ The first failure remains available while later cycles continue. A ROM CRC
 failure identifies a complete bank. SRAM and scratch faults include a byte
 offset. An invalid RTC read records the register, its limit, and its value.
 
-B stops and switches outputs off. Select opens first-failure details.
+Rumble f sets how many frames the motor runs at the start of each second,
+from 0 to 6. The pulse is timed from VBlank, so it keeps its length at every
+load. The MBC3 RTC watch reads the clock every 64 frames.
+
+B stops and switches outputs off. Select opens first-failure details, or a
+summary of cycles and seconds when nothing failed.
 Start from stopped results returns to settings. Elapsed time follows VBlank
 at either CPU speed.
 
-## Cartridge LED
+## Cart LED (MBC5)
 
 The MBC5 release supports the [insideGadgets MBC5 RGB cartridge](https://shop.insidegadgets.com/product/gameboy-2mb-32kb-fram-flash-cart-ultra-low-power/).
 Presets cover primary colors, white levels, a color cycle, and pulses.
@@ -246,7 +263,7 @@ appearance, brightness, and hardware support require observation.
 The MBC3 release disables this page's output because its RTC uses the same
 address range.
 
-## Infrared
+## Infrared (CGB)
 
 Presets cover receive-only observation, short bursts, a slow beacon, and dense
 bursts. A starts or stops. Left/Right changes receive/transmit mode; Select

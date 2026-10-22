@@ -35,13 +35,15 @@ static void draw(uint8_t pick,uint8_t failed,uint8_t signature){char s[3];
  ui_text(14,6,(pd_mask&(1u<<pick))?"Fail":"Pass");ui_number(pick<9?15:14,4,pick+1);ui_text(16,4,"/12");ui_text(1,15,reasons[pick]);ui_status(failed?"Failed checks":"All checks");}
 
 }
-void pd_show(void) BANKED {uint8_t key,old=0,pick=0,failed=!!pd_mask,signature=0,n;
- if(failed)while(!(pd_mask&(1u<<pick)))++pick;draw(pick,failed,signature);while(joypad())vsync();
+void pd_show(void) BANKED {uint8_t key,old=0,pick=0,failed=!!pd_mask,signature=0,n,shown;
+ if(failed)while(!(pd_mask&(1u<<pick)))++pick;draw(pick,failed,signature);shown=pick|(failed<<4)|(signature<<5);while(joypad())vsync();
  for(;;){vsync();key=joypad();n=key&~old;old=key;if(n&J_B)break;
- if(n&J_SELECT)signature^=1;
+ if((n&J_SELECT) && pd_cgb)signature^=1;
  if(n&J_A){failed=(!failed && pd_mask);if(failed && !(pd_mask&(1u<<pick)))while(!(pd_mask&(1u<<pick)))pick=(pick+1)%12;}
  if(n&(J_LEFT|J_RIGHT)){do{pick=(pick+((n&J_LEFT)?11:1))%12;}while(failed && !(pd_mask&(1u<<pick)));signature=0;}
- if(n)draw(pick,failed,signature);
+ /* Redraw only when the view changed; an identical redraw blinks the screen.
+    Without CGB readings every view is the same. */
+ if(n && pd_cgb && shown!=(pick|(failed<<4)|(signature<<5))){draw(pick,failed,signature);shown=pick|(failed<<4)|(signature<<5);}
  }while(joypad())vsync();
 }
 

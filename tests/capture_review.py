@@ -3,6 +3,7 @@ from pathlib import Path
 import tempfile,shutil
 from PIL import Image,ImageDraw
 from pyboy import PyBoy
+from media import record
 ROOT=Path(__file__).resolve().parents[1];shots=[];browsers=[]
 with tempfile.TemporaryDirectory() as td:
  for selected in range(12):
@@ -37,7 +38,7 @@ with tempfile.TemporaryDirectory() as td:
    p.screen.image.save(ROOT/'build'/f'review-test-{selected}.png');shots.append(p.screen.image.convert('RGB'))
   finally:p.stop(save=False)
  board=Image.new('RGB',(680,664),(227,219,200));d=ImageDraw.Draw(board)
- labels=['Platform','Link Cable','Rumble','Audio Range','D-pad diagonals','Display settings','SRAM pattern check','Burn In','Cartridge LED','Infrared','Flicker comparison','Real Time Clock']
+ labels=['Platform','Link','Rumble','Audio','D-pad diagonals','Display settings','SRAM pattern check','Burn in','Cart LED','Infrared','Flicker comparison','Clock']
  for i,(im,label) in enumerate(zip(shots,labels)):
   x=8+i%4*168;y=8+i//4*168;board.paste(im,(x,y));d.text((x,y+146),label,fill=(64,40,32))
  # Last row shows the three browser pages.
@@ -70,3 +71,4 @@ with tempfile.TemporaryDirectory() as td:
  for i,im in enumerate(controls):
   x=4+i%2*168;y=4+i//2*164;board.paste(im,(x,y));d.text((x,y+146),('Color' if i<2 else 'Monochrome')+(' menu' if i%2==0 else ' live buttons'),fill=(64,40,32))
  board.resize((1008,984),Image.Resampling.NEAREST).save(ROOT/'assets/controls.png')
+record(['audio.gif','browser.gif','controls.png','presets.png','review.png'],{'mbc5':'build/bacon-bits.gbc','mbc3':'build/mbc3/bacon-bits.gbc'},'PyBoy')

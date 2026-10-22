@@ -2,6 +2,10 @@
 #define BB_H
 #include <gb/gb.h>
 #include <gb/cgb.h>
+/* Every screen polls input only after it is fully drawn, so the first poll
+   uncovers a screen that ui_init hid while it was rebuilt. */
+uint8_t bb_joypad(void) NONBANKED;
+#define joypad() bb_joypad()
 #define UI_FONT_COUNT 96
 #define UI_CHROME 96
 #define UI_RULE 106
@@ -30,7 +34,10 @@ void flicker_run(void) BANKED;
 void sram_run(void) BANKED;
 void burn_run(void) BANKED;
 char *ui_decimal(char *out,uint32_t n);
-void ui_number(uint8_t x,uint8_t y,uint32_t n);
+uint8_t ui_number(uint8_t x,uint8_t y,uint32_t n);
+void ui_pad(uint8_t x,uint8_t y,const char *s,uint8_t width);
+void ui_count(uint8_t x,uint8_t y,uint32_t n,uint8_t width);
+void ui_line(uint8_t y,const char *text);
 void ui_screen(const char *title,const char *page);
 void ui_field(uint8_t row,const char *label,const char *value,uint8_t selected);
 void ui_value(uint8_t row,const char *label,uint32_t value,uint8_t selected);
@@ -40,6 +47,9 @@ uint8_t ui_presets(const char *title,const char *const *names,const char *const 
 uint16_t bb_rom_crc(uint8_t bank,uint16_t offset,uint16_t count,uint16_t crc) NONBANKED;
 void bb_cpu(uint8_t fast) NONBANKED;
 uint16_t bb_frame(void) NONBANKED;
+extern uint8_t bb_ram_bank,bb_rumble_bit;
+void bb_rumble_start(uint8_t frames) NONBANKED;
+void bb_rumble_stop(void) NONBANKED;
 extern uint8_t selected_test,bb_keys,bb_fast;
 extern const unsigned char bb_font[];
 void ui_init(void);
@@ -49,6 +59,15 @@ void ui_box(uint8_t top,uint8_t bottom);
 void ui_cell(uint8_t x,uint8_t y,uint8_t tile);
 void ui_header(void);
 extern uint16_t ui_revision;
+/* Tiles ui_init must reload: every UI tile, or only the font slots the browser borrows. */
+#define UI_TILES_BORROWED 1u
+#define UI_TILES_ALL 2u
+extern uint8_t bb_tiles_dirty;
+/* Set when the window map (9C00) holds something other than the blank cover. */
+extern uint8_t bb_cover_dirty;
+void ui_reveal(void) NONBANKED;
+void ui_cover(void) NONBANKED;
+uint8_t ui_page(const char *title,const char *page,uint8_t key);
 void ui_hardware(uint8_t scene,uint8_t frame) BANKED;
 void rtc_run(void) BANKED;
 void rtc_read(uint8_t latch) BANKED;

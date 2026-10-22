@@ -11,7 +11,7 @@ syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',rom.with_
 def run(cgb):
  with tempfile.TemporaryDirectory() as td:
   path=Path(td)/'test.gbc';shutil.copy(rom,path)
-  p=PyBoy(str(path),window='null',sound_emulated=False,cgb=cgb);p.set_emulation_speed(0)
+  p=PyBoy(str(path),window='null',sound_emulated=True,cgb=cgb);p.set_emulation_speed(0)
   def get(n,size=1):return int.from_bytes(bytes(p.memory[syms['_'+n]:syms['_'+n]+size]),'little')
   def press(k,n=8):p.button_press(k);p.tick(n,True);p.button_release(k);p.tick(16,True)
   def text():return '\n'.join(''.join(chr(t+32).upper() if t<96 else '#' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
@@ -64,7 +64,7 @@ def run(cgb):
    press('a');press('down');press('a');wait(500,lambda:'SRAM RESULT' in text())
    assert 'PASS' in text() and get('ram_checked',4)==pattern_bytes,(text(),get('ram_checked',4))
    # A real emulator battery file, followed by a fresh machine instance.
-   p.stop(save=True);p=PyBoy(str(path),window='null',sound_emulated=False,cgb=cgb);p.set_emulation_speed(0);p.tick(240,True);launch(6)
+   p.stop(save=True);p=PyBoy(str(path),window='null',sound_emulated=True,cgb=cgb);p.set_emulation_speed(0);p.tick(240,True);launch(6)
    press('a');wait(400,lambda:'SRAM RESULT' in text());assert 'PASS' in text(),text()
    p.memory[3,0xa123]^=0x40;press('b');press('a');wait(400,lambda:'SRAM RESULT' in text())
    assert 'FAIL' in text() and get('ram_errors',4)==1

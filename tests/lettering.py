@@ -4,6 +4,13 @@ import tempfile,shutil,sys
 from pyboy import PyBoy
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools'))
 from lettering import tiles
+from PIL import Image
+# The published glyph sheet must decode to the same tiles the ROM carries.
+sheet=Image.open(ROOT/'assets/font.png').convert('L');decoded=bytearray()
+for i in range(96):
+ for y in range(8):
+  bits=sum(0x80>>x for x in range(8) if sheet.getpixel((i%16*8+x,i//16*8+y))<128);decoded+=bytes((bits,bits))
+assert bytes(decoded)==tiles(),'assets/font.png differs from the ROM font'
 for cgb in [True,False]:
  with tempfile.TemporaryDirectory() as td:
   f=Path(td)/'test.gbc';shutil.copy(ROOT/'build/bacon-bits.gbc',f);p=PyBoy(str(f),window='null',sound_emulated=False,cgb=cgb);p.set_emulation_speed(0)

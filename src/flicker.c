@@ -49,7 +49,8 @@ static void actor(void) {
 }
 static void prepare(void) {
  uint8_t n=2,t,phase,x,y,k,lo,hi,c,tile[16],row[20],count;
- flicker_ready=0;HIDE_SPRITES;HIDE_WIN;SCX_REG=SCY_REG=0;VBK_REG=0;
+ /* The full view replaces the settings map and the cover map. */
+ flicker_ready=0;++ui_revision;HIDE_SPRITES;HIDE_WIN;SCX_REG=SCY_REG=0;VBK_REG=0;bb_cover_dirty=1;
  if(flicker_pattern==2){n=flicker_cell;if(!(n&1u))n>>=1;if(!(n&1u))n>>=1;}
  if(flicker_pattern==3)n=1;
  count=n*n;
@@ -90,13 +91,13 @@ static void advance(void) {
 }
 static void settings(uint8_t page,uint8_t sel) {
  char v[20],*end;uint16_t hz;
- ui_screen("Flicker",page==0?"1/4":page==1?"2/4":page==2?"3/4":"4/4");
- if(!page){
+ uint8_t fresh=ui_page("Flicker",page==0?"1/4":page==1?"2/4":page==2?"3/4":"4/4",0xa0u|page);
+ if(!page){if(fresh){
   set_bkg_data(112,sizeof(flicker_preview_tiles)/16,flicker_preview_tiles);
   set_bkg_tiles(2,6,16,6,flicker_preview_map);
   if(_cpu==CGB_TYPE){palette_color_t p[4]={RGB_WHITE,RGB(21,21,21),RGB(10,10,10),RGB_BLACK};vsync();set_bkg_palette(4,1,p);VBK_REG=1;fill_bkg_rect(2,6,16,6,4);VBK_REG=0;}
   ui_text(2,13,"Flicker");ui_text(12,13,"Dither");
- }else if(page==1){
+ }}else if(page==1){
   end=ui_decimal(v,flicker_a);*end++=' ';*end++='f';*end++='r';*end=0;ui_field(0,"Phase A",v,sel==0);
   end=ui_decimal(v,flicker_b);*end++=' ';*end++='f';*end++='r';*end=0;ui_field(1,"Phase B",v,sel==1);
   ui_field(2,"Lead",flicker_lead?"B":"A",sel==2);ui_field(3,"Move on",flicker_cycle?"Cycle":"Frame",sel==3);
@@ -110,12 +111,12 @@ static void settings(uint8_t page,uint8_t sel) {
   ui_field(3,"Compare",flicker_compare?"Split":"Off",sel==3);
  }
  if(page==1){
-  ui_text(1,16,"Duty");ui_number(6,16,100u*flicker_a/(flicker_a+flicker_b));ui_text(9,16,"%");
-  hz=5973u/(flicker_a+flicker_b);ui_text(1,17,"Cycle");end=ui_decimal(v,hz/100u);*end++='.';*end++='0'+hz%100u/10u;*end++='0'+hz%10u;*end++=' ';*end++='H';*end++='z';*end=0;ui_text(7,17,v);
+  end=ui_decimal(v+5,100u*flicker_a/(flicker_a+flicker_b));v[0]='D';v[1]='u';v[2]='t';v[3]='y';v[4]=' ';*end++='%';*end=0;ui_line(16,v);
+  hz=5973u/(flicker_a+flicker_b);v[0]='C';v[1]='y';v[2]='c';v[3]='l';v[4]='e';v[5]=' ';end=ui_decimal(v+6,hz/100u);*end++='.';*end++='0'+hz%100u/10u;*end++='0'+hz%10u;*end++=' ';*end++='H';*end++='z';*end=0;ui_line(17,v);
  }else{
   ui_status("Stopped");
-  if(!page){end=ui_decimal(v,flicker_a);*end++='/';end=ui_decimal(end,flicker_b);*end++=' ';*end++='f';*end++='r';*end++=' ';*end++=' ';end=ui_decimal(end,100u*flicker_a/(flicker_a+flicker_b));*end++='%';*end++=' ';*end++='d';*end++='u';*end++='t';*end++='y';*end=0;ui_text(1,17,v);}
-  if(page==2)ui_text(1,17,flicker_cycle?"Speed px/cycle":"Speed px/frame");
+  if(!page){end=ui_decimal(v,flicker_a);*end++='/';end=ui_decimal(end,flicker_b);*end++=' ';*end++='f';*end++='r';*end++=' ';*end++=' ';end=ui_decimal(end,100u*flicker_a/(flicker_a+flicker_b));*end++='%';*end++=' ';*end++='d';*end++='u';*end++='t';*end++='y';*end=0;ui_line(17,v);}
+  if(page==2)ui_line(17,flicker_cycle?"Speed px/cycle":"Speed px/frame");
  }
 }
 static void stop(void) {

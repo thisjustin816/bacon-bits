@@ -1,5 +1,7 @@
 """Reject a moved assembly entry, stale return gate, or an overflowing ROM bank."""
 from pathlib import Path
+# Static WRAM ends below this; tests/stack_depth.py measures the stack above it.
+STACK_FLOOR=0xdc00
 import os
 import re,json
 ROOT=Path(__file__).resolve().parents[1]
@@ -38,7 +40,7 @@ print(str(32 if rom[0x147]==0x10 else 64)+' KiB SRAM header and independent per-
 
 for name,start,size in re.findall(r'^(_DATA|_INITIALIZED)\s+([\dA-F]+)\s+([\dA-F]+)',(BUILD/'bacon-bits.map').read_text(),re.M):
  start=int(start,16);size=int(size,16)
- assert start+size<=0xdc00,(name,start,size)
+ assert start+size<=STACK_FLOOR,(name,start,size)
  print(f'{name}: {size} bytes, ends {start+size:04x}; stack reserve remains')
 
 # Verify the compiled font and every scene's tile range against the shared layout.
@@ -67,3 +69,29 @@ assert 112+98==210 and 210+15==225 and 225+6<=240
 assert 110+98+15+6+16==245
 assert syms['_flicker_run']>>16==4,'Flicker moved out of its allocated code bank'
 print('Flicker fits 245 resident patterns, 6 sprites, and both preloaded LCD maps')
+
+# Settings rows print a label at column 2 and a value from column 11 to 18,
+# so a ninth label letter touches the value and a ninth value letter is cut.
+def call_arguments(source,name):
+ for match in re.finditer(r'\b'+name+r'\(',source):
+  depth,at,args,start,quote=1,match.end(),[],match.end(),None
+  while depth:
+   c=source[at]
+   if quote:
+    if c=='\\':at+=1
+    elif c==quote:quote=None
+   elif c in '"\'':quote=c
+   elif c=='(':depth+=1
+   elif c==')':depth-=1
+   elif c==',' and depth==1:args.append(source[start:at]);start=at+1
+   at+=1
+  args.append(source[start:at-1]);yield args
+too_long=[]
+for path in sorted(ROOT.glob('src/*.c'))+sorted(ROOT.glob('src/*.inc'))+[BUILD/'adapted/link.c']:
+ source=path.read_text()
+ for name,columns in [('ui_field',(1,2)),('ui_value',(1,))]:
+  for args in call_arguments(source,name):
+   for column in columns:
+    too_long+=[(path.name,text) for text in re.findall(r'"((?:[^"\\]|\\.)*)"',args[column]) if len(text)>8]
+assert not too_long,('Settings text wider than its eight columns',too_long)
+print('Every settings label and value fits its eight columns')
