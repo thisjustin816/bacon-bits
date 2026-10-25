@@ -18,7 +18,7 @@ def launch(n):
 def text():
  v=p.vram();return '\n'.join(''.join(chr(t+32).upper() if t<96 else '#' for t in v[0x1800+y*32:0x1800+y*32+20]) for y in range(18))
 try:
- p.tick(600);launch(0);before=p.vram();press=p.press;press('select');assert 'PROBE DETAILS' in text();p.image.save(ROOT/'build/sameboy-probe.png')
+ p.tick(600);launch(0);before=p.vram();press=p.press;press('select');assert ' PROBE ' in text().split('\n')[5];p.image.save(ROOT/'build/sameboy-probe.png')
  press('select');assert 'NO KNOWN MATCH' in text();p.image.save(ROOT/'build/sameboy-signature.png');press('b');p.tick(120);after=p.vram()
  for y in range(18):
   assert before[0x1800+y*32:0x1800+y*32+20]==after[0x1800+y*32:0x1800+y*32+20]

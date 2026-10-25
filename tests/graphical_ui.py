@@ -17,11 +17,11 @@ with tempfile.TemporaryDirectory() as td:
    assert 'RUMBLE' in row(p,15)
    press('a');p.tick(120,True)
    assert 'BACON BIT BENCH' in row(p,1),'Platform lost the shared header'
-   assert 'PLATFORM' in row(p,4)
+   assert 'PLATFORM' in row(p,5)
    p.screen.image.save(ROOT/'build'/f'graphical-platform-{cgb}.png')
    if cgb:
     assert 'PYBOY' in row(p,16)
-    press('a');assert 'PROBE DETAILS' in row(p,4)
-    press('b');assert 'PLATFORM' in row(p,4)
+    press('a');assert 'PROBE' in row(p,5)
+    press('b');assert 'PLATFORM' in row(p,5)
   finally:p.stop(save=False)
 print('Shared graphical launcher and platform UI passed in CGB and DMG modes')

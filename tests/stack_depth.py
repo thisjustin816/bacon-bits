@@ -21,7 +21,7 @@ for variant in ['mbc5','mbc3']:
    assert heap<sp<=0xe000,(hex(heap),hex(sp))
    # Leave the live frames above SP alone.
    c.p.memory[heap:sp-32]=[FILL]*(sp-32-heap)
-   def opened(title):assert title in c.row(4),(title,c.text())
+   def opened(title):assert title in c.row(5),(title,c.text())
    def leave():c.leave();assert c.get('selected_test')<11
    c.go(0);c.press('a',after=120);opened('Platform');c.press('select');c.press('right');c.press('a');c.press('b',after=60);leave()
    c.go(1);c.press('a',after=60);opened('Link');c.press('down');c.press('right');c.press('start',after=90)

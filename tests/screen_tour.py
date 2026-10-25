@@ -95,10 +95,10 @@ class Tour:
   for _ in range(choice-first if choice>=first else 4):self.press('down')
   self.press('a')
  def expect(self,title):
-  assert title in self.text(4),(self.name,self.step,'Tour lost its place',self.text(4))
+  assert title in self.text(5),(self.name,self.step,'Tour lost its place',self.text(5))
  def until(self,title,limit):
   for _ in range(limit):
-   if title in self.text(4):return
+   if title in self.text(5):return
    self.frame()
   raise AssertionError((self.name,self.step,'Never reached',title))
  def leave(self):self.step+=' / return chord';self.chord();self.press('down');self.press('a',60)
@@ -116,7 +116,7 @@ for variant in ['', 'mbc3']:
    t.step='browser up/down'
    for key in ['down','down','up','up']:t.press(key)
    t.step='platform';t.go(0);t.press('a',120);t.expect('Platform');t.press('select');t.press('right');t.press('a');t.press('select');t.press('b',60);t.leave()
-   t.step='link';t.go(1);t.press('a',60);t.expect('Link settings');t.press('down');t.press('right');t.press('start',90)
+   t.step='link';t.go(1);t.press('a',60);t.expect('Link setup');t.press('down');t.press('right');t.press('start',90)
    for _ in range(4):t.press('right',30)
    t.press('a');t.press('a');t.press('select');t.press('select');t.press('b');t.press('start',40);t.leave()
    if variant:

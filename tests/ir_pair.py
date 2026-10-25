@@ -29,7 +29,7 @@ def open_preset(pb,syms,choice):
   if pb.memory[syms['_selected_test']]==IR_TEST:break
   press(pb,'right')
  else:raise AssertionError('browser never reached Infrared')
- press(pb,'a');assert 'presets' in row(pb,4),text(pb)
+ press(pb,'a');assert 'presets' in row(pb,5),text(pb)
  first=1 if 'Manual' in text(pb) else 0
  for _ in range(choice-first):press(pb,'down')
  press(pb,'a');assert 'INFRARED' in text(pb).upper(),text(pb)

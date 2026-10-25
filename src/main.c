@@ -59,9 +59,7 @@ void ui_clear(void) {
  for(y=0;y<4;++y)for(x=0;x<4;++x)ui_cell(x,y,UI_BRAND+y*4+x);
  /* The shared heading stays resident while the body is redrawn. Clearing
     its map cells exposes a blank header for several LCD frames. */
- fill_bkg_rect(4,0,16,1,0);fill_bkg_rect(4,2,16,1,0);
- /* On CGB the sky stops two pixel rows short so the title below has room. */
- fill_bkg_rect(4,3,16,1,_cpu==CGB_TYPE?UI_HEADER_BASE:0);
+ fill_bkg_rect(4,0,16,1,0);fill_bkg_rect(4,2,16,2,0);
  fill_bkg_rect(3+sizeof(BRAND_NAME),1,17-sizeof(BRAND_NAME),1,0);
  for(y=4;y!=18;++y) fill_bkg_rect(0,y,20,1,0);
  if(_cpu==CGB_TYPE) {VBK_REG=1;fill_bkg_rect(0,4,20,14,0);VBK_REG=0;}
@@ -76,8 +74,6 @@ void ui_header(void) {
  uint8_t x,y;
  for(y=0;y<4;++y)for(x=0;x<4;++x)ui_cell(x,y,UI_BRAND+y*4+x);
  ui_text(4,1,BRAND_NAME);
- fill_bkg_rect(4,3,16,1,_cpu==CGB_TYPE?UI_HEADER_BASE:0);
- for(y=4;y<18;++y)if(y==4 || y>=15)fill_bkg_rect(0,y,20,1,(UI_CHROME+10));
  if(_cpu==CGB_TYPE){VBK_REG=1;fill_bkg_rect(0,0,20,4,1);fill_bkg_rect(0,15,20,3,2);VBK_REG=0;}
 }
 void ui_init(void) {
@@ -91,10 +87,7 @@ void ui_init(void) {
  BGP_REG=0xe4;
  /* Reloading unchanged tiles keeps the body blank for frames, so only what
     was overwritten is restored. */
- if(bb_tiles_dirty&UI_TILES_ALL){
-  set_bkg_data(UI_BRAND,16,bb_brand);
-  if(_cpu==CGB_TYPE){set_bkg_data(UI_BRAND+12,4,bb_brand_base);set_bkg_data(UI_HEADER_BASE,1,bb_header_base);}
- }
+ if(bb_tiles_dirty&UI_TILES_ALL)set_bkg_data(UI_BRAND,16,bb_brand);
  ui_clear();
  if(bb_tiles_dirty&UI_TILES_ALL){set_bkg_data(0,UI_FONT_COUNT,bb_font);set_bkg_data(UI_CHROME,11,bb_chrome);set_bkg_data(UI_PASS,3,bb_probes);}
  else if(bb_tiles_dirty){for(i=0;i!=sizeof(label_slots);++i)set_bkg_data(label_slots[i],1,bb_font+label_slots[i]*16u);set_bkg_data(UI_FOCUS_EXTRA,4,bb_font+UI_FOCUS_EXTRA*16u);}
@@ -126,7 +119,7 @@ static void browser(uint8_t fresh) {
  }
  ui_focus(selected_test&3u,fresh);
  if(fresh){
-  fill_bkg_rect(0,17,20,1,(UI_CHROME+10));ui_text(7,17,group==2?"3 of 3":group==1?"2 of 3":"1 of 3");
+  fill_bkg_rect(0,17,20,1,0);ui_text(7,17,group==2?"3 of 3":group==1?"2 of 3":"1 of 3");
   /* A redraw outlasts one animation pose, so show the current one when uncovering. */
   ui_scene(scene,(uint8_t)(bb_frame()/12u)&3u);ui_reveal();
  }

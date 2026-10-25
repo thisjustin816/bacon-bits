@@ -55,9 +55,9 @@ static void show(uint8_t held) {
  ui_scene(4,0);
  for(i=0;i<4;++i){
   ui_cell((i&1u)?2:8,(i&2u)?13:7,(held&15u)==diagonal_bits[i]?UI_ACTIVE:UI_PASS);
-  ui_text(11,6+2*i,corners[i]);
+  ui_text(11,7+2*i,corners[i]);
   corner_value=button_diagonal_view?(button_diagonal_view==2?((uint32_t)button_diagonal_peak[i]*16742UL)/1000UL:button_diagonal_peak[i]):button_diagonal[i];
-  if(corner_value>99999UL)ui_pad(14,6+2*i,"99K+",5);else ui_count(14,6+2*i,corner_value,5);
+  if(corner_value>99999UL)ui_pad(14,7+2*i,"99K+",5);else ui_count(14,7+2*i,corner_value,5);
  }
  ui_cell(0,15,0);ui_pad(1,15,"Opposites",11);ui_count(12,15,button_opposites,8);ui_status(button_diagonal_view==0?"Entry counts":button_diagonal_view==1?"Longest fr":"Longest ms");}
 

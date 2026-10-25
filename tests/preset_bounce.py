@@ -20,9 +20,9 @@ failures=[]
 for test,name,running,expect in ((10,'Flicker','flicker_running','FLICKER'),(9,'Infrared','ir_running','INFRARED')):
  c=Cart(rom)
  try:
-  c.go(test);c.press('a');assert 'presets' in c.row(4),c.text()
+  c.go(test);c.press('a');assert 'presets' in c.row(5),c.text()
   bounced_pick(c)
-  if c.get(running) or expect not in c.text().upper():failures.append((name,c.get(running),c.row(4)))
+  if c.get(running) or expect not in c.text().upper():failures.append((name,c.get(running),c.row(5)))
  finally:c.p.stop(save=False)
 assert not failures,failures
 print('A bouncing preset press picks the preset without starting Flicker or Infrared')

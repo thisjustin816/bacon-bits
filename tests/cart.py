@@ -32,7 +32,7 @@ class Cart:
   raise AssertionError(('Browser never reached test',test))
  def preset(self,choice):
   """Open the selected test and pick preset 1-4; 0 keeps the current settings."""
-  self.press('a');assert 'presets' in self.row(4),self.text()
+  self.press('a');assert 'presets' in self.row(5),self.text()
   first=1 if 'Manual' in self.text() else 0
   for _ in range(choice-first if choice>=first else 4):self.press('down')
   self.press('a')

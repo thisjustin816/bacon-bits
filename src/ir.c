@@ -116,7 +116,7 @@ void ir_listen(void) BANKED __naked {
 }
 static void view(uint8_t detail,uint8_t row){if(last_page!=detail){ui_screen("Infrared",detail?"Set":"");last_page=detail;}
  if(detail){ui_value(0,"On us",((uint16_t)ir_on+1u)*3815UL/1000UL,row==0);ui_value(1,"Off us",((uint16_t)ir_off+2u)*3815UL/1000UL,row==1);ui_value(2,"Pulses",ir_pulses,row==2);ui_value(3,"Every fr",ir_period,row==3);}
- else {ui_hardware(1,(ir_mode?ir_bursts:ir_edges)&3u);ui_pad(2,6,ir_mode?"Transmit":"Receive",8);ui_pad(11,10,ir_mode?"Bursts":"Edges",8);ui_count(11,12,ir_mode?ir_bursts:ir_edges,8);}
+ else {ui_hardware(1,(ir_mode?ir_bursts:ir_edges)&3u);ui_pad(11,7,ir_mode?"Transmit":"Receive",8);ui_pad(11,10,ir_mode?"Bursts":"Edges",8);ui_count(11,12,ir_mode?ir_bursts:ir_edges,8);}
  ui_status(ir_running?(ir_mode?"Sending bursts":"Listening"):"Idle");}
 void ir_run(void) BANKED {
  last_page=255;

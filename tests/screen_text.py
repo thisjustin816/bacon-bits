@@ -6,7 +6,7 @@ a=argparse.ArgumentParser();a.add_argument('--rom',type=Path,default=ROMS['mbc5'
 
 def rows_separated(c,context):
  """A settings label ends by column 9, so column 10 stays blank beside a value."""
- for y in (6,8,10,12):
+ for y in (7,9,11,13):
   line=c.row(y)
   assert not (line[10].isalnum() and line[11].isalnum()),(context,'Label touches its value',line)
 
@@ -39,7 +39,7 @@ def run(cgb):
    # Infrared: switching from Transmit back to Receive leaves no old letters.
    c.go(9);c.preset(4);c.press('a');c.tick(400);assert c.get('ir_bursts',2)>9
    c.press('a');c.press('left')
-   assert c.row(6)[2:9]=='Receive' and not c.row(6)[9].isalpha(),('Stale mode text',c.row(6))
+   assert c.row(7)[11:18]=='Receive' and not c.row(7)[18].isalpha(),('Stale mode text',c.row(7))
    assert c.row(10)[10:19]==' Edges   ',('Stale counter label',c.row(10))
    assert c.row(12)[10:19]==' 0       ',('Stale counter digits',c.row(12))
    c.press('b')
@@ -56,13 +56,13 @@ def clock():
  try:
   c.go(2);c.preset(1)
   for _ in range(3):c.press('select')
-  line=c.row(8);assert c.get('rtc_latch_errors',2)==0
+  line=c.row(9);assert c.get('rtc_latch_errors',2)==0
   assert line[10:19].strip()=='0',('Clock change count is not the stored zero',line)
   rows_separated(c,'clock page 4')
   for _ in range(2):c.press('select')
   c.press('left');c.press('left');assert c.get('rtc_mode')==2
   for _ in range(2):c.press('select')
-  assert c.row(8)[10:19].strip()=='0',('Halt change count is not zero',c.row(8))
+  assert c.row(9)[10:19].strip()=='0',('Halt change count is not zero',c.row(9))
   print('MBC3: Clock change counters show their stored value')
  finally:c.close()
 

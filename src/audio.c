@@ -45,7 +45,7 @@ static void preview(void) {
 static void audio_front(void) {
  char value[12],*end;uint8_t i;
  static const uint8_t cursor_x[]={1,10,10,11},cursor_y[]={13,13,17,16};
- tone_measure();ui_text(1,4,"Audio");
+ tone_measure();ui_text(2,5,"Audio");
  ui_pad(2,13,voices[tone_voice],8);
  /* At most five characters, right-aligned to column 15, so the value never
     runs into its unit: 0.1 Hz below 1 kHz, then whole Hz, then kHz. */

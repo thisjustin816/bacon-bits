@@ -8,14 +8,12 @@ uint8_t bb_joypad(void) NONBANKED;
 #define joypad() bb_joypad()
 #define UI_FONT_COUNT 96
 #define UI_CHROME 96
-#define UI_RULE 106
 #define UI_CURSOR 103
 #define UI_EMPTY 105
 #define UI_PASS 107
 #define UI_FAIL 108
 #define UI_ACTIVE 109
 #define UI_LINK_BALL 110
-#define UI_HEADER_BASE 111
 #define UI_ART 112
 #define UI_FOCUS 232
 #define UI_FOCUS_EXTRA 61
@@ -40,6 +38,7 @@ void ui_pad(uint8_t x,uint8_t y,const char *s,uint8_t width);
 void ui_count(uint8_t x,uint8_t y,uint32_t n,uint8_t width);
 void ui_line(uint8_t y,const char *text);
 void ui_screen(const char *title,const char *page);
+void ui_frame(uint8_t bottom,const char *title,const char *page);
 void ui_field(uint8_t row,const char *label,const char *value,uint8_t selected);
 void ui_value(uint8_t row,const char *label,uint32_t value,uint8_t selected);
 void ui_status(const char *text);

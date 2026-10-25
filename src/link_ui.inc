@@ -2,7 +2,7 @@
 static uint8_t link_detail,link_view=255;
 static void link_body(void) {
  uint8_t y;ui_cover();for(y=4;y<16;++y){fill_bkg_rect(0,y,20,1,0);if(running)service();}
- ui_text(1,4,"Link");ui_box(5,14);ui_number(16,4,page+1);ui_text(17,4,"/4");
+ {char count[4]={(char)('1'+page),'/','4',0};ui_frame(14,"Link",count);}
 }
 static void link_begin(void) {link_view=255;link_detail=0;ui_scene(2,0);}
 void draw(void) {
@@ -27,7 +27,7 @@ void draw(void) {
   if(!link_detail){ui_value(0,"Reply fr",max_reply,0);if(running)service();ui_value(1,"Gap fr",max_gap,0);if(running)service();ui_value(2,"Recov fr",max_recovery,0);if(running)service();ui_value(3,"Budget",reply_budget(),0);}
   else {ui_field(0,"CPU",double_cpu?"Double":"Normal",0);if(running)service();ui_field(1,"Wire",fast?"Fast":"Normal",0);if(running)service();ui_field(2,"Rate",rate_mode==0?"Paced":rate_mode==1?"Burst":"Full",0);if(running)service();ui_value(3,"Dropouts",dropouts,0);}
  }else{
-  if(profile){SHOW_SPRITES;ui_text(2,6,"Shared ball");}else ui_text(2,8,"No shared ball");
+  if(profile){SHOW_SPRITES;ui_text(2,7,"Shared ball");}else ui_text(2,8,"No shared ball");
  }
  if(running)service();
  if(page || link_detail)ui_status(failed()?failures[first_code]:!profile && page==1?"Sustain profile":"Detailed readings");

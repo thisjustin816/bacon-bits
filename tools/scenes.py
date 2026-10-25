@@ -113,14 +113,7 @@ def main():
  output+='static const uint8_t *const scene_maps[8][4]={'+','.join('{'+','.join('scene_map_'+str(i)+'_'+str(f) for f in range(4))+'}' for i in range(8))+'};\n'
  output+='static const uint8_t scene_sizes[8][5]={'+','.join('{'+','.join(map(str,(n,*r)))+'}' for n,r in sizes)+'};\n'
  write_generated(ROOT/'src/scene_data.h',output)
- mark=brand();base=mark.copy()
- # On CGB the header's last two rows take the page color, which is color 1
- # in the header palette; the bench legs stand on it.
- for y in (30,31):
-  for x in range(32):
-   if base.getpixel((x,y))==0:base.putpixel((x,y),1)
- write_generated(ROOT/'src/brand.h','const uint8_t bb_brand[]={'+','.join(map(str,b''.join(encode_tile(mark,x,y) for y in range(4) for x in range(4))))+'};\n'
-  +'const uint8_t bb_brand_base[]={'+','.join(map(str,b''.join(encode_tile(base,x,3) for x in range(4))))+'};\n')
+ write_generated(ROOT/'src/brand.h','const uint8_t bb_brand[]={'+','.join(map(str,b''.join(encode_tile(brand(),x,y) for y in range(4) for x in range(4))))+'};\n')
 
 def brand():
  """One bacon bit on a workbench, with a test probe resting on it."""
