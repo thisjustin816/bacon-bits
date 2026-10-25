@@ -31,9 +31,9 @@ static void draw(uint8_t pick,uint8_t failed,uint8_t signature){char s[3],page[6
   else if(pd_name[0]=='G'){ui_text(2,9,"VBK read 00");values(11,pd_obs[6],1);}
   else if(pd_name[0]=='M'){ui_text(2,9,"RP read 02");ui_text(2,11,"No other tells");values(13,pd_obs[5],1);}
   else {ui_text(2,9,"No known match");ui_text(2,11,pd_mask?"Tells found":"No tells found");}
-  ui_text(1,15,"Signature match");ui_status((pd_name[0]=='N' || pd_name[0]=='U')?"No signature":"Known signature");
+  ui_text(1,UI_DETAIL,"Signature match");ui_status((pd_name[0]=='N' || pd_name[0]=='U')?"No signature":"Known signature");
  }else{ui_text(2,7,titles[pick]);ui_text(2,9,"Expect");ui_text(2,10,expected[pick]);ui_text(2,12,"Read");values(13,pd_obs[pick],counts[pick]);
- ui_text(14,7,(pd_mask&(1u<<pick))?"Fail":"Pass");ui_text(1,15,reasons[pick]);ui_status(failed?"Failed checks":"All checks");}
+ ui_text(14,7,(pd_mask&(1u<<pick))?"Fail":"Pass");ui_text(1,UI_DETAIL,reasons[pick]);ui_status(failed?"Failed checks":"All checks");}
 
 }
 void pd_show(void) BANKED {uint8_t key,old=0,pick=0,failed=!!pd_mask,signature=0,n,shown;
@@ -53,7 +53,7 @@ static const palette_color_t cell_palette[4]={RGB(31,30,27),RGB(31,24,6),RGB(23,
 char pd_hardware[10];
 static void summary(void) {
  uint8_t i,failed=0;
- ui_init();ui_frame(14,"Platform","");ui_scene(1,0);
+ ui_init();ui_frame(UI_BOTTOM,"Platform","");ui_scene(1,0);
  for(i=0;i<13;++i)if(pd_mask&(1u<<i))++failed;
  for(i=0;i<12;++i)ui_cell(2+(i%6)*3,i<6?7:13,pd_cgb?((pd_mask&(1u<<i))?UI_FAIL:UI_PASS):UI_EMPTY);
  /* The 13th port sits over the chip, half a cell off the grid, so it is a
@@ -63,7 +63,7 @@ static void summary(void) {
  move_sprite(0,84,72);SHOW_SPRITES;
  ui_text(1,10,pd_hardware);
  ui_status(pd_cgb?display_name():"No CGB probes");
- if(pd_cgb){ui_number(failed<10?13:12,10,failed);ui_text(14,10,"/13");ui_text(12,12,"Tells");ui_text(1,17,pd_likely?"Emu likely":"Emu no tells");}
+ if(pd_cgb){ui_number(failed<10?13:12,10,failed);ui_text(14,10,"/13");ui_text(1,UI_DETAIL,pd_likely?"Emu likely":"Emu no tells");}
 }
 void pd_summary(void) BANKED {
  uint8_t key,old=0,n,candidate=0;

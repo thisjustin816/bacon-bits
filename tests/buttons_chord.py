@@ -36,7 +36,7 @@ try:
  c.p.button_press('select');c.tick(10);assert c.get('button_page')==0,'Select acted before release'
  c.p.button_release('select');c.tick(10);assert c.get('button_page')==1,'Select tap did not change page'
  c.press('select');c.press('a');assert c.get('button_units')==1,'A tap did not change units'
- c.press('start');assert 'Confirm' in c.row(5),'Start tap did not open Clear counts'
+ c.press('start');assert 'Confirm' in c.row(4),'Start tap did not open Clear counts'
  c.press('down');c.press('a');assert c.get('button_presses',32)==0,'Yes did not clear counters'
 finally:c.close()
 print('Buttons: staged and simultaneous chords on all four pages keep page, units, view and counts; Select, A and Start taps act on release')

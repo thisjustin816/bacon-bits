@@ -30,7 +30,7 @@ def run(cgb):
   try:
    p.tick(240,True);launch(0);p.tick(180,True)
    before=bytes(p.memory[0,0x9800:0x9a40]);press('select')
-   assert ' PROBE ' in text().split('\n')[5],'Platform evidence view absent\n'+text()
+   assert ' PROBE ' in text().split('\n')[4],'Platform evidence view absent\n'+text()
    if cgb:
     assert get('pd_obs',48).to_bytes(48,'little')[32]==0xfb
     press('a') # all probes

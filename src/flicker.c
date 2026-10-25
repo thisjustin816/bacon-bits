@@ -103,21 +103,20 @@ static void settings(uint8_t page,uint8_t sel) {
   ui_field(2,"Lead",flicker_lead?"B":"A",sel==2);ui_field(3,"Move on",flicker_cycle?"Cycle":"Frame",sel==3);
  }else if(page==2){
   ui_field(0,"Pattern",names[flicker_pattern],sel==0);
-  ui_decimal(v,flicker_speed);ui_field(1,"Speed",v,sel==1);ui_text(13,8,flicker_cycle?"px/cyc":"px/fr");
+  ui_decimal(v,flicker_speed);ui_field(1,"Speed",v,sel==1);ui_text(13,UI_FIELD+2u,flicker_cycle?"px/cyc":"px/fr");
   ui_field(2,"Axis",axes[flicker_axis],sel==2);end=ui_decimal(v,flicker_cell);*end++=' ';*end++='p';*end++='x';*end=0;ui_field(3,"Cell",v,sel==3);
  }else{
   ui_field(0,"Pair",_cpu==CGB_TYPE?pairs[flicker_pair]:"Gray",sel==0);
   ui_value(1,"Level A",flicker_level_a,sel==1);ui_value(2,"Level B",flicker_level_b,sel==2);
   ui_field(3,"Compare",flicker_compare?"Split":"Off",sel==3);
  }
+ ui_status("Stopped");
  if(page==1){
-  end=ui_decimal(v+5,100u*flicker_a/(flicker_a+flicker_b));v[0]='D';v[1]='u';v[2]='t';v[3]='y';v[4]=' ';*end++='%';*end=0;ui_line(16,v);
-  hz=5973u/(flicker_a+flicker_b);v[0]='C';v[1]='y';v[2]='c';v[3]='l';v[4]='e';v[5]=' ';end=ui_decimal(v+6,hz/100u);*end++='.';*end++='0'+hz%100u/10u;*end++='0'+hz%10u;*end++=' ';*end++='H';*end++='z';*end=0;ui_line(17,v);
- }else{
-  ui_status("Stopped");
-  if(!page){end=ui_decimal(v,flicker_a);*end++='/';end=ui_decimal(end,flicker_b);*end++=' ';*end++='f';*end++='r';*end++=' ';*end++=' ';end=ui_decimal(end,100u*flicker_a/(flicker_a+flicker_b));*end++='%';*end++=' ';*end++='d';*end++='u';*end++='t';*end++='y';*end=0;ui_line(17,v);}
-  if(page==2)ui_line(17,flicker_cycle?"Speed px/cycle":"Speed px/frame");
+  end=ui_decimal(v+5,100u*flicker_a/(flicker_a+flicker_b));v[0]='D';v[1]='u';v[2]='t';v[3]='y';v[4]=' ';*end++='%';*end++=' ';*end++=' ';
+  hz=5973u/(flicker_a+flicker_b);end=ui_decimal(end,hz/100u);*end++='.';*end++='0'+hz%100u/10u;*end++='0'+hz%10u;*end++=' ';*end++='H';*end++='z';*end=0;ui_line(UI_DETAIL,v);
  }
+ if(!page){end=ui_decimal(v,flicker_a);*end++='/';end=ui_decimal(end,flicker_b);*end++=' ';*end++='f';*end++='r';*end++=' ';*end++=' ';end=ui_decimal(end,100u*flicker_a/(flicker_a+flicker_b));*end++='%';*end++=' ';*end++='d';*end++='u';*end++='t';*end++='y';*end=0;ui_line(UI_DETAIL,v);}
+ if(page==2)ui_line(UI_DETAIL,flicker_cycle?"Speed px/cycle":"Speed px/frame");
 }
 static void stop(void) {
  vsync();HIDE_SPRITES;LCDC_REG&=~8u;SCX_REG=SCY_REG=0;VBK_REG=0;

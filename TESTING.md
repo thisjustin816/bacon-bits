@@ -45,7 +45,7 @@ bouncing button can; neither instrument may start from the held button. `letteri
 focus changes and counter formatting.
 
 `screen_text` walks the settings pages and checks that no label touches its
-value, along with the Buttons footer, the Link timer, Infrared after a mode
+value, along with the Buttons timing status, the Link timer, Infrared after a mode
 switch, the Audio frequency unit and the Clock counters. `tools/check_build.py`
 enforces the same eight-column limit on every settings label and value in the
 source. `display_timing`, `buttons_chord`, `burn_cadence` and `burn_rumble`

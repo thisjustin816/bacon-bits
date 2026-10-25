@@ -1,8 +1,8 @@
 /* Included in the link engine's bank so serial state stays directly accessible. */
 static uint8_t link_detail,link_view=255;
 static void link_body(void) {
- uint8_t y;ui_cover();for(y=4;y<16;++y){fill_bkg_rect(0,y,20,1,0);if(running)service();}
- {char count[4]={(char)('1'+page),'/','4',0};ui_frame(14,"Link",count);}
+ uint8_t y;ui_cover();for(y=UI_TOP;y<=UI_BOTTOM;++y){fill_bkg_rect(0,y,20,1,0);if(running)service();}
+ {char count[4]={(char)('1'+page),'/','4',0};ui_frame(UI_BOTTOM,"Link",count);}
 }
 static void link_begin(void) {link_view=255;link_detail=0;ui_scene(2,0);}
 void draw(void) {
@@ -30,9 +30,9 @@ void draw(void) {
   if(profile){SHOW_SPRITES;ui_text(2,7,"Shared ball");}else ui_text(2,8,"No shared ball");
  }
  if(running)service();
- if(page || link_detail)ui_status(failed()?failures[first_code]:!profile && page==1?"Sustain profile":"Detailed readings");
+ if(page || link_detail)ui_status(failed()?failures[first_code]:!profile && page==1?"Sustain profile":"Detailed view");
  {char *end=ui_decimal(value,elapsed_seconds/60u);uint8_t x;*end++=':';*end++='0'+(elapsed_seconds%60)/10;*end++='0'+elapsed_seconds%10;*end=0;x=19u-(uint8_t)(end-value);
-  ui_cell(0,17,0);ui_pad(1,17,failed()?"Fail":!good?"Wait":elapsed_seconds>=PASS_SECONDS?"Pass":running?(frozen?"Held":"Running"):"Stopped",x-1u);ui_text(x,17,value);ui_cell(19,17,0);}
+  ui_cell(0,UI_DETAIL,0);ui_pad(1,UI_DETAIL,failed()?"Fail":!good?"Wait":elapsed_seconds>=PASS_SECONDS?"Pass":running?(frozen?"Held":"Running"):"Stopped",x-1u);ui_text(x,UI_DETAIL,value);ui_cell(19,UI_DETAIL,0);}
  if(running)service();
 }
 static void link_detail_change(uint8_t pressed) {

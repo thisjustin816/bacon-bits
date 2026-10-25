@@ -5,6 +5,7 @@ import re,json,tempfile,shutil,sys
 import numpy as np
 from audio_navigation import select_row,lower_index
 from pyboy import PyBoy
+from header import pyboy_header,vram_header
 ROOT=Path(__file__).resolve().parents[1]
 rom=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'build/bacon-bits.gbc'
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',rom.with_suffix('.noi').read_text(),re.M)}
@@ -63,7 +64,7 @@ with tempfile.TemporaryDirectory() as td:
    else:assert energy[1]>0.1 and energy[0]<0.1,energy
   p.screen.image.save(ROOT/'build/audio-playing.png')
   press('b');assert get('tone_playing')==0 and p.memory[0xff26]&0x80==0
-  assert 'BACON BIT BENCH' in text(p)
+  assert pyboy_header(p,True)
   # Platform detection must still find an idle APU after playing every voice.
   press('left');press('left');press('left');press('a');p.tick(180,True)
   assert p.memory[0xff76]==0 and p.memory[0xff77]==0

@@ -1,4 +1,4 @@
-"""Draw original native-size instruments, menu cards and breakfast branding."""
+"""Draw original native-size instruments and menu cards."""
 from pathlib import Path
 from generated import write_generated
 from PIL import Image,ImageDraw
@@ -113,19 +113,5 @@ def main():
  output+='static const uint8_t *const scene_maps[8][4]={'+','.join('{'+','.join('scene_map_'+str(i)+'_'+str(f) for f in range(4))+'}' for i in range(8))+'};\n'
  output+='static const uint8_t scene_sizes[8][5]={'+','.join('{'+','.join(map(str,(n,*r)))+'}' for n,r in sizes)+'};\n'
  write_generated(ROOT/'src/scene_data.h',output)
- write_generated(ROOT/'src/brand.h','const uint8_t bb_brand[]={'+','.join(map(str,b''.join(encode_tile(brand(),x,y) for y in range(4) for x in range(4))))+'};\n')
 
-def brand():
- """One bacon bit on a workbench, with a test probe resting on it."""
- im=Image.new('P',(32,32),0);d=ImageDraw.Draw(im)
- d.rectangle((1,23,30,24),fill=3);d.rectangle((2,25,29,25),fill=2)
- d.rectangle((4,26,6,31),fill=3);d.rectangle((25,26,27,31),fill=3);d.rectangle((7,29,24,29),fill=3)
- wave=[0,0,-1,-1,-1,0,0,1,1,1];left,right=5,22
- for x in range(left,right+1):
-  layers=[3,2,2,1,1,2,2,3] if left<x<right else [3]*8
-  for i,c in enumerate(layers):im.putpixel((x,14+wave[(x-left)%len(wave)]+i),c)
- d.line([(31,1),(29,1),(28,2)],fill=3)
- d.polygon([(27,2),(29,4),(25,8),(23,6)],fill=2,outline=3);d.line([(24,6),(26,4)],fill=1)
- d.line([(23,8),(22,9)],fill=3);d.line([(21,10),(19,12)],fill=3)
- return im
 if __name__=='__main__':main()

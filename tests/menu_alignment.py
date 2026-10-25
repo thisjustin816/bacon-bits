@@ -4,6 +4,7 @@ import re,shutil,sys,tempfile
 from pyboy import PyBoy
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools'))
 from lettering import GLYPHS,tiles
+from header import pyboy_header,vram_header
 rom_override=Path(sys.argv[1]) if len(sys.argv)>1 else None
 for variant in ['', 'mbc3']:
  rom=rom_override or ROOT/'build'/variant/'bacon-bits.gbc'
@@ -16,8 +17,7 @@ for variant in ['', 'mbc3']:
     return bool(p.memory[0,addr] & p.memory[0,addr+1] & (0x80>>(x&7)))
    try:
     p.tick(240,True)
-    header=[''.join(chr(t+32) if t<96 else '#' for t in p.memory[0,0x9804+y*32:0x9814+y*32]).rstrip() for y in (1,2)]
-    assert header==['Bacon Bit Bench',''],header
+    assert pyboy_header(p,cgb),(variant,cgb,'Header missing over the menu')
     clock=rom.read_bytes()[0x147]==0x10
     pages=[['Platform','Link','Clock' if clock else 'Rumble','Audio'],['Buttons','Display','SRAM','Burn in'],['Cart LED','Infrared','Flicker']]
     for page,labels in enumerate(pages):

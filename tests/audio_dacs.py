@@ -22,7 +22,7 @@ try:
  def press(key,label,after=24):
   c.p.button_press(key);watch(label,8);c.p.button_release(key);watch(label,after)
  # Burst check plays a triangle wave in 30-frame bursts and gaps.
- c.go(3);c.preset(4);c.tick(30);assert 'Audio' in c.row(5),c.text()
+ c.go(3);c.preset(4);c.tick(30);assert 'Audio' in c.row(4),c.text()
  watch('opened, silent',30)
  press('a','wave bursts',200)
  for _ in range(3):press('right','wave frequency steps')

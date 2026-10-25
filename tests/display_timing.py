@@ -30,6 +30,6 @@ for cgb in (True,False):
   c.go(5);c.preset(1);c.press('a');assert ready(c) and c.get('display_pattern')==2
   c.press('right');assert c.get('display_pattern')==3 and ready(c),'Right did not change the running pattern'
   before=palette(c,cgb);c.press('select');assert c.get('display_invert')==1 and palette(c,cgb)!=before,'Select did not invert the running pattern'
-  c.press('b');assert not c.get('display_running') and 'Display' in c.row(5)
+  c.press('b');assert not c.get('display_running') and 'Display' in c.row(4)
  finally:c.close()
  print(('CGB' if cgb else 'DMG')+': flicker phases of 1, 2 and 30 frames, and Right/Select/B during the full view',flush=True)

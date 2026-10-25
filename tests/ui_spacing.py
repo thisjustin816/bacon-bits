@@ -15,17 +15,17 @@ with tempfile.TemporaryDirectory() as td:
   for _ in range(3):press('down')
   press('a');at=syms['_button_opposites'];p.memory[at:at+4]=[255]*4;press('a')
   p.screen.image.save(ROOT/'build'/('counter-overflow-before.png' if 'before' in rom.name else 'counter-spacing-after.png'))
-  assert row(15)[12:19]=='4294M  ' and row(15)[19]==' ',row(15)
+  assert row(17)[12:19]=='4294M  ' and row(17)[19]==' ',row(17)
   assert bytes(p.memory[at:at+4])==bytes([255]*4),'Formatting changed the retained count'
   for k in ['a','b','start','select']:p.button_press(k)
   p.tick(100,True)
   for k in ['a','b','start','select']:p.button_release(k)
   p.tick(30,True);press('down');press('a')
   press('right');press('right');press('a');press('down');press('a');press('a');press('down');press('a')
-  body='\n'.join(row(y) for y in range(6,17))
+  body='\n'.join(row(y) for y in range(6,18))
   for _ in range(8):
    if 'Written' in body or 'Verified' in body:break
-   p.tick(1,True);body='\n'.join(row(y) for y in range(6,17))
+   p.tick(1,True);body='\n'.join(row(y) for y in range(6,18))
   assert 'Written' in body or 'Verified' in body,body
   p.screen.image.save(ROOT/'build/sram-progress-spacing.png')
  finally:p.stop(save=False)

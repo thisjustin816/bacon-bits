@@ -44,12 +44,12 @@ static void show(uint8_t held) {
   for(i=0;i<8;++i)if(held&(1u<<i))++n;
   for(i=0;i<4;++i){ui_cell(xs[i]-1,ys[i],(held&(16u<<i))?UI_ACTIVE:0);ui_text(xs[i],ys[i],labels[i]);}
   for(i=0;i<4;++i)ui_cell((i&1u)?2:8,(i&2u)?13:7,(held&15u)==diagonal_bits[i]?UI_PASS:UI_EMPTY);
-  ui_cell(0,16,0);ui_pad(1,16,"Held",5);ui_count(6,16,n,3);ui_pad(9,16,"Peak",6);ui_count(15,16,button_peak,5);
+  ui_cell(0,UI_DETAIL,0);ui_pad(1,UI_DETAIL,"Held",5);ui_count(6,UI_DETAIL,n,3);ui_pad(9,UI_DETAIL,"Peak",6);ui_count(15,UI_DETAIL,button_peak,5);
  }else if(button_page==1){for(i=0;i<4;++i)ui_value(i,names[(button_pick+i)&7u],button_presses[(button_pick+i)&7u],i==0);ui_status("Press counts");}
  else if(button_page==2){ui_field(0,"Button",names[button_pick],1);ui_value(1,button_units?"Hold ms":"Hold fr",button_units?((uint32_t)button_longest[button_pick]*16742UL)/1000UL:button_longest[button_pick],0);
   ui_value(2,"Taps",button_short[button_pick],0);
   ui_value(3,"Gaps",button_gaps[button_pick],0);
-  strcpy(str,"Short at most ");end=ui_decimal(str+14,button_threshold);*end++=' ';*end++='f';*end++='r';*end=0;ui_status(str);
+  strcpy(str,"Taps up to ");end=ui_decimal(str+11,button_threshold);*end++=' ';*end++='f';*end++='r';*end=0;ui_status(str);
  }else {
  static const char *const corners[]={"NE","NW","SE","SW"};
  ui_scene(4,0);
@@ -59,7 +59,7 @@ static void show(uint8_t held) {
   corner_value=button_diagonal_view?(button_diagonal_view==2?((uint32_t)button_diagonal_peak[i]*16742UL)/1000UL:button_diagonal_peak[i]):button_diagonal[i];
   if(corner_value>99999UL)ui_pad(14,7+2*i,"99K+",5);else ui_count(14,7+2*i,corner_value,5);
  }
- ui_cell(0,15,0);ui_pad(1,15,"Opposites",11);ui_count(12,15,button_opposites,8);ui_status(button_diagonal_view==0?"Entry counts":button_diagonal_view==1?"Longest fr":"Longest ms");}
+ ui_cell(0,UI_DETAIL,0);ui_pad(1,UI_DETAIL,"Opposites",11);ui_count(12,UI_DETAIL,button_opposites,8);ui_status(button_diagonal_view==0?"Entry counts":button_diagonal_view==1?"Longest fr":"Longest ms");}
 
 }
 void buttons_run(void) BANKED {

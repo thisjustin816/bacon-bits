@@ -44,17 +44,18 @@ static void preview(void) {
 }
 static void audio_front(void) {
  char value[12],*end;uint8_t i;
- static const uint8_t cursor_x[]={1,10,10,11},cursor_y[]={13,13,17,16};
- tone_measure();ui_text(2,5,"Audio");
+ static const uint8_t cursor_x[]={1,10,10,1},cursor_y[]={13,13,UI_DETAIL,UI_DETAIL};
+ tone_measure();ui_text(2,UI_TOP,"Audio");
  ui_pad(2,13,voices[tone_voice],8);
  /* At most five characters, right-aligned to column 15, so the value never
     runs into its unit: 0.1 Hz below 1 kHz, then whole Hz, then kHz. */
  if(tone_hundredths>=10000000UL){end=ui_decimal(value,tone_hundredths/100000UL);*end++='k';*end=0;}
  else{end=ui_decimal(value,tone_hundredths/100u);if(tone_hundredths<100000UL){*end++='.';*end++='0'+tone_hundredths%100u/10u;*end=0;}}
  {uint8_t x=16u-(uint8_t)(end-value);if(x>11u)fill_bkg_rect(11,13,x-11u,1,0);ui_text(x,13,value);}ui_text(17,13,"Hz");preview();
- ui_cell(0,16,0);ui_pad(1,16,tone_playing?(tone_gate?"Playing":"Rest"):"Silent",10);ui_pad(12,16,outputs[tone_output],8);
- ui_cell(0,17,0);ui_pad(1,17,tone_voice<2?duties[tone_shape[tone_voice]]:tone_voice==2?wave_names[tone_shape[2]]:tone_shape[3]?"7 bit":"15 bit",9);
- ui_text(11,17,"Level");ui_count(17,17,tone_level,3);
+ ui_status(tone_playing?(tone_gate?"Playing":"Rest"):"Silent");
+ ui_corner(tone_voice<2?duties[tone_shape[tone_voice]]:tone_voice==2?wave_names[tone_shape[2]]:tone_shape[3]?"7 bit":"15 bit");
+ ui_cell(0,UI_DETAIL,0);ui_pad(2,UI_DETAIL,outputs[tone_output],8);
+ ui_text(11,UI_DETAIL,"Level");ui_count(17,UI_DETAIL,tone_level,2);
  for(i=0;i<4;++i)ui_cell(cursor_x[i],cursor_y[i],i==audio_row?UI_CURSOR:0);
 }
 static void draw_audio(void) {

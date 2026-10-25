@@ -51,24 +51,31 @@ scene_sizes=re.search(r'scene_sizes\[8\]\[5\]=\{(.+)\};',scene_source)[1]
 counts=[int(row.split(',')[0]) for row in re.findall(r'\{([^{}]+)\}',scene_sizes)]
 assert len(counts)==8 and max(counts)<=128,counts
 assert 112+max(counts)<=232,'Instrument tiles overlap the focus border'
-assert 232+8==240,'Focus border overlaps the brand'
+assert 232+8<=256,'Focus border runs past the tile table'
 label_slots=set(map(int,re.search(r'slots\[\]=\{([^}]+)\}',(ROOT/'src/main.c').read_text())[1].split(',')))
 assert label_slots.isdisjoint(range(61,65)), 'Focus patterns overlap centered-label slots'
 controls=(ROOT/'src/button_data.h').read_text()
 button_bytes=re.search(r'button_tiles\[\]=\{([^}]+)\}',controls)[1].split(',')
 assert len(button_bytes)==37*16, 'Live D-pad tile budget changed'
 assert 96+11+3<=110 and 110<112,'Link sprite overlaps the font or instruments'
-print(f'Mixed-case font and instrument ranges passed; browser uses {96+11+3+max(counts)+8+16} resident tiles, including focus; live D-pad uses 37 tiles')
+print(f'Mixed-case font and instrument ranges passed; browser uses {96+11+3+max(counts)+8} resident tiles, including focus; live D-pad uses 37 tiles')
 
-# Flicker keeps the UI font and brand resident while both maps alternate.
+# Flicker keeps the UI font resident while both maps alternate.
 flicker=(ROOT/'src/flicker_data.h').read_text()
 for name,limit in [('preview',98),('reference',15)]:
  values=re.search(r'flicker_'+name+r'_tiles\[\]=\{([^}]+)\}',flicker)[1].split(',')
  assert len(values)%16==0 and len(values)//16<=limit,(name,len(values))
 assert 112+98==210 and 210+15==225 and 225+6<=240
-assert 110+98+15+6+16==245
+assert 110+98+15+6==229
 assert syms['_flicker_run']>>16==4,'Flicker moved out of its allocated code bank'
-print('Flicker fits 245 resident patterns, 6 sprites, and both preloaded LCD maps')
+print('Flicker fits 229 resident patterns, 6 sprites, and both preloaded LCD maps')
+
+# The Color header's tiles live alone in VRAM bank 1 and its map covers rows 0-2.
+logo=(ROOT/'src/logo.h').read_text()
+logo_tiles=int(re.search(r'BB_LOGO_TILES (\d+)',logo)[1])
+logo_map=re.search(r'bb_logo_map\[\]=\{([^}]+)\}',logo)[1].split(',')
+assert logo_tiles<=256 and len(logo_map)==60 and max(map(int,logo_map))<logo_tiles,(logo_tiles,len(logo_map))
+print(f'Color header uses {logo_tiles} tiles in VRAM bank 1')
 
 # Settings rows print a label at column 2 and a value from column 11 to 18,
 # so a ninth label letter touches the value and a ninth value letter is cut.

@@ -20,8 +20,8 @@ MAX_BLANK=18
 # border in one VBlank and draws the new one over the next two.
 MAX_CHANGE_RUN=3
 def body_cells(image):
- data=image.crop((0,32,160,144)).tobytes()
- return [hash(b''.join(data[(y*8+r)*480+x*24:(y*8+r)*480+x*24+24] for r in range(8))) for y in range(14) for x in range(20)]
+ data=image.crop((0,24,160,144)).tobytes()
+ return [hash(b''.join(data[(y*8+r)*480+x*24:(y*8+r)*480+x*24+24] for r in range(8))) for y in range(15) for x in range(20)]
 def borrowed_cell(x,y):
  # Labels sit on rows 9 and 15; the focus border runs along each card's edge.
  return y in (4,9,10,15,16) or (x in (0,9,10,19) and 4<=y<=16)
@@ -40,14 +40,16 @@ class Tour:
  def frame(self):
   self.p.tick();self.frames+=1;v=self.p.vram();cells=v[0x1800:0x1800+32*18]
   visible=[cells[y*32+x] for y in range(18) for x in range(20)]
+  # A Color cell whose attribute selects VRAM bank 1 shows a logo tile, not a glyph.
+  banked=[bool(v[0x3800+y*32+x]&8) for y in range(18) for x in range(20)] if len(v)>0x2000 else [False]*360
   if args.frames and self.frames%2==0:self.p.image.save(args.frames/f'{self.name}-{self.frames:06d}.png')
   # The boot ROM's logo uses tiles the font takes over; judge the cartridge's own frames.
   if not self.full_view and self.step!='boot':
    if len(self.p.image.getcolors(65536) or [])<=1:self.problems.append((self.step,self.frames,'blank frame'))
-   # The cover window hides rows 4-17 while a screen is rebuilt; judge only what shows.
-   covered=(self.p.read(0xff40)[0]&0x20) and self.p.read(0xff4a)[0]<=32
+   # The cover window hides rows 3-17 while a screen is rebuilt; judge only what shows.
+   covered=(self.p.read(0xff40)[0]&0x20) and self.p.read(0xff4a)[0]<=24
    for i,t in enumerate(visible):
-    if t>=96 or (covered and i>=80):continue
+    if t>=96 or banked[i] or (covered and i>=60):continue
     if (t in LABEL_SLOTS or 61<=t<=64) and borrowed_cell(i%20,i//20):continue
     if t and v[t*16:t*16+16]!=self.font[t*16:t*16+16]:
      self.problems.append((self.step,self.frames,f'corrupt glyph {t} at {i%20},{i//20}'));break
@@ -95,10 +97,10 @@ class Tour:
   for _ in range(choice-first if choice>=first else 4):self.press('down')
   self.press('a')
  def expect(self,title):
-  assert title in self.text(5),(self.name,self.step,'Tour lost its place',self.text(5))
+  assert title in self.text(4),(self.name,self.step,'Tour lost its place',self.text(4))
  def until(self,title,limit):
   for _ in range(limit):
-   if title in self.text(5):return
+   if title in self.text(4):return
    self.frame()
   raise AssertionError((self.name,self.step,'Never reached',title))
  def leave(self):self.step+=' / return chord';self.chord();self.press('down');self.press('a',60)

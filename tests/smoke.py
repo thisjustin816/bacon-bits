@@ -2,6 +2,7 @@
 from pathlib import Path
 import tempfile,shutil,re,json
 from pyboy import PyBoy
+from header import pyboy_header,vram_header
 ROOT=Path(__file__).resolve().parents[1]
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'build/bacon-bits.noi').read_text(),re.M)}
 rom=ROOT/'build/bacon-bits.gbc'
@@ -22,7 +23,7 @@ for cgb in [True,False]:
    before=bytes(p.memory[0,0x8800:0x8d00]);chord();assert 'CONTINUE' in text(p,'popup');press('b')
    assert before==bytes(p.memory[0,0x8800:0x8d00]),'CONTINUE did not restore borrowed tile patterns'
   try:
-   p.tick(240,True);assert 'BACON BIT BENCH' in text(p),text(p)
+   p.tick(240,True);assert pyboy_header(p,cgb),text(p)
    assert 'PLATFORM' in text(p)
    assert len(p.screen.image.convert('RGB').getcolors(65536))>=4
    press('left');assert p.memory[syms['_selected_test']]==10;press('right');assert 'PLATFORM' in text(p)

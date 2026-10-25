@@ -7,6 +7,10 @@ a new screen appears once it is fully drawn. A starts an activity; B stops it or
 returns. Presets configure a test without starting it. Continue preserves
 custom settings. A confirmation starts on No.
 
+Each test page is a box. Its title and page count sit in the top border, and
+what the test is doing, such as Stopped or Running, sits in the bottom border.
+A line under the box adds one more reading.
+
 Platform, Link, Rumble, Buttons and Flicker use A+B+Start+Select to open a
 return dialog. Continue is selected first; Test menu returns to the browser.
 Stop Link or Rumble before opening it. Buttons requires the chord to be held
@@ -237,8 +241,9 @@ physical battery retention.
 
 Presets cover a quick check, long soak, output load, and read-only SRAM watch.
 Choose 1/5/10/30/60 minutes or continuous operation, three loads, normal/double
-CPU speed, and stop/continue on failure. The instrument shows elapsed time,
-completed cycles, error count, and the ROM bank being checked.
+CPU speed, and stop/continue on failure. The instrument shows elapsed time
+(minutes and seconds, then hours and minutes after the first hour), completed
+cycles, error count, and the ROM bank being checked.
 
 Burn In compares CRC-16 checksums across all eight ROM banks and writes/reads
 256 bytes of scratch RAM. The CRC table and cartridge global checksum are

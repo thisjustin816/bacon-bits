@@ -6,7 +6,7 @@ a=argparse.ArgumentParser();a.add_argument('--rom',type=Path,default=ROMS['mbc5'
 
 def rows_separated(c,context):
  """A settings label ends by column 9, so column 10 stays blank beside a value."""
- for y in (7,9,11,13):
+ for y in (6,8,10,12):
   line=c.row(y)
   assert not (line[10].isalnum() and line[11].isalnum()),(context,'Label touches its value',line)
 
@@ -23,7 +23,7 @@ def run(cgb):
   settings_pages(c,3,2,2);settings_pages(c,5,1,2);settings_pages(c,6,2,2);settings_pages(c,7,1,2);settings_pages(c,10,1,4)
   # Buttons timing: separated rows and one readable footer.
   c.go(4);c.preset(3);rows_separated(c,'buttons timing')
-  assert c.row(16).strip('# ')=='Short at most 1 fr',c.row(16)
+  assert c.row(15).strip('# ')=='Taps up to 1 fr',c.row(15)
   c.leave()
   # Link: every detail page, and a minutes:seconds timer at the right edge.
   c.go(1);c.press('a');c.tick(60);c.press('start');c.tick(130)
@@ -56,13 +56,13 @@ def clock():
  try:
   c.go(2);c.preset(1)
   for _ in range(3):c.press('select')
-  line=c.row(9);assert c.get('rtc_latch_errors',2)==0
+  line=c.row(8);assert c.get('rtc_latch_errors',2)==0
   assert line[10:19].strip()=='0',('Clock change count is not the stored zero',line)
   rows_separated(c,'clock page 4')
   for _ in range(2):c.press('select')
   c.press('left');c.press('left');assert c.get('rtc_mode')==2
   for _ in range(2):c.press('select')
-  assert c.row(9)[10:19].strip()=='0',('Halt change count is not zero',c.row(9))
+  assert c.row(8)[10:19].strip()=='0',('Halt change count is not zero',c.row(8))
   print('MBC3: Clock change counters show their stored value')
  finally:c.close()
 

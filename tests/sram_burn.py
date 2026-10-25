@@ -23,17 +23,17 @@ try:
  assert c.get('ram_banks')==1
  c.press('a');c.press('down');c.press('a')
  wait(c,lambda:'SRAM result' in c.text(),40000);c.tick(40)
- assert c.row(7)[2:19].split()==['Result','Pass'] and c.row(13)[2:19].split()==['Passes','10'],c.text()
+ assert c.row(6)[2:19].split()==['Result','Pass'] and c.row(12)[2:19].split()==['Passes','10'],c.text()
  # Each pass restarts the byte count, so Bytes shows one pass of one bank.
  assert c.get('ram_errors',4)==0 and c.get('ram_checked',4)==8160,c.get('ram_checked',4)
  # Stopping a write part way leaves no valid record and reports Unknown, not Pass.
  c.press('b');c.press('a');c.press('down');c.press('a');c.tick(20);c.press('b')
- assert 'Unknown' in c.row(7) and not c.get('ram_valid'),c.text()
+ assert 'Unknown' in c.row(6) and not c.get('ram_valid'),c.text()
  c.press('b');c.press('b')
  # Write four banks so Burn In's read-only watch has a record to verify.
  c.go(6);c.preset(2);assert c.get('ram_mode')==1 and c.get('ram_banks')==4
  c.press('a');c.press('down');c.press('a')
- wait(c,lambda:'SRAM result' in c.text(),8000);assert 'Pass' in c.row(7) and c.get('ram_valid'),c.text()
+ wait(c,lambda:'SRAM result' in c.text(),8000);assert 'Pass' in c.row(6) and c.get('ram_valid'),c.text()
  c.press('b');c.press('b')
  c.go(7);c.preset(4);c.press('a')
  wait(c,lambda:c.get('burn_ram_status')>=2,16000)
@@ -42,6 +42,6 @@ try:
  c.p.memory[2,0xa500]^=1
  wait(c,lambda:not c.get('burn_running'),32000);c.tick(60)
  assert c.get('burn_first_kind')==3 and c.get('burn_first_bank')==2 and c.get('burn_first_offset',2)==0x500,(c.get('burn_first_kind'),c.get('burn_first_bank'),c.get('burn_first_offset',2))
- assert c.get('burn_ram_status')==3 and 'SRAM fail' in c.row(15),c.text()
+ assert c.get('burn_ram_status')==3 and 'SRAM fail' in c.row(17),c.text()
  print('Up/Down order, ten SRAM cycle passes, Unknown after a stopped write, and Burn In SRAM watch pass and fail passed')
 finally:c.close()
