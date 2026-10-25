@@ -21,6 +21,11 @@ def run(cgb):
  try:
   # Every Select page of the settings screens reached through presets.
   settings_pages(c,3,2,2);settings_pages(c,5,1,2);settings_pages(c,6,2,2);settings_pages(c,7,1,2);settings_pages(c,10,1,4)
+  # Flicker: the speed unit sits on the Speed row.
+  c.go(10);c.preset(1);c.press('select');c.press('select')
+  speed=[y for y in range(18) if c.row(y)[2:7]=='Speed']
+  assert speed and 'px/' in c.row(speed[0])[13:19],('Speed unit off its row',c.text())
+  c.press('b');c.tick(30)
   # Buttons timing: separated rows and one readable footer.
   c.go(4);c.preset(3);rows_separated(c,'buttons timing')
   assert c.row(15).strip('# ')=='Taps up to 1 fr',c.row(15)
