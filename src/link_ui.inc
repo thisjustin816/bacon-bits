@@ -25,7 +25,7 @@ void draw(void) {
   else {ui_value(0,"Exp cmd",first_kind,0);if(running)service();ui_value(1,"Got cmd",first_got_kind,0);if(running)service();ui_value(2,"Test err",first_test_mismatch,0);if(running)service();ui_field(3,"Scene",scene_pending?"Loading":waiting?"Wait ack":"Ready",0);}
  }else if(page==2){
   if(!link_detail){ui_value(0,"Reply fr",max_reply,0);if(running)service();ui_value(1,"Gap fr",max_gap,0);if(running)service();ui_value(2,"Recov fr",max_recovery,0);if(running)service();ui_value(3,"Budget",reply_budget(),0);}
-  else {ui_field(0,"CPU",double_cpu?"Double":"Normal",0);if(running)service();ui_field(1,"Wire",fast?"Fast":"Normal",0);if(running)service();ui_field(2,"Rate",rate_mode==0?"Paced":rate_mode==1?"Burst":"Full",0);if(running)service();ui_value(3,"Late",deadlines,0);}
+  else {ui_field(0,"CPU",double_cpu?"Double":"Normal",0);if(running)service();ui_field(1,"Wire",fast?"Fast":"Normal",0);if(running)service();ui_field(2,"Rate",rate_mode==0?"Paced":rate_mode==1?"Burst":"Full",0);if(running)service();ui_value(3,"Dropouts",dropouts,0);}
  }else{
   if(profile){SHOW_SPRITES;ui_text(2,6,"Shared ball");}else ui_text(2,8,"No shared ball");
  }

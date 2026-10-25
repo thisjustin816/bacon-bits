@@ -106,8 +106,8 @@ static RAM, tile budgets and screen text widths, copies them to their release
 names and writes their hashes to [SHA256SUMS](SHA256SUMS). The ROMs stay out
 of git. SHA256SUMS is committed with each change to the build.
 
-Platform, Link and Rumble are earlier standalone ROMs, kept unchanged in
-`vendor/` with their source revisions in [vendor/README.md](vendor/README.md).
+Platform, Link and Rumble are earlier standalone ROMs. Their sources are in
+`vendor/`, with where each came from in [vendor/README.md](vendor/README.md).
 A build step wraps them in the shared menu and return dialog.
 
 ## Testing

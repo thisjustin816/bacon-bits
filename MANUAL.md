@@ -41,9 +41,16 @@ the test continues.
 
 The traffic instrument advances with accepted packets. Detailed pages retain
 CRC, sequence, payload, overflow, underrun, timeout, barrier, state, and order
-errors. Timing includes reply, gap, recovery, and deadline readings. The first
-failure keeps its expected and received values. No peer is Wait, and a clean
-run needs ten minutes before reporting Pass.
+errors. Sequence counts packets that went missing without being rejected, so a
+packet that failed its CRC counts once, under CRC. Timing includes reply, gap,
+recovery, and deadline readings, and its second page counts dropouts: runs of
+16 or more $FF bytes after the first packet, which is what an end reads when
+the other stops driving the wire. Only the host sees a dropout; the peer sees
+a gap. The reply budget depends only on the rate, so a slower CPU or a heavier
+profile can make most updates late with no fault on the wire. Compare late
+updates only between runs with the same settings. The first failure keeps its
+expected and received values. No peer is Wait, and a clean run needs ten
+minutes before reporting Pass.
 
 ## Rumble (MBC5)
 
@@ -270,9 +277,13 @@ bursts. A starts or stops. Left/Right changes receive/transmit mode; Select
 opens ON/OFF width, pulse count, and repetition interval. B disables the IR
 port, restores CPU speed, and returns. DMG and GBA report no CGB IR port.
 
-Receive mode polls throughout a frame and counts observed active edges.
-Transmit mode counts the bursts it sends. Counts can miss activity while the
-interface updates and are not protocol decoding or a peer acknowledgement.
+Receive mode reads the port every 40 to 56 CPU cycles with interrupts held
+off and counts each time light arrives. It counts every pulse when ON and OFF
+are each at least 2 steps; at ON 1 it misses some. It stops reading once a
+frame, for about 0.7 ms of VBlank work, and for up to two frames while the
+screen shows a new count. A burst that arrives then loses the pulses sent
+during it. Transmit mode counts the bursts it sends. Counts are not protocol
+decoding or a peer acknowledgement.
 A constant IR source can become ambient to the receiver, so transmit mode
 uses bursts.
 

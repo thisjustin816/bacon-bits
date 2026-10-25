@@ -23,7 +23,7 @@ with `make -j1`: the parallel build can race on a helper program.
 | Diagnostic | Automated evidence | Remaining hardware check |
 | --- | --- | --- |
 | Platform | Probe observations, evidence pages, register signatures, summary restoration, upstream classifier suite | Classification on a real console; signatures identify observed behavior, not emulator authenticity |
-| Link cable | Original features and paired stress suites on standalone and banked ROMs; an interrupt during a graphics-bank switch must queue its byte | Two consoles and a cable for wire timing, disconnects and sustained operation |
+| Link cable | Original features and paired stress suites on standalone and banked ROMs; an interrupt during a graphics-bank switch must queue its byte; two benches on a free-running cable at both CPU speeds on each end, with a flipped bit, a dropped edge and a 40-frame unplug | Two consoles and a cable for electrical timing, connectors and sustained operation |
 | Rumble | Compiled assembly timing, output transitions in SameBoy, retained settings and output cleanup | Motor response, strength and cartridge compatibility |
 | Audio | Compiled APU calls and ordinary UI inputs; frequencies, clocks, waveform bytes, levels, stereo samples, mute, bursts and input responsiveness | Speaker/headphone response and audible artifacts |
 | Buttons | Counts, short presses, hold durations, diagonals, opposing inputs, confirmations, live D-pad graphics, retained counters, and staged or simultaneous return chords on every page | Contacts, physical bounce and combinations the emulator filters |
@@ -32,7 +32,7 @@ with `make -j1`: the parallel build can race on a helper program.
 | Burn in | Complete ROM checksums, an altered ROM, retained first-error details, duration, CPU switching and cleanup; scratch and SRAM paths run in the cartridge; motor pulse width and spacing at every load from SameBoy's rumble output; RTC watch and redraw cadence at every load | Sustained hardware stability under load |
 | Clock (MBC3) | Live tick, held latch, halt, rollover, confirmation, journal recovery and restoration in PyBoy; halt/restore in SameBoy; displayed change counters | Battery-backed accuracy and long-term retention |
 | Cartridge LED (MBC5) | Actual compiled 24-bit command order, idle output, primary-color commands and OFF cleanup | Compatible cartridge protocol and visible light output |
-| Infrared | Compiled edge-cycle counts, burst count, presets, receiver controls, mode-switch text and cleanup | Optical transmission/reception between real devices. PyBoy reads the IR port as idle, so receive counting is untested |
+| Infrared | Compiled edge-cycle counts, burst count, presets, receiver controls, mode-switch text and cleanup; two benches in one harness, one sending each transmit preset and the other counting every pulse at three frame offsets | Optical transmission and reception between real devices: receiver response, range and ambient light |
 | Flicker | Every-frame phase cadence, duty, movement, pause/step, reference stability, OAM DMA and cleanup in both emulators | Panel blending and perceived flicker |
 
 `smoke`, `variants` and `graphical_ui` cover entry routes and safe initial
@@ -77,6 +77,22 @@ checkerboard from stripes. Audio navigation is bounded and reports a missed
 input instead of waiting indefinitely.
 
 ## Harnesses and evidence
+
+`ir_pair` runs two benches in `tests/two_consoles.py`, a pure-Python copy of
+PyBoy that steps two consoles a few cycles at a time on one clock, with their
+infrared ports facing each other. PyBoy's own infrared port reads as idle.
+The receiver must count every pulse the sender's LED makes, read the port
+at least every 56 cycles, and stop for no more than 3,000 cycles a frame
+outside its redraw after a burst. The ON 1 width is not covered: its pulse
+is shorter than the gap between reads.
+
+`link_pair` runs two benches in Link on the same harness with a cable that
+behaves as the hardware's does: the host's clock never waits, and an edge that
+finds the peer unarmed is lost. Clean runs at each pairing of CPU speeds, with
+the peer's frames half a frame apart and under all stress, must lose no edge
+and count no error. A flipped bit must count as one CRC error and no SEQ
+error, a dropped edge must recover without a two-second gap, and a 40-frame
+unplug must count one host dropout and packets missing at the peer.
 
 `upstream` rebuilds and runs every vendored standalone suite. `link_combined`
 uses a separate autorun build and synthetic paired byte transport.

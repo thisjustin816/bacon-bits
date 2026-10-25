@@ -15,7 +15,8 @@ volatile uint8_t tx[TX_BUFFERS][PACKET_SIZE], ready[TX_BUFFERS], active, txpos;
 volatile uint8_t ring[128], wr, rd;
 volatile uint16_t overflow, underrun;
 uint8_t rate_mode = 1, frozen, lost, have_seq, window[16], candidate[16], window_len, window_pos;
-uint32_t next_tx, expected, good, crc_errors, seq_errors, data_errors;
+uint32_t next_tx, expected, good, crc_errors, seq_errors, data_errors, dropouts, rejected;
+uint8_t ff_run;
 uint32_t timeouts, first_sec, first_seq, first_wanted_seq, elapsed_seconds, second_phase;
 uint16_t old_time, last_good, last_draw, first_expected_crc, first_received_crc;
 uint8_t first_code, first_kind, first_got_kind, first_test_mismatch;
@@ -203,6 +204,12 @@ void receive(void) {
     uint32_t seq;
     while (rd != wr) {
         b = ring[rd]; rd = (rd + 1u) & 127u;
+        /* An end that is not driving the wire reads as $FF. A packet holds
+           its header, so 16 in a row is a dropout, counted once per run. A
+           host started before its peer reads $FF while it waits, so count
+           only after the first packet. */
+        if (b != 0xffu) ff_run = 0;
+        else if (ff_run != 16u && ++ff_run == 16u && good) ++dropouts;
         /* O(1) work for non-frames, including a floating/all-FF cable. */
         window[window_pos] = b; window_pos = (window_pos + 1u) & 15u;
         if (window_len < 16) ++window_len;
@@ -214,6 +221,7 @@ void receive(void) {
             : packet_check(candidate, host ? 2u : 1u, &seq);
         if (code) {
             if (code == 1) ++crc_errors; else ++data_errors;
+            ++rejected;
             if (first_error_open()) {
                 first_expected_crc = packet_crc(candidate, 13);
                 first_received_crc = candidate[13] | ((uint16_t)candidate[14] << 8);
@@ -223,8 +231,10 @@ void receive(void) {
             latch(code, seq);
             /* Slide after a failure; insertion/deletion can recover framing. */
         } else {
-            if (have_seq && seq != expected) { ++seq_errors; latch(4, seq); }
-            expected = seq + 1u; have_seq = 1;
+            /* A packet already counted as rejected is not missing too, so SEQ
+               counts only the packets that vanished without a rejection. */
+            if (have_seq && seq != expected && seq - expected > rejected) { ++seq_errors; latch(4, seq); }
+            expected = seq + 1u; have_seq = 1; rejected = 0;
             {
                 uint16_t now = frame_now(), gap = now - last_good;
                 if (good && gap > max_gap) max_gap = gap;
@@ -441,7 +451,7 @@ void draw_link_page(void) {
     pair_row(9, "CRC", crc_errors, "SEQ", seq_errors);
     pair_row(10, "DATA", data_errors, "GAPS", timeouts);
     pair_row(11, "OV", ov, "UN", un);
-    row(12, "");
+    count_row(12, "DROPOUTS", dropouts);
     blank(); put(0, "FIRST "); put(6, failures[failed() ? first_code : 0]); row(13, line);
     blank(); if (failed()) { put(0, "PKT "); put_n(4, first_seq, 16); } row(14, line);
     draw_detail(15);
@@ -535,7 +545,8 @@ void set_cpu_speed(void) {
 void start_test(void) {
     uint8_t b;
     running = 0; SC_REG = 0;
-    good = crc_errors = seq_errors = data_errors = timeouts = 0;
+    good = crc_errors = seq_errors = data_errors = timeouts = dropouts = rejected = 0;
+    ff_run = 0;
     elapsed_seconds = second_phase = first_sec = first_seq = first_wanted_seq = 0;
     overflow = underrun = first_expected_crc = first_received_crc = 0;
     wr = rd = active = txpos = done = 0;

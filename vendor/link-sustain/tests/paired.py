@@ -96,7 +96,7 @@ def worker(role, buffer, fault, rate, profile, cpu, output):
         p.tick(1); frames += 1
     result = {"rom_sha256": hashlib.sha256(rom.read_bytes()).hexdigest()}
     for name, size in [("good", 4), ("crc_errors", 4), ("seq_errors", 4),
-                       ("data_errors", 4), ("timeouts", 4), ("first_code", 1),
+                       ("data_errors", 4), ("timeouts", 4), ("dropouts", 4), ("first_code", 1),
                        ("overflow", 2), ("underrun", 2), ("expected", 4), ("next_tx", 4), ("first_seq", 4),
                        ("updates", 4), ("barriers", 4), ("state_errors", 4),
                        ("barrier_errors", 4), ("epoch_errors", 4), ("max_reply", 2),
@@ -168,11 +168,12 @@ def run(fault="clean", rate=1, profile=0, cpu=0, target=TARGET):
         assert r["good"] > 15, (role, r)
         assert r["overflow"] == r["underrun"] == r["data_errors"] == 0, (role, r)
         if fault == "clean":
-            assert r["crc_errors"] == r["seq_errors"] == r["timeouts"] == r["first_code"] == 0, (role, r)
+            assert r["crc_errors"] == r["seq_errors"] == r["timeouts"] == r["dropouts"] == r["first_code"] == 0, (role, r)
         elif fault == "corrupt":
-            assert r["crc_errors"] >= 1 and r["seq_errors"] >= 1 and r["first_code"] == 1, (role, r)
+            # The rejected packet is the one missing, so it is not a SEQ error too.
+            assert r["crc_errors"] >= 1 and r["seq_errors"] == 0 and r["first_code"] == 1, (role, r)
         elif fault == "gap":
-            assert r["timeouts"] >= 1 and r["seq_errors"] >= 1 and r["first_code"] != 0, (role, r)
+            assert r["timeouts"] >= 1 and r["seq_errors"] >= 1 and r["dropouts"] >= 1 and r["first_code"] != 0, (role, r)
         if profile:
             assert r["updates"] >= 2 and r["state_errors"] == r["barrier_errors"] == r["epoch_errors"] == 0, (role, r)
             if profile in (1, 4):
