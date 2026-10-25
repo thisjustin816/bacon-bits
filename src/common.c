@@ -39,14 +39,17 @@ void ui_field(uint8_t row,const char *label,const char *value,uint8_t selected) 
 }
 void ui_value(uint8_t row,const char *label,uint32_t value,uint8_t selected) {char s[11];if(value>99999999UL){ui_field(row,label,"99M+",selected);return;}ui_decimal(s,value);ui_field(row,label,s,selected);}
 void ui_status(const char *text) {ui_line(16,text);}
+/* A button bounces as it closes, so one released reading proves nothing: the
+   screen after a list would take the still-held button as a new press. */
+static void ui_release(void) {uint8_t quiet=0;while(quiet<3u){vsync();quiet=joypad()?0:quiet+1u;}}
 uint8_t ui_confirm(const char *message) {
  uint8_t key,old=0,yes=0;
  ui_screen("Confirm","");ui_text((20u-strlen(message))/2u,6,message);ui_text(5,9,"No");ui_text(5,12,"Yes");
- while(joypad())vsync();
+ ui_release();
  for(;;){vsync();key=joypad();ui_cell(3,9,yes?0:UI_CURSOR);ui_cell(3,12,yes?UI_CURSOR:0);
   if((key&~old)&(J_UP|J_DOWN))yes^=1u;
   if((key&~old)&J_B){yes=0;break;}if((key&~old)&J_A)break;old=key;}
- while(joypad())vsync();return yes;
+ ui_release();return yes;
 }
 uint16_t bb_rom_crc(uint8_t bank,uint16_t offset,uint16_t count,uint16_t crc) NONBANKED {
  uint8_t saved=CURRENT_BANK,value;uint16_t address;
@@ -71,11 +74,11 @@ uint8_t ui_presets(const char *title,const char *const *names,const char *const 
  uint8_t i,pick=seen?0:1,key,old=0,n;
  ui_init();ui_text(1,4,title);ui_box(5,16);
  for(i=0;i<5;++i)ui_text(3,6+i*2,i?names[i]:(seen?"Continue":"Manual"));
- ui_cell(1,6+pick*2,UI_CURSOR);ui_text(1,17,notes[pick]);while(joypad())vsync();
+ ui_cell(1,6+pick*2,UI_CURSOR);ui_text(1,17,notes[pick]);ui_release();
  for(;;){vsync();key=joypad();n=key&~old;old=key;
   if(n&J_B){pick=255;break;}if(n&J_A)break;
   if(n&(J_UP|J_DOWN)){ui_cell(1,6+pick*2,0);pick=(pick+((n&J_UP)?4u:1u))%5u;ui_cell(1,6+pick*2,UI_CURSOR);ui_line(17,notes[pick]);}
- }while(joypad())vsync();return pick;
+ }ui_release();return pick;
 }
 
 uint16_t bb_frame(void) NONBANKED {uint16_t value;CRITICAL {value=sys_time;}return value;}
