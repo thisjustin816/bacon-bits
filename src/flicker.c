@@ -103,7 +103,7 @@ static void settings(uint8_t page,uint8_t sel) {
   ui_field(2,"Lead",flicker_lead?"B":"A",sel==2);ui_field(3,"Move on",flicker_cycle?"Cycle":"Frame",sel==3);
  }else if(page==2){
   ui_field(0,"Pattern",names[flicker_pattern],sel==0);
-  ui_decimal(v,flicker_speed);ui_field(1,"Speed",v,sel==1);ui_text(13,8,flicker_cycle?"px/cyc":"px/fr");
+  ui_decimal(v,flicker_speed);ui_field(1,"Speed",v,sel==1);ui_text(13,9,flicker_cycle?"px/cyc":"px/fr");
   ui_field(2,"Axis",axes[flicker_axis],sel==2);end=ui_decimal(v,flicker_cell);*end++=' ';*end++='p';*end++='x';*end=0;ui_field(3,"Cell",v,sel==3);
  }else{
   ui_field(0,"Pair",_cpu==CGB_TYPE?pairs[flicker_pair]:"Gray",sel==0);
