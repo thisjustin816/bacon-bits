@@ -46,7 +46,7 @@ def boot_mode(cgb: bool) -> tuple[int, int]:
             expect(rows, "HOST   CGB-LIKE", mode)
             expect(rows, "72 5A>5A A5>A5  OK", mode)
             expect(rows, "73 3C>3C C3>C3  OK", mode)
-            expect(rows, "OF 12 FAILED", mode)
+            expect(rows, "OF 13 FAILED", mode)
         else:
             expect(rows, "HW     DMG", mode)
             expect(rows, "HOST   N/A", mode)

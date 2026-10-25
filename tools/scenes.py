@@ -68,6 +68,8 @@ def picture(scene,phase):
  elif scene==1:
   for i in range(12):
    x=16+i%6*24;y=56 if i<6 else 104;d.line((x+4,y+8 if i<6 else y-1,79,76 if i<6 else 101),fill=1)
+  # The 13th port, a sprite over the chip's top edge.
+  d.line((79,62,79,76),fill=1)
   chip(d,68,73)
  elif scene==2:
   handheld(d,15,62);handheld(d,117,62);d.line([(28,62),(28,56),(130,56),(130,62)],fill=3,width=2)
@@ -111,7 +113,14 @@ def main():
  output+='static const uint8_t *const scene_maps[8][4]={'+','.join('{'+','.join('scene_map_'+str(i)+'_'+str(f) for f in range(4))+'}' for i in range(8))+'};\n'
  output+='static const uint8_t scene_sizes[8][5]={'+','.join('{'+','.join(map(str,(n,*r)))+'}' for n,r in sizes)+'};\n'
  write_generated(ROOT/'src/scene_data.h',output)
- write_generated(ROOT/'src/brand.h','const uint8_t bb_brand[]={'+','.join(map(str,b''.join(encode_tile(brand(),x,y) for y in range(4) for x in range(4))))+'};\n')
+ mark=brand();base=mark.copy()
+ # On CGB the header's last two rows take the page color, which is color 1
+ # in the header palette; the bench legs stand on it.
+ for y in (30,31):
+  for x in range(32):
+   if base.getpixel((x,y))==0:base.putpixel((x,y),1)
+ write_generated(ROOT/'src/brand.h','const uint8_t bb_brand[]={'+','.join(map(str,b''.join(encode_tile(mark,x,y) for y in range(4) for x in range(4))))+'};\n'
+  +'const uint8_t bb_brand_base[]={'+','.join(map(str,b''.join(encode_tile(base,x,3) for x in range(4))))+'};\n')
 
 def brand():
  """One bacon bit on a workbench, with a test probe resting on it."""

@@ -26,6 +26,7 @@ p=patch(p,'    if (vbk00 !=','    pd_obs[6][0]=vbk00;\n    if (vbk00 !=')
 p=patch(p,'    if (key0 !=','    pd_obs[8][0]=key0;\n    if (key0 !=')
 p=patch(p,'io_write_read(0x4Eu, 0x00u) !=','(pd_obs[10][0]=io_write_read(0x4Eu, 0x00u)) !=');p=patch(p,'io_write_read(0x57u, 0x00u) !=','(pd_obs[10][1]=io_write_read(0x57u, 0x00u)) !=')
 p=patch(p,'    if (sgb_answered) tells','    pd_obs[11][0]=sgb_answered;\n    if (sgb_answered) tells')
+p=patch(p,'    if (mode3) tells','    pd_obs[12][0]=mode3&1u;pd_obs[12][1]=mode3>>1;\n    if (mode3) tells')
 p=patch(p,'    failed = 0u;','    pd_mask=tells;for(i=0;i<4;++i)pd_oam[i]=oam[i];\n    for(i=0;match[i] && i<11;++i)pd_name[i]=match[i];pd_name[i]=0;\n    failed = 0u;')
 p=patch(p,'while (1) vsync();','''LCDC_REG |= 0x10u;set_bkg_data(0,64,bb_font);set_bkg_data(TILE_RULE,1,rule_tile);
     while (1) { vsync(); if (bb_exit()) return;

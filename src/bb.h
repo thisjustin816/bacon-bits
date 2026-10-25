@@ -15,6 +15,7 @@ uint8_t bb_joypad(void) NONBANKED;
 #define UI_FAIL 108
 #define UI_ACTIVE 109
 #define UI_LINK_BALL 110
+#define UI_HEADER_BASE 111
 #define UI_ART 112
 #define UI_FOCUS 232
 #define UI_FOCUS_EXTRA 61

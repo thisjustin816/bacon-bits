@@ -3,16 +3,16 @@ from pathlib import Path
 import argparse,concurrent.futures,hashlib,json,os,subprocess,sys
 ROOT=Path(__file__).resolve().parents[1]
 a=argparse.ArgumentParser();a.add_argument('--core',type=Path,help='SameBoy libretro core; without it the SameBoy suites are reported as not run');a.add_argument('--jobs',type=int,default=4);a.add_argument('cases',nargs='*',help='run only these suites, for example the ones a change touches');args=a.parse_args()
-commands={name:[sys.executable,'tests/'+name+'.py'] for name in ['smoke','modal_regression','rumble_combined','audio_ui','audio_backend','audio_shapes','audio_responsiveness','additions','sram_patterns','burn_faults','presets','lettering','menu_alignment','ui_spacing','diagonals','graphical_ui','serial_ui_bank','cartridge_features','ir_cycles','ir_pair','preset_bounce','rtc','variants','flicker','display_font','screen_text','display_timing','buttons_chord','burn_cadence','sram_burn','audio_dacs','stack_depth']}
+commands={name:[sys.executable,'tests/'+name+'.py'] for name in ['smoke','modal_regression','rumble_combined','audio_ui','audio_backend','audio_shapes','audio_responsiveness','additions','sram_patterns','burn_faults','presets','lettering','menu_alignment','ui_spacing','diagonals','graphical_ui','serial_ui_bank','cartridge_features','ir_cycles','ir_pair','preset_bounce','platform_mode3','rtc','variants','flicker','display_font','screen_text','display_timing','buttons_chord','burn_cadence','sram_burn','audio_dacs','stack_depth']}
 commands['build_check']=[sys.executable,'tools/check_build.py']
 commands['mbc3_build_check']=[sys.executable,'tools/check_build.py']
 commands['mbc3_additions']=[sys.executable,'tests/additions.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio_backend']=[sys.executable,'tests/audio_backend.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio']=[sys.executable,'tests/audio_ui.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio_dacs']=[sys.executable,'tests/audio_dacs.py','--rom','build/mbc3/bacon-bits.gbc']
-sameboy=['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art','raster_transitions','burn_rumble','screen_tour','flicker_sameboy']
+sameboy=['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art','raster_transitions','burn_rumble','screen_tour','flicker_sameboy','platform_mode3_sameboy']
 if args.core:
- for name in sameboy:commands[name]=[sys.executable,'tests/'+('flicker' if name=='flicker_sameboy' else name)+'.py','--core',str(args.core)]
+ for name in sameboy:commands[name]=[sys.executable,'tests/'+(name[:-len('_sameboy')] if name in ('flicker_sameboy','platform_mode3_sameboy') else name)+'.py','--core',str(args.core)]
 slow=['link_combined','upstream','link_pair']
 known=set(commands)|set(sameboy)|set(slow)
 unknown=[name for name in args.cases if name not in known]

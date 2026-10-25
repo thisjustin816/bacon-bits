@@ -22,7 +22,7 @@ with `make -j1`: the parallel build can race on a helper program.
 
 | Diagnostic | Automated evidence | Remaining hardware check |
 | --- | --- | --- |
-| Platform | Probe observations, evidence pages, register signatures, summary restoration, upstream classifier suite | Classification on a real console; signatures identify observed behavior, not emulator authenticity |
+| Platform | Probe observations, evidence pages, register signatures, summary restoration, upstream classifier suite; the mode-3 write probe fails in PyBoy, which lets the writes through, and passes in SameBoy, which drops them | Classification on a real console; signatures identify observed behavior, not emulator authenticity |
 | Link cable | Original features and paired stress suites on standalone and banked ROMs; an interrupt during a graphics-bank switch must queue its byte; two benches on a free-running cable at both CPU speeds on each end, with a flipped bit, a dropped edge and a 40-frame unplug | Two consoles and a cable for electrical timing, connectors and sustained operation |
 | Rumble | Compiled assembly timing, output transitions in SameBoy, retained settings and output cleanup | Motor response, strength and cartridge compatibility |
 | Audio | Compiled APU calls and ordinary UI inputs; frequencies, clocks, waveform bytes, levels, stereo samples, mute, bursts and input responsiveness | Speaker/headphone response and audible artifacts |

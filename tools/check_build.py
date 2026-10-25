@@ -57,7 +57,7 @@ assert label_slots.isdisjoint(range(61,65)), 'Focus patterns overlap centered-la
 controls=(ROOT/'src/button_data.h').read_text()
 button_bytes=re.search(r'button_tiles\[\]=\{([^}]+)\}',controls)[1].split(',')
 assert len(button_bytes)==37*16, 'Live D-pad tile budget changed'
-assert 96+11+3<=110 and 110<112,'Link sprite overlaps the font or instruments'
+assert 96+11+3<=110 and 110<111<112,'Link sprite or header edge overlaps the font or instruments'
 print(f'Mixed-case font and instrument ranges passed; browser uses {96+11+3+max(counts)+8+16} resident tiles, including focus; live D-pad uses 37 tiles')
 
 # Flicker keeps the UI font and brand resident while both maps alternate.

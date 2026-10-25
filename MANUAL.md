@@ -14,18 +14,21 @@ for at least 60 frames so each of its buttons can be tested separately.
 
 ## Platform
 
-The chip diagram shows the twelve captured probe results. Filled ports passed;
-a crossed port failed. The summary reports hardware class and any matching
-emulator signature. A or Select opens the evidence.
+The chip diagram shows the thirteen captured probe results. Filled ports
+passed; a crossed port failed. The summary reports hardware class and any
+matching emulator signature. A or Select opens the evidence.
 
-Left/Right chooses a probe. A switches between failed probes and all twelve.
+Left/Right chooses a probe. A switches between failed probes and all thirteen.
 Select switches to name evidence, and B returns to the diagram. Each probe
 shows expected bytes, captured reads, and what it checks. KEY1 compares its
-unused-bit mask. RP accepts three documented signatures. Monochrome hardware
-reports that the CGB probes do not apply.
+unused-bit mask. RP accepts three documented signatures. The thirteenth, the
+port over the chip, writes to VRAM and to palette RAM while a line is drawn
+and reads both back: a console drops the writes, so each read is 00, and 01
+means the write landed. Monochrome hardware reports that the CGB probes do
+not apply.
 
-The classification follows Platform Detect v1.4's ordered rules. A named host
-can pass all twelve probes, and an unknown signature can still fail probes.
+The classification follows Platform Detect v1.5's ordered rules. A named host
+can pass all thirteen probes, and an unknown signature can still fail probes.
 These register signatures do not guarantee host identity.
 
 ## Link
