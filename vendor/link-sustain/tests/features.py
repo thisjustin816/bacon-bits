@@ -87,11 +87,11 @@ with tempfile.TemporaryDirectory() as temp:
         inject(host, ack=True); p.tick(12, True)
         assert get("updates", 4) == 1 and get("simulation", 2) == 2
         p.tick(180, True)
-        assert get("deadlines", 4) == 1 and get("max_reply", 2) > 0
+        assert get("deadlines", 4) == 1 and get("max_reply", 4) > 0
         p.tick(90, True); assert get("deadlines", 4) == 1
         lib.stress_next(c.byref(host), 1); inject(host, ack=True); p.tick(12, True)
         assert get("updates", 4) == 2 and get("lost") == 0
-        assert get("max_recovery", 2) >= 120 and get("first_code") == 10
+        assert get("max_recovery", 4) >= 120 and get("first_code") == 10
         # A real error replaces the wait for the other console and shows in the verdict.
         press("b"); press("start")
         configure(get, press, host=True, test=0, rate=1, cpu=0)

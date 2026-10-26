@@ -96,6 +96,14 @@ and count no error. A bit flipped in a packet's payload must count as one CRC
 error and no SEQ error, a dropped edge must recover without a two-second gap, and a 40-frame
 unplug must count one host dropout and packets missing at the peer.
 
+`link_long` runs two benches under All stress with their frame counters
+starting just short of the 65536-frame wrap, so ordinary intervals cross
+it and must not read as gaps. It then unplugs the cable and moves each
+counter forward 80000 frames in steps, as 22 minutes of silence would. The
+gap, the recovery and the host's reply wait must each count all 80000
+frames, and the first failure must survive the recovery. On a build that
+kept these intervals in 16 bits it reads about 14500.
+
 `upstream` rebuilds and runs every vendored standalone suite. `link_combined`
 uses a separate autorun build and synthetic paired byte transport.
 `rumble_combined` runs the compiled motor/delay/input bytes in the timing

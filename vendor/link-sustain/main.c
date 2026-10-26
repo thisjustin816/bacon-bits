@@ -18,13 +18,16 @@ uint8_t rate_mode = 1, frozen, lost, have_seq, window[16], candidate[16], window
 uint32_t next_tx, expected, good, crc_errors, seq_errors, data_errors, dropouts, rejected;
 uint8_t ff_run;
 uint32_t timeouts, first_sec, first_seq, first_wanted_seq, elapsed_seconds, second_phase;
-uint16_t old_time, last_good, last_draw, first_expected_crc, first_received_crc;
+uint16_t old_time, last_draw, first_expected_crc, first_received_crc;
 uint8_t first_code, first_kind, first_got_kind, first_test_mismatch;
 uint16_t first_wanted_epoch, first_got_epoch, first_wanted_hash, first_got_hash;
 uint8_t profile = 4, double_cpu, page, waiting, deadline_latched, scene_pending;
 uint8_t pending_payload[6], outgoing_payload[6];
 stress_state simulation;
-uint16_t wait_started, scene_started, last_load, max_reply, max_gap, max_recovery;
+uint16_t scene_started, last_load;
+/* Intervals that can outlast sys_time's 18-minute wrap use the 32-bit clock. */
+uint32_t clock_frames, last_good, wait_started, max_reply, max_gap, max_recovery;
+uint16_t clock_seen;
 uint32_t pending_sequence;
 uint32_t updates, barriers, state_errors, barrier_errors, epoch_errors, deadlines, stale_replies;
 volatile uint16_t busy_checksum;
@@ -64,6 +67,16 @@ uint16_t frame_now(void) {
     uint16_t result;
     CRITICAL { result = sys_time; }
     return result;
+}
+
+/* sys_time wraps every 65536 frames. service() samples this at least once a
+   frame while a test runs, so each step is small and the sum never wraps
+   in a soak. */
+uint32_t frames(void) {
+    uint16_t now = frame_now();
+    clock_frames += (uint16_t)(now - clock_seen);
+    clock_seen = now;
+    return clock_frames;
 }
 
 void serial_isr(void) {
@@ -107,14 +120,14 @@ void make_packet(uint8_t *p, uint32_t sequence) {
 
 void accept_update(const uint8_t *payload, uint32_t sequence) {
     uint8_t result;
-    uint16_t duration;
+    uint32_t duration;
     stress_state wanted;
     if (host && !waiting) return;
     result = stress_accept(&simulation, profile, host, payload);
     if (result == STRESS_ACCEPT) {
         if (simulation.command == STRESS_SCENE) ++barriers; else ++updates;
         if (host) {
-            duration = frame_now() - wait_started;
+            duration = frames() - wait_started;
             if (duration > max_reply) max_reply = duration;
             waiting = 0;
         }
@@ -162,7 +175,7 @@ void stress_service(void) {
     if (scene_pending && (uint16_t)(now - scene_started) >= 6u) {
         scene_pending = 0; accept_update(pending_payload, pending_sequence);
     }
-    if (host && waiting && !deadline_latched && (uint16_t)(now - wait_started) > budget) {
+    if (host && waiting && !deadline_latched && frames() - wait_started > budget) {
         ++deadlines; deadline_latched = 1;
     }
 }
@@ -170,7 +183,7 @@ void stress_service(void) {
 void begin_update(void) {
     if (!profile || !host || waiting) return;
     stress_next(&simulation, profile);
-    waiting = 1; deadline_latched = 0; wait_started = frame_now();
+    waiting = 1; deadline_latched = 0; wait_started = frames();
 }
 
 void refill(void) {
@@ -236,7 +249,7 @@ void receive(void) {
             if (have_seq && seq != expected && seq - expected > rejected) { ++seq_errors; latch(4, seq); }
             expected = seq + 1u; have_seq = 1; rejected = 0;
             {
-                uint16_t now = frame_now(), gap = now - last_good;
+                uint32_t now = frames(), gap = now - last_good;
                 if (good && gap > max_gap) max_gap = gap;
                 if (lost && gap > max_recovery) max_recovery = gap;
                 ++good; last_good = now; lost = 0;
@@ -255,10 +268,9 @@ void service(void) {
     while (second_phase >= 262144ul) { second_phase -= 262144ul; ++elapsed_seconds; }
     refill(); receive();
     if (profile) stress_service();
-    now = frame_now();
     if (overflow) latch(6, expected);
     if (underrun) latch(7, expected);
-    if ((uint16_t)(now - last_good) >= 120u && !lost) {
+    if (frames() - last_good >= 120u && !lost) {
         lost = 1; ++timeouts; latch(5, expected);
     }
 }
@@ -558,6 +570,7 @@ void start_test(void) {
     waiting = deadline_latched = scene_pending = 0;
     updates = barriers = state_errors = barrier_errors = epoch_errors = deadlines = stale_replies = 0;
     max_reply = max_gap = max_recovery = busy_checksum = 0; last_load = 0xffffu;
+    clock_seen = frame_now(); clock_frames = 0;
     stress_init(&simulation);
     set_cpu_speed();
     begin_update();
@@ -566,7 +579,8 @@ void start_test(void) {
         ready[b] = 1;
     }
     next_tx = TX_BUFFERS;
-    old_time = last_good = last_draw = frame_now();
+    old_time = last_draw = frame_now();
+    last_good = frames();
     IF_REG &= (uint8_t)~SIO_IFLAG;
     SB_REG = tx[0][0]; running = 1;
     if (!host) SC_REG = 0x80u | (fast ? 2u : 0u);
