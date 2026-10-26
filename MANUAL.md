@@ -56,9 +56,10 @@ for the next frame, or All for no wait, and Idle waits 0 us to 4 ms after each
 byte. Changing Burst or Idle under a preset switches Rate to Custom, starting
 from that preset's values. The host's pacing applies to both ends, so the peer
 shows By host. Masked runs a number of scanlines with interrupts off each
-frame, from 1 to 64, on whichever end sets it. Too little idle or too many
-masked lines on the peer leaves bytes the peer is not ready for, and the run
-fails. The timing page's second view shows the wire's bit rate on the host.
+frame, from 1 to 64, on whichever end sets it. Masked lines on the peer that
+outlast the time between bytes leave bytes the peer is not ready for, and the
+run fails; the test's own work already spaces bytes a few milliseconds apart,
+so Idle alone rarely does. The timing page's second view shows the wire's bit rate on the host.
 
 Start begins the test. B stops it; Start then returns to settings. Left/Right
 changes between traffic, shared-state, timing, and ball pages. A or Up/Down

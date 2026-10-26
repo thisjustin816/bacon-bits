@@ -8,9 +8,12 @@ The Paced, Burst and Full presets, on either wire, must stay clean and move
 the bytes the build before Custom pacing moved, within 3%: Full moves about
 1.5% fewer, the cost of the 32-bit interval clock. Custom bursts of 8 bytes
 with 488 us between them must stay clean and move at least 1.2 times the
-Burst preset's bytes; the loop's own work, not the burst, limits both. With 8 lines masked each frame on both ends, as the
-Busy game preset sets, Burst must stay clean, while Custom All with no idle
-loses the bytes that arrive while the peer's interrupts are off and fails.
+Burst preset's bytes; the loop's own work, not the burst, limits both.
+That work also spaces bytes about 6 ms apart even with no idle, so a mask
+breaks the link only when it outlasts that gap. With 8 lines masked each
+frame on both ends, as the Busy game preset sets, Burst must stay clean.
+Custom All with no idle and 64 lines (7.3 ms) masked on the peer loses the
+bytes that arrive while the peer's interrupts are off and fails.
 64 masked lines on the host must stay clean and only slow it, as the host
 sends nothing while its own interrupts are off.
 """
@@ -62,7 +65,7 @@ CASES=(
  ('Full on the fast wire',dict(rate=2,link=1),False,None),
  ('Custom 8 bytes, 488 us idle',dict(rate=3,setup=custom(burst=8,idle=IDLE_488US)),False,('Burst',1.2)),
  ('Burst, 8 lines masked',dict(rate=1,setup=custom(masked=(MASKED_8,MASKED_8))),False,None),
- ('Custom All, no idle, 8 lines masked',dict(rate=3,setup=custom(burst=0,idle=IDLE_0US,masked=(MASKED_8,MASKED_8))),True,None),
+ ('Custom All, no idle, peer masks 64 lines',dict(rate=3,setup=custom(burst=0,idle=IDLE_0US,masked=(0,MASKED_64))),True,None),
  ('Full, host masks 64 lines',dict(rate=2,setup=custom(masked=(MASKED_64,0))),False,('Full',0.9)),
 )
 
@@ -86,6 +89,6 @@ def main():
    if not ok:failures.append((cpu,label,sides,missed,taken))
  assert not failures,failures
  print('Link stress: the presets pace as before Custom pacing and stay clean, an 8-byte Custom burst moves more than Burst, '
-       '8 masked lines stay clean at Burst and fail with no idle, and masked lines on the host only slow it, at both CPU speeds')
+       '8 masked lines stay clean at Burst, 64 on the peer fail with no idle, and masked lines on the host only slow it, at both CPU speeds')
 
 if __name__=='__main__':main()

@@ -101,9 +101,10 @@ Paced, Burst, Full and Full on the fast wire must stay clean and move the
 same bytes per run as the build before Custom pacing, within 3%. Paced and
 Burst match it within 1%; Full moves about 1.5% fewer, the cost of the 32-bit
 interval clock. Custom bursts of 8 bytes with 488 us between them must stay
-clean and move at least 1.2 times the Burst preset's bytes. With 8 lines masked each frame on both
-ends, Burst must stay clean and Custom All with no idle must lose edges and
-fail. 64 masked lines on the host must stay clean and move fewer bytes than
+clean and move at least 1.2 times the Burst preset's bytes. With 8 lines
+masked each frame on both ends, Burst must stay clean. The loop's own work
+spaces bytes about 6 ms apart even with no idle, so Custom All with no idle
+fails only once the peer masks 64 lines (7.3 ms) and loses edges. 64 masked lines on the host must stay clean and move fewer bytes than
 Full.
 
 `link_snapshot` starts the peer 150 frames before the host. That wait must
