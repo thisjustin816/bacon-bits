@@ -7,7 +7,9 @@ seconds in, the cable is unplugged and each counter moves forward 20000
 frames at a time, four times, as 22 minutes of silence would. Then the cable
 goes back in. The gap, the recovery and the host's wait for a reply must each
 count all of the 80000 frames, not the remainder past 65536, and the first
-failure recorded during the silence must still be there afterwards.
+failure recorded during the silence must still be there afterwards. That
+failure is no sync, or a CRC error when the cable comes out mid-packet and
+the rest of the packet reads as $FF.
 """
 from pathlib import Path
 import shutil,sys,tempfile
@@ -19,7 +21,7 @@ from two_consoles import Pair,FRAME,run_frames,press
 from link_pair import LINK_TEST,run_frames_paired
 
 JUMP,JUMPS=20000,4
-NO_SYNC=5
+CRC,NO_SYNC=1,5
 
 def main():
  rom=Path(sys.argv[1]) if len(sys.argv)>1 else ROMS['mbc5']
@@ -69,7 +71,7 @@ def main():
  assert all(side['good']>before[i]['good']+10 for i,side in enumerate(after)),('Link did not recover',after)
  assert all(side['max_gap']>=silence and side['max_recovery']>=silence for side in after),('Gap or recovery wrapped',after)
  assert after[0]['max_reply']>=silence,('Reply wait wrapped',after[0])
- assert all(code==NO_SYNC for code,_ in first) and kept==first,('First failure changed after recovery',first,kept)
+ assert all(code in (CRC,NO_SYNC) for code,_ in first) and kept==first,('First failure changed after recovery',first,kept)
  print(f'Link: a frame-counter wrap is no gap, and a {silence}-frame silence counts in full as gap, recovery and reply wait; the first failure survives recovery')
 
 if __name__=='__main__':main()
