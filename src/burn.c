@@ -35,16 +35,21 @@ ui_field(1,"RTC",motor?"Watch":"Skip",row==1);
 ui_value(1,"Rumble f",motor,row==1);
 #endif
 ui_field(2,"SRAM",ram_check?"Verify":"Skip",row==2);ui_field(3,"Scratch","256 B",0);}ui_status("Ready");}
-static void status_body(uint8_t page){if(!page){uint8_t i;
+/* Minutes and seconds for the first hour, then hours and minutes. */
+static const char *elapsed(char *s,uint32_t seconds){char *end;uint16_t low;
+ if(seconds<3600UL){end=ui_decimal(s,seconds/60UL);*end++=':';low=seconds%60UL;}
+ else{end=ui_decimal(s,seconds/3600UL);*end++='h';low=seconds/60UL%60UL;}
+ *end++='0'+low/10u;*end++='0'+low%10u;*end=0;return s;}
+static void status_body(uint8_t page){if(!page){uint8_t i;char s[12];
  ui_hardware(2,(uint8_t)burn_seconds&3u);
- ui_pad(10,6,"Seconds",9);ui_count(10,7,burn_seconds,9);ui_pad(10,9,"Cycles",9);ui_count(10,10,burn_cycles,9);ui_pad(10,12,"Errors",9);ui_count(10,13,burn_errors,9);
- for(i=0;i<8;++i)ui_cell(2+i*2u,14,burn_first_kind==1 && burn_first_bank==i?UI_FAIL:burn_bank==i?UI_PASS:UI_EMPTY);
+ ui_text(10,6,"Time");ui_pad(10,7,elapsed(s,burn_seconds),9);ui_text(10,9,"Cycles");ui_count(10,10,burn_cycles,9);ui_text(10,12,"Errors");ui_count(17,12,burn_errors,2);
+ for(i=0;i<8;++i)ui_cell(10+i,14,burn_first_kind==1 && burn_first_bank==i?UI_FAIL:burn_bank==i?UI_PASS:UI_EMPTY);
 }else{if(burn_first_kind==4){ui_value(0,"RTC reg",burn_first_offset,0);ui_value(1,"Maximum",burn_first_expected,0);ui_value(2,"Read",burn_first_read,0);ui_value(3,"Errors",burn_errors,0);}
  else if(!burn_first_kind){ui_field(0,"Result","No error",0);ui_value(1,"Cycles",burn_cycles,0);ui_value(2,"Seconds",burn_seconds,0);ui_field(3,"Scratch","Pass",0);}
  else {if(burn_first_kind==2)ui_field(0,"Area","Scratch",0);else ui_value(0,"Bank",burn_first_bank,0);
  if(burn_first_kind==1)ui_field(1,"Scope","16K bank",0);else ui_value(1,"Offset",burn_first_offset,0);
- ui_value(2,"Expected",burn_first_expected,0);ui_value(3,"Read",burn_first_read,0);}}ui_line(15,burn_ram_status==4?"SRAM no record":burn_ram_status==3?"SRAM fail":burn_ram_status==2?"SRAM checked":burn_ram_status==1?"SRAM verify":"SRAM skipped");ui_status(burn_running?"Running":"Stopped");}
-static void status(uint8_t page){ui_screen(page?(burn_first_kind==1?"ROM failure":burn_first_kind==2?"Scratch failure":burn_first_kind==3?"SRAM failure":burn_first_kind==4?"RTC failure":"No failure"):(burn_running?"Burn run":"Burn stop"),page?"2/2":"1/2");status_body(page);}
+ ui_value(2,"Expected",burn_first_expected,0);ui_value(3,"Read",burn_first_read,0);}}ui_line(UI_DETAIL,burn_ram_status==4?"SRAM no record":burn_ram_status==3?"SRAM fail":burn_ram_status==2?"SRAM checked":burn_ram_status==1?"SRAM verify":"SRAM skipped");ui_status(burn_running?"Running":"Stopped");}
+static void status(uint8_t page){ui_screen(page?(burn_first_kind==1?"ROM failure":burn_first_kind==2?"Scratch fail":burn_first_kind==3?"SRAM failure":burn_first_kind==4?"RTC failure":"No failure"):(burn_running?"Burn run":"Burn stop"),page?"2/2":"1/2");status_body(page);}
 void burn_run(void) BANKED {uint8_t row=0,page=0,key,old=0,n,finished=0,i,pattern=0,ram_active=0,draw_wait=0;uint16_t last=0,delta,chunk,a,now;uint32_t phase=0;
 #ifdef BB_MBC3
  uint8_t rtc_wait=0;

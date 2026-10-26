@@ -37,7 +37,7 @@ join them on one menu with the same controls.
 
 | Test | Settings and readings |
 | --- | --- |
-| Platform | Twelve CGB register probes with the bytes read back, the hardware class, and a match against known emulator signatures |
+| Platform | Twelve CGB register probes with the bytes read back, a check that writes made while a line is drawn are dropped, the hardware class, and a match against known emulator signatures |
 | Link | Host or peer, five traffic profiles, pacing, wire clock and CPU speed. Keeps the first failure with its expected and received values |
 | Rumble (MBC5) | An 8-bit pattern, bit length in frames or milliseconds, on and off sweeps, prespin, burst length and gap |
 | Clock (MBC3) | Live ticks, a held latch, a temporary halt, and a day 511 rollover from a seeded time. Puts the clock back afterwards |
@@ -125,8 +125,8 @@ static RAM, tile budgets and screen text widths, copies them to their release
 names and writes their hashes to [SHA256SUMS](SHA256SUMS). The ROMs stay out
 of git. SHA256SUMS is committed with each change to the build.
 
-Platform, Link and Rumble are earlier standalone ROMs, kept unchanged in
-`vendor/` with their source revisions in [vendor/README.md](vendor/README.md).
+Platform, Link and Rumble are earlier standalone ROMs. Their sources are in
+`vendor/`, with where each came from in [vendor/README.md](vendor/README.md).
 A build step wraps them in the shared menu and return dialog.
 
 ## Testing

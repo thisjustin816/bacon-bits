@@ -26,6 +26,7 @@ p=patch(p,'    if (vbk00 !=','    pd_obs[6][0]=vbk00;\n    if (vbk00 !=')
 p=patch(p,'    if (key0 !=','    pd_obs[8][0]=key0;\n    if (key0 !=')
 p=patch(p,'io_write_read(0x4Eu, 0x00u) !=','(pd_obs[10][0]=io_write_read(0x4Eu, 0x00u)) !=');p=patch(p,'io_write_read(0x57u, 0x00u) !=','(pd_obs[10][1]=io_write_read(0x57u, 0x00u)) !=')
 p=patch(p,'    if (sgb_answered) tells','    pd_obs[11][0]=sgb_answered;\n    if (sgb_answered) tells')
+p=patch(p,'    if (mode3) tells','    pd_obs[12][0]=mode3&1u;pd_obs[12][1]=mode3>>1;\n    if (mode3) tells')
 p=patch(p,'    failed = 0u;','    pd_mask=tells;for(i=0;i<4;++i)pd_oam[i]=oam[i];\n    for(i=0;match[i] && i<11;++i)pd_name[i]=match[i];pd_name[i]=0;\n    failed = 0u;')
 p=patch(p,'while (1) vsync();','''LCDC_REG |= 0x10u;set_bkg_data(0,64,bb_font);set_bkg_data(TILE_RULE,1,rule_tile);
     while (1) { vsync(); if (bb_exit()) return;
@@ -82,9 +83,9 @@ void draw_menu_row(uint8_t r) {
  else if(cursor==4 && r==4)ui_field(0,"CPU",menu_value(r),1);
 }
 '''+p[b:]
-p=patch(p,'    clear_screen();\n    row(0, "LINK SUSTAIN v1.2");\n    draw_box(2, 8);','    link_cpu_page=0;ui_screen("LINK SETTINGS","1/2");')
+p=patch(p,'    clear_screen();\n    row(0, "LINK SUSTAIN v1.2");\n    draw_box(2, 8);','    link_cpu_page=0;ui_screen("LINK SETUP","1/2");')
 # Rows rewrite in place; only a change between the two settings pages redraws the screen.
-p=patch(p,'            for (r = 0;', '            if ((cursor==4)!=link_cpu_page) {link_cpu_page=cursor==4;ui_screen("LINK SETTINGS",link_cpu_page?"2/2":"1/2");}\n            for (r = 0;')
+p=patch(p,'            for (r = 0;', '            if ((cursor==4)!=link_cpu_page) {link_cpu_page=cursor==4;ui_screen("LINK SETUP",link_cpu_page?"2/2":"1/2");}\n            for (r = 0;')
 a=p.index('            switch (cursor) {',p.index('void menu(void)'));b=p.index('        }\n        phase',a)
 p=p[:a]+'            ui_status(cursor==ROW_TEST?profiles[profile]:"STOPPED");\n'+p[b:]
 p=patch(p,'if (phase != blink) { blink = phase; row(16, phase ? "    PRESS START" : ""); }','if (phase != blink) blink=phase;')

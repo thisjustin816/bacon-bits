@@ -26,11 +26,12 @@ enum {
     TELL_01,      /* SB does not hold a written value */
     TELL_UNMAPPED,/* an unmapped register keeps a written value */
     TELL_SGB,     /* the SGB packet probe answered */
+    TELL_M3,      /* VRAM or palette RAM took a write while a line was drawn */
     TELL_COUNT
 };
 
 static const char *const tell_names[TELL_COUNT] = {
-    "72", "74", "75", "6C", "76", "56", "4F", "4D", "4C", "01", "UN", "SGB"
+    "72", "74", "75", "6C", "76", "56", "4F", "4D", "4C", "01", "UN", "SGB", "M3"
 };
 
 /* SDCC drops a volatile read that follows a write to the same address and
@@ -72,6 +73,56 @@ static uint8_t write_and_restore(uint8_t lo, uint8_t value) {
     uint8_t after = io_write_read(lo, value);
     io_write(lo, before);
     return after;
+}
+
+/* A console drops writes to VRAM and palette RAM while it draws a line (mode
+   3). The writes go to a map cell off the right edge of the screen and to an
+   unused object palette entry, using ld (hl) and ldh, which PyBoy lets
+   through. */
+#define M3_CELL 0x981Fu
+#define M3_PALETTE 0x3Eu /* object palette 7, color 3, low byte */
+static void mode3_write(uint8_t vram_value, uint8_t palette_value) __naked {
+    (void)vram_value; (void)palette_value;
+    __asm
+        ld c, a
+        ld hl, #0x981F
+    1$:
+        ldh a, (_LY_REG + 0)
+        cp #72
+        jr nz, 1$
+    2$:
+        ldh a, (_STAT_REG + 0)
+        and #3
+        cp #3
+        jr nz, 2$
+        ld (hl), c
+        ld a, e
+        ldh (_OCPD_REG + 0), a
+        ret
+    __endasm;
+}
+
+/* Returns bit 0 when the VRAM write landed and bit 1 when the palette write
+   did. Both are read back and restored in VBlank. */
+static uint8_t mode3_writes(void) {
+    volatile uint8_t *cell = (volatile uint8_t *)M3_CELL;
+    uint8_t cell_before, palette_before, landed = 0u;
+    if (!(LCDC_REG & 0x80u)) return 0u;
+    vsync();
+    cell_before = *cell;
+    OCPS_REG = M3_PALETTE;
+    palette_before = OCPD_REG;
+    disable_interrupts();
+    mode3_write(cell_before ^ 0xFFu, palette_before ^ 0xFFu);
+    enable_interrupts();
+    vsync();
+    if (*cell != cell_before) landed |= 1u;
+    OCPS_REG = M3_PALETTE;
+    if (OCPD_REG != palette_before) landed |= 2u;
+    *cell = cell_before;
+    OCPS_REG = M3_PALETTE;
+    OCPD_REG = palette_before;
+    return landed;
 }
 
 static void print_hex8(uint8_t value) {
@@ -156,7 +207,7 @@ static void title(void) {
     printf("PLATFORM DETECT");
     paint(0u, 0u, 20u, PAL_TITLE);
     gotoxy(15u, 17u);
-    printf("V1.4");
+    printf("V1.5");
     paint(15u, 17u, 4u, PAL_RULE);
 }
 
@@ -174,6 +225,7 @@ void main(void) {
     uint8_t vbk00;
     uint8_t ff4e_sticks;
     uint8_t ff57_sticks;
+    uint8_t mode3;
     uint16_t tells = 0u;
     uint8_t i;
     uint8_t failed;
@@ -254,6 +306,9 @@ void main(void) {
     if (ff4e_sticks || ff57_sticks) tells |= 1u << TELL_UNMAPPED;
 
     if (sgb_answered) tells |= 1u << TELL_SGB;
+
+    mode3 = mode3_writes();
+    if (mode3) tells |= 1u << TELL_M3;
 
     /* Signatures measured against each emulator's default CGB setup; see the README. */
     emulator = 1u;

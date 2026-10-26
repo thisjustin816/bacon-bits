@@ -1,17 +1,17 @@
 #include "bb.h"
 #include "art.h"
-#include "brand.h"
+#include "logo.h"
 #include <string.h>
 
 uint8_t selected_test,bb_keys,bb_raw_rumble;
 uint16_t ui_revision;
 uint8_t bb_tiles_dirty=UI_TILES_ALL,bb_cover_dirty=1;
 static uint8_t covered;
-/* A blank window over rows 4-17 hides a screen while it is rebuilt, so a
+/* A blank window over rows 3-17 hides a screen while it is rebuilt, so a
    change shows the old screen, then the finished new one. */
 void ui_cover(void) NONBANKED {
- if(bb_cover_dirty){LCDC_REG|=0x40u;fill_win_rect(0,0,20,14,0);if(_cpu==CGB_TYPE){VBK_REG=1;fill_win_rect(0,0,20,14,0);VBK_REG=0;}bb_cover_dirty=0;}
- LCDC_REG|=0x40u;WX_REG=7;WY_REG=32;
+ if(bb_cover_dirty){LCDC_REG|=0x40u;fill_win_rect(0,0,20,15,0);if(_cpu==CGB_TYPE){VBK_REG=1;fill_win_rect(0,0,20,15,0);VBK_REG=0;}bb_cover_dirty=0;}
+ LCDC_REG|=0x40u;WX_REG=7;WY_REG=24;
  /* Inside VBlank the change already lands on a frame boundary. */
  if(LY_REG<144u)vsync();
  SHOW_WIN;covered=1;
@@ -52,17 +52,19 @@ typedef char label_slots_fit[(LABEL_SLOTS(CARD_0)+LABEL_SLOTS(CARD_1)+LABEL_SLOT
  && LABEL_SLOTS(CARD_8)+LABEL_SLOTS(CARD_9)+LABEL_SLOTS(CARD_10)<=sizeof(label_slots))?1:-1];
 void ui_cell(uint8_t x,uint8_t y,uint8_t tile) {set_bkg_tile_xy(x,y,tile);}
 void ui_text(uint8_t x,uint8_t y,const char *s) {while(*s) ui_cell(x++,y,(uint8_t)*s++-32u);}
+/* On Color the header is the logo, drawn from VRAM bank 1; on monochrome
+   it is the name in the shared font. */
+static void logo(void) {
+ VBK_REG=1;fill_bkg_rect(0,0,20,3,0x09);VBK_REG=0;set_bkg_tiles(0,0,20,3,bb_logo_map);
+}
 void ui_clear(void) {
- uint8_t x,y;
- /* Keep the brand visible while outgoing font references are removed. */
- if(_cpu==CGB_TYPE){VBK_REG=1;fill_bkg_rect(0,0,20,4,1);VBK_REG=0;}
- for(y=0;y<4;++y)for(x=0;x<4;++x)ui_cell(x,y,UI_BRAND+y*4+x);
- /* The shared heading stays resident while the body is redrawn. Clearing
-    its map cells exposes a blank header for several LCD frames. */
- fill_bkg_rect(4,0,16,1,0);fill_bkg_rect(4,2,16,2,0);
- fill_bkg_rect(3+sizeof(BRAND_NAME),1,17-sizeof(BRAND_NAME),1,0);
- for(y=4;y!=18;++y) fill_bkg_rect(0,y,20,1,0);
- if(_cpu==CGB_TYPE) {VBK_REG=1;fill_bkg_rect(0,4,20,14,0);VBK_REG=0;}
+ uint8_t y;
+ /* The heading stays resident while the body is redrawn: clearing its map
+    cells would expose a blank header for several LCD frames. A full-screen
+    test may have drawn over it, so the logo is put back first. */
+ if(_cpu==CGB_TYPE)logo();
+ for(y=3;y!=18;++y) fill_bkg_rect(0,y,20,1,0);
+ if(_cpu==CGB_TYPE) {VBK_REG=1;fill_bkg_rect(0,3,20,15,0);VBK_REG=0;}
 }
 void ui_box(uint8_t top,uint8_t bottom) {
  uint8_t y;
@@ -71,11 +73,9 @@ void ui_box(uint8_t top,uint8_t bottom) {
  for(y=top+1;y<bottom;++y) {ui_cell(0,y,(UI_CHROME+1));ui_cell(19,y,(UI_CHROME+1));}
 }
 void ui_header(void) {
- uint8_t x,y;
- for(y=0;y<4;++y)for(x=0;x<4;++x)ui_cell(x,y,UI_BRAND+y*4+x);
- ui_text(4,1,BRAND_NAME);
- for(y=4;y<18;++y)if(y==4 || y>=15)fill_bkg_rect(0,y,20,1,(UI_CHROME+10));
- if(_cpu==CGB_TYPE){VBK_REG=1;fill_bkg_rect(0,0,20,4,1);fill_bkg_rect(0,15,20,3,2);VBK_REG=0;}
+ if(_cpu==CGB_TYPE){logo();VBK_REG=1;fill_bkg_rect(0,16,20,2,2);VBK_REG=0;return;}
+ fill_bkg_rect(0,0,20,1,0);fill_bkg_rect(0,2,20,1,0);fill_bkg_rect(0,1,2,1,0);fill_bkg_rect(17,1,3,1,0);
+ ui_text(2,1,BRAND_NAME);
 }
 void ui_init(void) {
  ++ui_revision;
@@ -88,7 +88,6 @@ void ui_init(void) {
  BGP_REG=0xe4;
  /* Reloading unchanged tiles keeps the body blank for frames, so only what
     was overwritten is restored. */
- if(bb_tiles_dirty&UI_TILES_ALL)set_bkg_data(UI_BRAND,16,bb_brand);
  ui_clear();
  if(bb_tiles_dirty&UI_TILES_ALL){set_bkg_data(0,UI_FONT_COUNT,bb_font);set_bkg_data(UI_CHROME,11,bb_chrome);set_bkg_data(UI_PASS,3,bb_probes);}
  else if(bb_tiles_dirty){for(i=0;i!=sizeof(label_slots);++i)set_bkg_data(label_slots[i],1,bb_font+label_slots[i]*16u);set_bkg_data(UI_FOCUS_EXTRA,4,bb_font+UI_FOCUS_EXTRA*16u);}
@@ -120,7 +119,7 @@ static void browser(uint8_t fresh) {
  }
  ui_focus(selected_test&3u,fresh);
  if(fresh){
-  fill_bkg_rect(0,17,20,1,(UI_CHROME+10));ui_text(7,17,group==2?"3 of 3":group==1?"2 of 3":"1 of 3");
+  fill_bkg_rect(0,17,20,1,0);ui_text(7,17,group==2?"3 of 3":group==1?"2 of 3":"1 of 3");
   /* A redraw outlasts one animation pose, so show the current one when uncovering. */
   ui_scene(scene,(uint8_t)(bb_frame()/12u)&3u);ui_reveal();
  }
@@ -185,7 +184,11 @@ static void rumble_run(void) {
 void main(void) {
  uint8_t keys,previous=0,pressed,phase=255,last_group=0;
  NR52_REG=0;
- if(_cpu==CGB_TYPE){if(LCDC_REG&0x80u)vsync();set_bkg_palette(0,4,breakfast);}
+ /* Nothing else writes tile data to VRAM bank 1, so the logo loads once.
+    Without a boot ROM the LCD starts with $9000 tile addressing, so select
+    $8000 first or the tiles land where the map never reads them. */
+ LCDC_REG|=0x10u;
+ if(_cpu==CGB_TYPE){if(LCDC_REG&0x80u)vsync();set_bkg_palette(0,4,breakfast);VBK_REG=1;set_bkg_data(0,BB_LOGO_TILES,bb_logo_tiles);VBK_REG=0;}
  DISPLAY_ON;
  browser(1);
 #ifdef BB_AUTORUN

@@ -7,6 +7,10 @@ a new screen appears once it is fully drawn. A starts an activity; B stops it or
 returns. Presets configure a test without starting it. Continue preserves
 custom settings. A confirmation starts on No.
 
+Each test page is a box. Its title and page count sit in the top border, and
+what the test is doing, such as Stopped or Running, sits in the bottom border.
+A line under the box adds one more reading.
+
 Platform, Link, Rumble, Buttons and Flicker use A+B+Start+Select to open a
 return dialog. Continue is selected first; Test menu returns to the browser.
 Stop Link or Rumble before opening it. Buttons requires the chord to be held
@@ -14,18 +18,21 @@ for at least 60 frames so each of its buttons can be tested separately.
 
 ## Platform
 
-The chip diagram shows the twelve captured probe results. Filled ports passed;
-a crossed port failed. The summary reports hardware class and any matching
-emulator signature. A or Select opens the evidence.
+The chip diagram shows the thirteen captured probe results. Filled ports
+passed; a crossed port failed. The summary reports hardware class and any
+matching emulator signature. A or Select opens the evidence.
 
-Left/Right chooses a probe. A switches between failed probes and all twelve.
+Left/Right chooses a probe. A switches between failed probes and all thirteen.
 Select switches to name evidence, and B returns to the diagram. Each probe
 shows expected bytes, captured reads, and what it checks. KEY1 compares its
-unused-bit mask. RP accepts three documented signatures. Monochrome hardware
-reports that the CGB probes do not apply.
+unused-bit mask. RP accepts three documented signatures. The thirteenth, the
+port over the chip, writes to VRAM and to palette RAM while a line is drawn
+and reads both back: a console drops the writes, so each read is 00, and 01
+means the write landed. Monochrome hardware reports that the CGB probes do
+not apply.
 
-The classification follows Platform Detect v1.4's ordered rules. A named host
-can pass all twelve probes, and an unknown signature can still fail probes.
+The classification follows Platform Detect v1.5's ordered rules. A named host
+can pass all thirteen probes, and an unknown signature can still fail probes.
 These register signatures do not guarantee host identity.
 
 ## Link
@@ -41,9 +48,16 @@ the test continues.
 
 The traffic instrument advances with accepted packets. Detailed pages retain
 CRC, sequence, payload, overflow, underrun, timeout, barrier, state, and order
-errors. Timing includes reply, gap, recovery, and deadline readings. The first
-failure keeps its expected and received values. No peer is Wait, and a clean
-run needs ten minutes before reporting Pass.
+errors. Sequence counts packets that went missing without being rejected, so a
+packet that failed its CRC counts once, under CRC. Timing includes reply, gap,
+recovery, and deadline readings, and its second page counts dropouts: runs of
+16 or more $FF bytes after the first packet, which is what an end reads when
+the other stops driving the wire. Only the host sees a dropout; the peer sees
+a gap. The reply budget depends only on the rate, so a slower CPU or a heavier
+profile can make most updates late with no fault on the wire. Compare late
+updates only between runs with the same settings. The first failure keeps its
+expected and received values. No peer is Wait, and a clean run needs ten
+minutes before reporting Pass.
 
 ## Rumble (MBC5)
 
@@ -227,8 +241,9 @@ physical battery retention.
 
 Presets cover a quick check, long soak, output load, and read-only SRAM watch.
 Choose 1/5/10/30/60 minutes or continuous operation, three loads, normal/double
-CPU speed, and stop/continue on failure. The instrument shows elapsed time,
-completed cycles, error count, and the ROM bank being checked.
+CPU speed, and stop/continue on failure. The instrument shows elapsed time
+(minutes and seconds, then hours and minutes after the first hour), completed
+cycles, error count, and the ROM bank being checked.
 
 Burn In compares CRC-16 checksums across all eight ROM banks and writes/reads
 256 bytes of scratch RAM. The CRC table and cartridge global checksum are
@@ -270,9 +285,13 @@ bursts. A starts or stops. Left/Right changes receive/transmit mode; Select
 opens ON/OFF width, pulse count, and repetition interval. B disables the IR
 port, restores CPU speed, and returns. DMG and GBA report no CGB IR port.
 
-Receive mode polls throughout a frame and counts observed active edges.
-Transmit mode counts the bursts it sends. Counts can miss activity while the
-interface updates and are not protocol decoding or a peer acknowledgement.
+Receive mode reads the port every 40 to 56 CPU cycles with interrupts held
+off and counts each time light arrives. It counts every pulse when ON and OFF
+are each at least 2 steps; at ON 1 it misses some. It stops reading once a
+frame, for about 0.7 ms of VBlank work, and for up to two frames while the
+screen shows a new count. A burst that arrives then loses the pulses sent
+during it. Transmit mode counts the bursts it sends. Counts are not protocol
+decoding or a peer acknowledgement.
 A constant IR source can become ambient to the receiver, so transmit mode
 uses bursts.
 

@@ -25,7 +25,14 @@ void ui_count(uint8_t x,uint8_t y,uint32_t n,uint8_t width) {
  uint8_t end=ui_number(x,y,n);if(end<x+width)fill_bkg_rect(end,y,x+width-end,1,0);
 }
 void ui_line(uint8_t y,const char *text) {ui_cell(0,y,0);ui_pad(1,y,text,19);}
-void ui_screen(const char *title,const char *page) {ui_init();ui_text(1,4,title);ui_text(16,4,page);ui_box(5,14);}
+/* The title and page count sit in the body box's top border, each with a
+   blank cell either side so the border never touches a letter. */
+void ui_frame(uint8_t bottom,const char *title,const char *page) {
+ uint8_t n=strlen(page);
+ ui_box(UI_TOP,bottom);ui_cell(1,UI_TOP,0);ui_text(2,UI_TOP,title);ui_cell(2u+strlen(title),UI_TOP,0);
+ if(n){ui_cell(17u-n,UI_TOP,0);ui_text(18u-n,UI_TOP,page);ui_cell(18,UI_TOP,0);}
+}
+void ui_screen(const char *title,const char *page) {ui_init();ui_frame(UI_BOTTOM,title,page);}
 /* A settings page redraws only when another screen or page was shown since;
    otherwise its fields are rewritten in place. Returns 1 after a redraw. */
 uint8_t ui_page(const char *title,const char *page,uint8_t key) {
@@ -34,19 +41,40 @@ uint8_t ui_page(const char *title,const char *page,uint8_t key) {
  ui_screen(title,page);revision=ui_revision;shown=key;return 1;
 }
 void ui_field(uint8_t row,const char *label,const char *value,uint8_t selected) {
- uint8_t y=6u+2u*row;
+ uint8_t y=UI_FIELD+2u*row;
  ui_cell(1,y,selected?UI_CURSOR:0);ui_pad(2,y,label,9);ui_pad(11,y,value,8);
 }
 void ui_value(uint8_t row,const char *label,uint32_t value,uint8_t selected) {char s[11];if(value>99999999UL){ui_field(row,label,"99M+",selected);return;}ui_decimal(s,value);ui_field(row,label,s,selected);}
-void ui_status(const char *text) {ui_line(16,text);}
+/* The status sits in the bottom border as the title does in the top one.
+   A shorter status puts back the border a longer one covered. */
+void ui_status(const char *text) {
+ static uint16_t revision;static uint8_t shown;
+ uint8_t n=strlen(text);
+ if(revision!=ui_revision)shown=0;
+ if(n){ui_cell(1,UI_BOTTOM,0);ui_text(2,UI_BOTTOM,text);ui_cell(2u+n,UI_BOTTOM,0);}
+ if(shown>n)fill_bkg_rect(n?3u+n:1u,UI_BOTTOM,n?shown-n:shown+2u,1,UI_CHROME+0);
+ shown=n;revision=ui_revision;
+}
+/* A reading for the right end of the bottom border, such as a timer. */
+void ui_corner(const char *text) {
+ static uint16_t revision;static uint8_t shown;
+ uint8_t n=strlen(text);
+ if(revision!=ui_revision)shown=0;
+ if(shown>n)fill_bkg_rect(17u-shown,UI_BOTTOM,shown-n,1,UI_CHROME+0);
+ ui_cell(17u-n,UI_BOTTOM,0);ui_text(18u-n,UI_BOTTOM,text);ui_cell(18,UI_BOTTOM,0);
+ shown=n;revision=ui_revision;
+}
+/* A button bounces as it closes, so one released reading proves nothing: the
+   screen after a list would take the still-held button as a new press. */
+static void ui_release(void) {uint8_t quiet=0;while(quiet<3u){vsync();quiet=joypad()?0:quiet+1u;}}
 uint8_t ui_confirm(const char *message) {
  uint8_t key,old=0,yes=0;
- ui_screen("Confirm","");ui_text((20u-strlen(message))/2u,6,message);ui_text(5,9,"No");ui_text(5,12,"Yes");
- while(joypad())vsync();
+ ui_screen("Confirm","");ui_text((20u-strlen(message))/2u,UI_FIELD,message);ui_text(5,9,"No");ui_text(5,12,"Yes");
+ ui_release();
  for(;;){vsync();key=joypad();ui_cell(3,9,yes?0:UI_CURSOR);ui_cell(3,12,yes?UI_CURSOR:0);
   if((key&~old)&(J_UP|J_DOWN))yes^=1u;
   if((key&~old)&J_B){yes=0;break;}if((key&~old)&J_A)break;old=key;}
- while(joypad())vsync();return yes;
+ ui_release();return yes;
 }
 uint16_t bb_rom_crc(uint8_t bank,uint16_t offset,uint16_t count,uint16_t crc) NONBANKED {
  uint8_t saved=CURRENT_BANK,value;uint16_t address;
@@ -69,13 +97,13 @@ void bb_cpu(uint8_t fast) NONBANKED {
 
 uint8_t ui_presets(const char *title,const char *const *names,const char *const *notes,uint8_t seen) {
  uint8_t i,pick=seen?0:1,key,old=0,n;
- ui_init();ui_text(1,4,title);ui_box(5,16);
- for(i=0;i<5;++i)ui_text(3,6+i*2,i?names[i]:(seen?"Continue":"Manual"));
- ui_cell(1,6+pick*2,UI_CURSOR);ui_text(1,17,notes[pick]);while(joypad())vsync();
+ ui_init();ui_frame(UI_BOTTOM,title,"");
+ for(i=0;i<5;++i)ui_text(3,UI_FIELD+i*2,i?names[i]:(seen?"Continue":"Manual"));
+ ui_cell(1,UI_FIELD+pick*2,UI_CURSOR);ui_text(1,UI_DETAIL,notes[pick]);ui_release();
  for(;;){vsync();key=joypad();n=key&~old;old=key;
   if(n&J_B){pick=255;break;}if(n&J_A)break;
-  if(n&(J_UP|J_DOWN)){ui_cell(1,6+pick*2,0);pick=(pick+((n&J_UP)?4u:1u))%5u;ui_cell(1,6+pick*2,UI_CURSOR);ui_line(17,notes[pick]);}
- }while(joypad())vsync();return pick;
+  if(n&(J_UP|J_DOWN)){ui_cell(1,UI_FIELD+pick*2,0);pick=(pick+((n&J_UP)?4u:1u))%5u;ui_cell(1,UI_FIELD+pick*2,UI_CURSOR);ui_line(UI_DETAIL,notes[pick]);}
+ }ui_release();return pick;
 }
 
 uint16_t bb_frame(void) NONBANKED {uint16_t value;CRITICAL {value=sys_time;}return value;}

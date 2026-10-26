@@ -18,6 +18,7 @@ all:
 	mkdir -p $(BUILD_DIR)
 	$(PYTHON) tools/art.py
 	$(PYTHON) tools/scenes.py
+	$(PYTHON) tools/logo.py
 	$(PYTHON) tools/flicker_art.py
 	$(PYTHON) tools/controls_art.py
 	$(PYTHON) tools/hardware_art.py

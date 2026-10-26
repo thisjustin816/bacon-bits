@@ -30,10 +30,10 @@ for load in ('Light','Medium','High'):
   c.go(7);c.preset(1);set_load(c,load);c.press('a')
   shown=set();blank=0
   for _ in range(660):
-   c.tick();found=re.match(r'\s*(\d+)',c.row(7)[10:19])
-   if found:shown.add(int(found[1]))
+   c.tick();found=re.match(r'\s*(\d+):(\d\d)',c.row(7)[10:19])
+   if found:shown.add(int(found[1])*60+int(found[2]))
    # A redraw rewrites each count in place, so no frame shows one missing.
-   blank+=any(c.row(y)[10]==' ' for y in (7,10,13))
+   blank+=any(c.row(y)[x]==' ' for x,y in ((10,7),(10,10),(17,12)))
   assert not blank,(load,'Frames with a blank Seconds, Cycles or Errors count',blank)
   # Seconds redraw at least every 32 frames, so none of the first ten is skipped.
   assert set(range(1,11))<=shown,(load,'Seconds shown',sorted(shown))

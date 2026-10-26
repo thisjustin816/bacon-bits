@@ -8,7 +8,6 @@ uint8_t bb_joypad(void) NONBANKED;
 #define joypad() bb_joypad()
 #define UI_FONT_COUNT 96
 #define UI_CHROME 96
-#define UI_RULE 106
 #define UI_CURSOR 103
 #define UI_EMPTY 105
 #define UI_PASS 107
@@ -18,7 +17,13 @@ uint8_t bb_joypad(void) NONBANKED;
 #define UI_ART 112
 #define UI_FOCUS 232
 #define UI_FOCUS_EXTRA 61
-#define UI_BRAND 240
+/* Screen rows: the box's top border holds the title, fields start below a
+   blank row, the bottom border holds the status, and one detail line sits
+   under the box with a blank row between. */
+#define UI_TOP 4
+#define UI_FIELD 6
+#define UI_BOTTOM 15
+#define UI_DETAIL 17
 #ifdef BB_MBC3
 #define BB_RAM_BANKS 4
 #else
@@ -39,9 +44,11 @@ void ui_pad(uint8_t x,uint8_t y,const char *s,uint8_t width);
 void ui_count(uint8_t x,uint8_t y,uint32_t n,uint8_t width);
 void ui_line(uint8_t y,const char *text);
 void ui_screen(const char *title,const char *page);
+void ui_frame(uint8_t bottom,const char *title,const char *page);
 void ui_field(uint8_t row,const char *label,const char *value,uint8_t selected);
 void ui_value(uint8_t row,const char *label,uint32_t value,uint8_t selected);
 void ui_status(const char *text);
+void ui_corner(const char *text);
 uint8_t ui_confirm(const char *message);
 uint8_t ui_presets(const char *title,const char *const *names,const char *const *notes,uint8_t seen);
 uint16_t bb_rom_crc(uint8_t bank,uint16_t offset,uint16_t count,uint16_t crc) NONBANKED;

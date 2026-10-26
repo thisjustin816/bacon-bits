@@ -48,11 +48,11 @@ void sram_run(void) BANKED {uint8_t key,old=0,n,sel=0,page=0,active=0,done=0,red
   else if((uint16_t)(bb_frame()-since)>=(uint16_t)ram_delay*60u){if(ram_errors || (limit<3 && passes>=(limit==0?1UL:limit==1?10UL:100UL))){active=0;done=1;result(page,passes);}else sram_begin(ram_mode==2);}
   if(active && (uint16_t)(bb_frame()-last_draw)>=16u){
    last_draw=bb_frame();
-   ui_hardware(3,0);ui_pad(10,6,ram_stage==1?"Write":ram_stage==2?"Verify":"Pause",8);
+   ui_hardware(3,0);ui_pad(10,7,ram_stage==1?"Write":ram_stage==2?"Verify":"Pause",8);
    {uint8_t i;for(i=0;i<ram_banks;++i)ui_cell(1+i,7,ram_errors && ram_first_bank==i?UI_FAIL:ram_bank==i?UI_ACTIVE:ram_bank>i?UI_PASS:UI_EMPTY);}
-   ui_pad(10,8,"Bank",5);ui_count(15,8,ram_bank,3);
-   ui_pad(10,10,"Errors",8);ui_count(10,12,ram_errors,8);
-   progress=ram_stage==1?(uint32_t)ram_bank*8192u+ram_address-(ram_bank?32u:0u):ram_checked;ui_cell(0,15,0);ui_count(1,15,progress,9);ui_pad(10,15,ram_stage==1?"Written":"Verified",10);
+   ui_pad(10,9,"Bank",5);ui_count(15,9,ram_bank,3);
+   ui_pad(10,11,"Errors",7);ui_count(17,11,ram_errors,2);
+   progress=ram_stage==1?(uint32_t)ram_bank*8192u+ram_address-(ram_bank?32u:0u):ram_checked;ui_cell(0,UI_DETAIL,0);ui_count(1,UI_DETAIL,progress,9);ui_pad(10,UI_DETAIL,ram_stage==1?"Written":"Verified",10);
    ui_status(ram_stage==1?"Writing pattern":ram_stage==2?"Verifying data":"Waiting");
   }continue;
  }

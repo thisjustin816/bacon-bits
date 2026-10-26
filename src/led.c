@@ -26,7 +26,7 @@ static void view(uint8_t detail,uint8_t row){
  uint8_t red=led_active?led_sent[0]:led_red,green=led_active?led_sent[1]:led_green,blue=led_active?led_sent[2]:led_blue;
  if(last_page!=detail){ui_screen("Cart LED",detail?"Set":"");last_page=detail;}
  if(detail){ui_value(0,"Red",led_red,row==0);ui_value(1,"Green",led_green,row==1);ui_value(2,"Blue",led_blue,row==2);ui_value(3,"Every fr",led_period,row==3);}
- else {ui_hardware(0,0);ui_text(11,6,"Red");ui_count(11,7,red,7);ui_text(11,9,"Green");ui_count(11,10,green,7);ui_text(11,12,"Blue");ui_count(11,13,blue,7);}
+ else {ui_hardware(0,0);ui_text(10,7,"Red");ui_count(16,7,red,3);ui_text(10,9,"Green");ui_count(16,9,green,3);ui_text(10,11,"Blue");ui_count(16,11,blue,3);}
  if(!detail && _cpu==CGB_TYPE){palette_color_t colors[4]={RGB(31,30,27),0,RGB(23,9,7),RGB(8,5,4)};
   colors[1]=led_active?RGB(red>>3,green>>3,blue>>3):RGB(12,11,10);vsync();set_bkg_palette(6,1,colors);VBK_REG=1;fill_bkg_rect(1,6,8,8,6);VBK_REG=0;}
  ui_status(led_active?"Command sent":"Output off");

@@ -4,6 +4,7 @@ import argparse,ctypes,re,shutil,tempfile,json,hashlib,collections,itertools
 from pyboy import PyBoy
 from PIL import Image,ImageDraw
 from libretro import SameBoy
+from header import pyboy_header,vram_header
 ROOT=Path(__file__).resolve().parents[1]
 a=argparse.ArgumentParser();a.add_argument('--core',type=Path);a.add_argument('--rom',type=Path);args=a.parse_args()
 OUT=ROOT/'build'/('flicker-sameboy' if args.core else 'flicker-pyboy');OUT.mkdir(exist_ok=True)
@@ -46,7 +47,7 @@ for variant in ['', 'mbc3']:
      tick()
     assert get('flicker_ready'),('Full view did not finish preparing',get('flicker_cell'),get('flicker_running'))
     tick(5)
-   def stop():press('b');assert not get('flicker_ready') and not get('flicker_running');assert 'Bacon Bit Bench' in text()
+   def stop():press('b');assert not get('flicker_ready') and not get('flicker_running');assert vram_header(p.vram(),cgb) if args.core else pyboy_header(p,cgb)
    dma=[]
    if not args.core:
     def dma_hook(_):dma.append((p.memory[0xff44],p.memory[0xff41]&3))

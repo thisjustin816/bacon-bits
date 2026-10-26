@@ -42,10 +42,10 @@ void rumble_view(void) BANKED {
    ui_pad(8,9,"",2);ui_pad(10,9,s,9);}
   width=(R[3]==1 || R[3]==2)?R[5]:8;
   nominal_ms=R[24]?(uint16_t)width*R[2]:((uint32_t)width*R[25]*16742UL+500u)/1000u;
-  end=ui_decimal(s,nominal_ms);*end++=' ';*end++='m';*end++='s';*end=0;ui_pad(10,10,s,9);
+  end=ui_decimal(s,nominal_ms);*end++=' ';*end++='m';*end++='s';*end=0;ui_corner(s);
   if(trace_changed)waveform();
-  if(R[3]==1 || R[3]==2){ui_cell(0,15,0);ui_pad(1,15,"Felt at",11);if(R[31+(R[3]==2)])ui_count(12,15,R[31+(R[3]==2)],8);else ui_pad(12,15,"None",8);}
-  else ui_line(15,"");
+  if(R[3]==1 || R[3]==2){ui_cell(0,UI_DETAIL,0);ui_pad(1,UI_DETAIL,"Felt at",11);if(R[31+(R[3]==2)])ui_count(12,UI_DETAIL,R[31+(R[3]==2)],8);else ui_pad(12,UI_DETAIL,"None",8);}
+  else ui_line(UI_DETAIL,"");
  }
  ui_status(R[17]?"Running":detail?"Timing settings":"Stopped");
  /* The assembly loop reads keys itself, so uncover the screen here. */

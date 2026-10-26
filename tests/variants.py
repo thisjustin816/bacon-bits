@@ -1,6 +1,7 @@
 """Open every release entry on both CGB and DMG without automatic outputs."""
 from pathlib import Path
 from pyboy import PyBoy
+from header import pyboy_header,vram_header
 import re,tempfile,shutil
 ROOT=Path(__file__).resolve().parents[1]
 for variant,rom in [('mbc5',ROOT/'build/bacon-bits.gbc'),('mbc3',ROOT/'build/mbc3/bacon-bits.gbc')]:
@@ -17,8 +18,8 @@ for variant,rom in [('mbc5',ROOT/'build/bacon-bits.gbc'),('mbc3',ROOT/'build/mbc
      for _ in range(selected):press('right')
      assert get('selected_test')==selected;press('a');p.tick(90,True)
      if 'PRESETS' in text():press('a');p.tick(60,True)
-     assert 'BACON BIT BENCH' in text(),(variant,cgb,selected,text())
-     assert len(p.screen.image.convert('RGB').getcolors(65536))>=3,(variant,cgb,selected)
+     assert pyboy_header(p,cgb),(variant,cgb,selected,text())
+     assert len(p.screen.image.convert('RGB').getcolors(65536))>=2,(variant,cgb,selected)
      if selected==1:assert not get('running')
      if selected==2:assert 'CLOCK' in text() if variant=='mbc3' else 'RUMBLE' in text()
      if selected==3:assert not get('tone_playing')

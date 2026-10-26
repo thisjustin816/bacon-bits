@@ -42,6 +42,6 @@ try:
  c.p.memory[2,0xa500]^=1
  wait(c,lambda:not c.get('burn_running'),32000);c.tick(60)
  assert c.get('burn_first_kind')==3 and c.get('burn_first_bank')==2 and c.get('burn_first_offset',2)==0x500,(c.get('burn_first_kind'),c.get('burn_first_bank'),c.get('burn_first_offset',2))
- assert c.get('burn_ram_status')==3 and 'SRAM fail' in c.row(15),c.text()
+ assert c.get('burn_ram_status')==3 and 'SRAM fail' in c.row(17),c.text()
  print('Up/Down order, ten SRAM cycle passes, Unknown after a stopped write, and Burn In SRAM watch pass and fail passed')
 finally:c.close()

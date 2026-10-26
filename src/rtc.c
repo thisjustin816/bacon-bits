@@ -86,7 +86,7 @@ static void view(uint8_t page,uint8_t row){
  uint16_t changed=rtc_mode==2?rtc_halt_errors:rtc_latch_errors;
  if(last_page!=page){ui_screen("Clock",page?"Set":"");last_page=page;}
  if(!page){ui_hardware(2,rtc_data[0]&3u);pair(10,7,rtc_data[2]%24);ui_text(12,7,":");pair(13,7,rtc_data[1]%60);ui_text(15,7,":");pair(16,7,rtc_data[0]%60);
-  ui_text(10,9,"Day");ui_count(14,9,(uint16_t)rtc_data[3]+((uint16_t)(rtc_data[4]&1u)<<8),3);ui_pad(10,11,!rtc_valid?"Unknown":rtc_data[4]&64?"Halted":"Ticking",8);ui_line(15,!rtc_valid?"Flags unknown":rtc_data[4]&128?"Carry set":"Carry clear");
+  ui_text(10,9,"Day");ui_count(14,9,(uint16_t)rtc_data[3]+((uint16_t)(rtc_data[4]&1u)<<8),3);ui_pad(10,11,!rtc_valid?"Unknown":rtc_data[4]&64?"Halted":"Ticking",8);ui_line(UI_DETAIL,!rtc_valid?"Flags unknown":rtc_data[4]&128?"Carry set":"Carry clear");
  }else if(page==1){ui_field(0,"Mode",rtc_mode==0?"Live":rtc_mode==1?"Latch":rtc_mode==2?"Halt":"Rollover",row==0);ui_value(1,"Window s",rtc_window,row==1);ui_value(2,"Seed day",rtc_day,row==2);ui_value(3,rtc_mode==1 || rtc_mode==2?"Samples":"Ticks",rtc_mode==1 || rtc_mode==2?rtc_observations:rtc_ticks,0);}
  else if(page==2){ui_value(0,"Hour",rtc_hour,row==0);ui_value(1,"Minute",rtc_minute,row==1);ui_value(2,"Second",rtc_second,row==2);ui_field(3,"Halt",rtc_seed_halt?"Yes":"No",row==3);}
  else {ui_field(0,"Carry",rtc_seed_carry?"Set":"Clear",row==0);ui_value(1,"Changed",changed,0);ui_value(2,"Flags",rtc_data[4],0);ui_field(3,"Restore",rtc_dirty?"Pending":"Clean",0);}

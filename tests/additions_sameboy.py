@@ -3,6 +3,7 @@ from pathlib import Path
 import re,argparse
 from libretro import SameBoy
 from display_assertions import check_pattern
+from header import vram_header
 ROOT=Path(__file__).resolve().parents[1]
 a=argparse.ArgumentParser();a.add_argument('--core',required=True,type=Path);args=a.parse_args()
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'build/bacon-bits.noi').read_text(),re.M)}
@@ -18,7 +19,8 @@ def launch(n):
 def text():
  v=p.vram();return '\n'.join(''.join(chr(t+32).upper() if t<96 else '#' for t in v[0x1800+y*32:0x1800+y*32+20]) for y in range(18))
 try:
- p.tick(600);launch(0);before=p.vram();press=p.press;press('select');assert 'PROBE DETAILS' in text();p.image.save(ROOT/'build/sameboy-probe.png')
+ # SameBoy starts without a boot ROM, so the logo must load with no help from it.
+ p.tick(600);assert vram_header(p.vram(),True),'Color header missing at boot';launch(0);before=p.vram();press=p.press;press('select');assert ' PROBE ' in text().split('\n')[4];p.image.save(ROOT/'build/sameboy-probe.png')
  press('select');assert 'NO KNOWN MATCH' in text();p.image.save(ROOT/'build/sameboy-signature.png');press('b');p.tick(120);after=p.vram()
  for y in range(18):
   assert before[0x1800+y*32:0x1800+y*32+20]==after[0x1800+y*32:0x1800+y*32+20]

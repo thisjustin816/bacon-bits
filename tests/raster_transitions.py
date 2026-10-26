@@ -1,4 +1,4 @@
-"""The persistent brand must survive navigation and diagnostic returns on the LCD."""
+"""The persistent header must survive navigation and diagnostic returns on the LCD."""
 from pathlib import Path
 import argparse,json,hashlib,re
 from PIL import Image
@@ -14,11 +14,11 @@ for variant in ['', 'mbc3']:
   def get(name,size=1):return int.from_bytes(p.read(syms['_'+name],size),'little')
   events=[];shots=[]
   try:
-   p.tick(600);brand=p.image.crop((0,0,160,32)).tobytes()
+   p.tick(600);header=p.image.crop((0,0,160,24)).tobytes()
    def tick(n):
     for _ in range(n):
      p.tick()
-     assert p.image.crop((0,0,160,32)).tobytes()==brand,(variant,model,p.frame,'Persistent brand corrupted')
+     assert p.image.crop((0,0,160,24)).tobytes()==header,(variant,model,p.frame,'Persistent header corrupted')
    def press(k):
     events.append({'frame':p.frame,'key':k});p.held={p.BUTTONS[k]};tick(8);p.held=set();tick(40)
    # All page changes, including wraparound, and all diagnostic entrances.
@@ -49,4 +49,4 @@ for variant in ['', 'mbc3']:
    raise
   finally:p.close()
  if args.rom:break
-print('Persistent brand stayed intact in every sampled navigation and diagnostic transition')
+print('Persistent header stayed intact in every sampled navigation and diagnostic transition')

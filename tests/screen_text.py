@@ -21,9 +21,14 @@ def run(cgb):
  try:
   # Every Select page of the settings screens reached through presets.
   settings_pages(c,3,2,2);settings_pages(c,5,1,2);settings_pages(c,6,2,2);settings_pages(c,7,1,2);settings_pages(c,10,1,4)
+  # Flicker: the speed unit sits on the Speed row.
+  c.go(10);c.preset(1);c.press('select');c.press('select')
+  speed=[y for y in range(18) if c.row(y)[2:7]=='Speed']
+  assert speed and 'px/' in c.row(speed[0])[13:19],('Speed unit off its row',c.text())
+  c.press('b');c.tick(30)
   # Buttons timing: separated rows and one readable footer.
   c.go(4);c.preset(3);rows_separated(c,'buttons timing')
-  assert c.row(16).strip('# ')=='Short at most 1 fr',c.row(16)
+  assert c.row(15).strip('# ')=='Taps up to 1 fr',c.row(15)
   c.leave()
   # Link: every detail page, and a minutes:seconds timer at the right edge.
   c.go(1);c.press('a');c.tick(60);c.press('start');c.tick(130)
@@ -39,7 +44,7 @@ def run(cgb):
    # Infrared: switching from Transmit back to Receive leaves no old letters.
    c.go(9);c.preset(4);c.press('a');c.tick(400);assert c.get('ir_bursts',2)>9
    c.press('a');c.press('left')
-   assert c.row(6)[2:9]=='Receive' and not c.row(6)[9].isalpha(),('Stale mode text',c.row(6))
+   assert c.row(7)[11:18]=='Receive' and not c.row(7)[18].isalpha(),('Stale mode text',c.row(7))
    assert c.row(10)[10:19]==' Edges   ',('Stale counter label',c.row(10))
    assert c.row(12)[10:19]==' 0       ',('Stale counter digits',c.row(12))
    c.press('b')
