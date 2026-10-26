@@ -4,12 +4,14 @@ Two benches run Link under All stress over the free-running cable of
 two_consoles.py. Each console's frame counter starts 64 frames short of its
 wrap, so ordinary intervals cross it, and those must not read as gaps. Two
 seconds in, the cable is unplugged and each counter moves forward 20000
-frames at a time, four times, as 22 minutes of silence would. Then the cable
-goes back in. The gap, the recovery and the host's wait for a reply must each
-count all of the 80000 frames, not the remainder past 65536, and the first
-failure recorded during the silence must still be there afterwards. That
-failure is no sync, or a CRC error when the cable comes out mid-packet and
-the rest of the packet reads as $FF.
+frames at a time, five times, as 28 minutes of silence would. More than 65536
+of those frames pass after the first jump has set off no sync, so a clock
+sampled only while packets flow or the no-sync check waits would wrap. Then
+the cable goes back in. The gap, the recovery and the host's wait for a reply
+must each count all of the 100000 frames, not the remainder past 65536, and
+the first failure recorded during the silence must still be there
+afterwards. That failure is no sync, or a CRC error when the cable comes out
+mid-packet and the rest of the packet reads as $FF.
 """
 from pathlib import Path
 import shutil,sys,tempfile
@@ -20,7 +22,7 @@ from rom_helpers import configure
 from two_consoles import Pair,FRAME,run_frames,press
 from link_pair import LINK_TEST,run_frames_paired
 
-JUMP,JUMPS=20000,4
+JUMP,JUMPS=20000,5
 CRC,NO_SYNC=1,5
 
 def main():
@@ -55,7 +57,14 @@ def main():
    wrapped=[get(pb,'sys_time',2)<0x8000 for pb in pair.machines]
    pair.cable.connected=False
    run_frames_paired(pair,4)
+   host=pair.machines[0]
+   # A jump inside the host's byte wait would read as a serial hang, which
+   # real time cannot cause. The host is outside that wait while it waits for
+   # VBlank or runs the delay after a byte, so the clocks move then.
+   def span(name):start=syms[name];return start,min(a for a in syms.values() if a>start)
+   outside=[span('_wait_vbl_done'),span('_delay')]
    for _ in range(JUMPS):
+    pair.run_until(lambda:any(a<=host.mb.cpu.PC<b for a,b in outside),8*FRAME)
     for pb in pair.machines:set_time(pb,get(pb,'sys_time',2)+JUMP)
     run_frames_paired(pair,2)
    first=[(get(pb,'first_code'),get(pb,'first_sec',4)) for pb in pair.machines]

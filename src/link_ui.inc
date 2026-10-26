@@ -44,7 +44,7 @@ static void link_snapshot(void) {
   if(snap_pending==1){s[0]='A';s[1]='c';s[2]='k';s[3]=' ';ui_decimal(s+4,snap_command);}
   ui_field(3,"Pending",snap_pending==1?(const char *)s:snap_pending?"Scene":"None",0);
  }else if(link_detail==6){
-  ui_field(0,"Rate",link_rates[snap_rate],0);if(running)service();
+  ui_field(0,"Rate",snap_host?link_rates[snap_rate]:"By host",0);if(running)service();
   ui_field(1,"Burst",snap_host?burst_text(snap_burst):"By host",0);if(running)service();
   ui_field(2,"Idle",snap_host?idle_text(snap_rate,snap_idle):"By host",0);if(running)service();
   ui_field(3,"Masked",masked_text(snap_masked),0);
@@ -75,7 +75,7 @@ void draw(void) {
   else {ui_value(0,"Exp cmd",first_kind,0);if(running)service();ui_value(1,"Got cmd",first_got_kind,0);if(running)service();ui_value(2,"Test err",first_test_mismatch,0);if(running)service();ui_field(3,"Scene",scene_pending?"Loading":waiting?"Wait ack":"Ready",0);}
  }else if(page==2){
   if(!link_detail){ui_value(0,"Reply fr",max_reply,0);if(running)service();ui_value(1,"Gap fr",max_gap,0);if(running)service();ui_value(2,"Recov fr",max_recovery,0);if(running)service();ui_value(3,"Budget",reply_budget(),0);}
-  else {ui_field(0,"CPU",double_cpu?"Double":"Normal",0);if(running)service();if(host)ui_value(1,"Wire b/s",(fast?262144UL:8192UL)<<double_cpu,0);else ui_field(1,"Wire b/s","By host",0);if(running)service();ui_field(2,"Rate",link_rates[rate_mode],0);if(running)service();ui_value(3,"Dropouts",dropouts,0);}
+  else {ui_field(0,"CPU",double_cpu?"Double":"Normal",0);if(running)service();if(host)ui_value(1,"Wire b/s",(fast?262144UL:8192UL)<<double_cpu,0);else ui_field(1,"Wire b/s","By host",0);if(running)service();ui_field(2,"Rate",host?link_rates[rate_mode]:"By host",0);if(running)service();ui_value(3,"Dropouts",dropouts,0);}
  }else{
   if(profile){SHOW_SPRITES;ui_text(2,7,"Shared ball");}else ui_text(2,8,"No shared ball");
  }

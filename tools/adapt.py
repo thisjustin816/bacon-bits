@@ -79,7 +79,7 @@ a=p.index('void draw_menu_row(uint8_t r)');b=p.index('void change_setting',a)
 p=p[:a]+'''static const char *const short_tests[]={"SUSTAIN","SCENE","UNEQUAL","BALL","ALL LOAD"};
 static const char *const short_rates[]={"PACED","BURST","FULL","CUSTOM"};
 void draw_menu_row(uint8_t r) {
- if(cursor<ROW_CPU && r<ROW_CPU)ui_field(r,menu_label[r],r==ROW_TEST?short_tests[profile]:r==ROW_RATE?short_rates[rate_mode]:menu_value(r),cursor==r);
+ if(cursor<ROW_CPU && r<ROW_CPU)ui_field(r,menu_label[r],r==ROW_TEST?short_tests[profile]:r==ROW_RATE?(host?short_rates[rate_mode]:"BY HOST"):menu_value(r),cursor==r);
  else if(cursor>=ROW_CPU && r>=ROW_CPU)ui_field(r-ROW_CPU,r==ROW_MASK?"MASKED":menu_label[r],!host && (r==ROW_BURST || r==ROW_IDLE)?"BY HOST":menu_value(r),cursor==r);
 }
 '''+p[b:]

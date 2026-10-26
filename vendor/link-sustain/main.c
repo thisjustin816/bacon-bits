@@ -80,15 +80,15 @@ uint16_t frame_now(void) {
     return result;
 }
 
-/* sys_time wraps every 65536 frames. service() samples this at least once a
-   frame while a test runs, so each step is small and the sum never wraps
-   in a soak. */
-uint32_t frames(void) {
-    uint16_t now = frame_now();
+/* sys_time wraps every 65536 frames. service() advances this clock on every
+   frame it sees while a test runs, so each step is small and the sum never
+   wraps in a soak, whether or not packets flow. */
+uint32_t frames_at(uint16_t now) {
     clock_frames += (uint16_t)(now - clock_seen);
     clock_seen = now;
     return clock_frames;
 }
+uint32_t frames(void) { return frames_at(frame_now()); }
 
 void serial_isr(void) {
     uint8_t n;
@@ -204,12 +204,11 @@ uint16_t reply_budget(void) {
     return !n ? 60u : n == 1 ? 360u : n < 8 ? 480u / n : 60u;
 }
 
-void stress_service(uint8_t ticked) {
-    uint16_t now = frame_now();
+void stress_service(uint16_t now, uint8_t ticked) {
     if (scene_pending && (uint16_t)(now - scene_started) >= 6u) {
         scene_pending = 0; accept_update(pending_payload, pending_sequence);
     }
-    if (ticked && host && waiting && !deadline_latched && frames() - wait_started > reply_budget()) {
+    if (ticked && host && waiting && !deadline_latched && clock_frames - wait_started > reply_budget()) {
         ++deadlines; deadline_latched = 1;
     }
 }
@@ -310,20 +309,22 @@ void receive(void) {
     }
 }
 
-/* service() runs many times a frame while a byte is in flight, so the checks
-   on the 32-bit clock, which change only when a frame passes, wait for one. */
+/* service() runs many times a frame while a byte is in flight, so the 32-bit
+   clock and the checks on it, which change only when a frame passes, wait for
+   one. */
 void service(void) {
     uint16_t now = frame_now();
     uint8_t ticked = now != old_time;
+    if (ticked) frames_at(now);
     /* 70224 CPU cycles per frame; divide both clock constants by 16. */
     second_phase += (uint32_t)(uint16_t)(now - old_time) * 4389u;
     old_time = now;
     while (second_phase >= 262144ul) { second_phase -= 262144ul; ++elapsed_seconds; }
     refill(); receive();
-    if (profile) stress_service(ticked);
+    if (profile) stress_service(now, ticked);
     if (overflow) latch(6, expected);
     if (underrun) latch(7, expected);
-    if (ticked && !lost && frames() - last_good >= 120u) {
+    if (ticked && !lost && clock_frames - last_good >= 120u) {
         /* Before the first packet this is the wait for the other console,
            not a gap; the first packet clears it. */
         lost = 1; if (good) ++timeouts; latch(5, expected);
@@ -732,8 +733,8 @@ void change_setting(int8_t step) {
     case ROW_RATE: rate_mode = (rate_mode + 4u + step) % 4u; break;
     case ROW_LINK: fast ^= 1u; break;
     case ROW_CPU: if (_cpu == CGB_TYPE) double_cpu ^= 1u; break;
-    case ROW_BURST: make_custom(); burst_len = (burst_len + 17u + step) % 17u; break;
-    case ROW_IDLE: make_custom(); idle_step = (idle_step + 8u + step) % 8u; break;
+    case ROW_BURST: if (host) { make_custom(); burst_len = (burst_len + 17u + step) % 17u; } break;
+    case ROW_IDLE: if (host) { make_custom(); idle_step = (idle_step + 8u + step) % 8u; } break;
     default: masked_step = (masked_step + 8u + step) % 8u;
     }
 }

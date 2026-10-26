@@ -39,7 +39,8 @@ These register signatures do not guarantee host identity.
 
 Five profiles cover sustained packets, scene waits, unequal CPU load, a shared
 ball, and combined stress. Settings select host/peer, profile, pacing, wire
-clock, and CPU speed. Fast wire clock and double CPU speed require CGB hardware.
+clock, CPU speed, and lines masked each frame. Fast wire clock and double CPU
+speed require CGB hardware.
 
 Link opens on four presets, each setting everything but the role, which each
 console still picks. Soak runs All load in 4-byte bursts on the normal wire,
@@ -59,7 +60,8 @@ shows By host. Masked runs a number of scanlines with interrupts off each
 frame, from 1 to 64, on whichever end sets it. Masked lines on the peer that
 outlast the time between bytes leave bytes the peer is not ready for, and the
 run fails; the test's own work already spaces bytes a few milliseconds apart,
-so Idle alone rarely does. The timing page's second view shows the wire's bit rate on the host.
+so Idle alone rarely does. The timing page's second view shows the wire's bit
+rate on the host.
 
 Start begins the test. B stops it; Start then returns to settings. Left/Right
 changes between traffic, shared-state, timing, and ball pages. A or Up/Down
@@ -73,9 +75,10 @@ packet that failed its CRC counts once, under CRC. Timing includes reply, gap,
 recovery, and deadline readings, and its second page counts dropouts: runs of
 16 or more $FF bytes after the first packet, which is what an end reads when
 the other stops driving the wire. Only the host sees a dropout; the peer sees
-a gap. The reply budget depends only on the rate, so a slower CPU or a heavier
-profile can make most updates late with no fault on the wire. Compare late
-updates only between runs with the same settings. The first failure keeps its
+a gap. The reply budget depends only on the rate, and for Custom only on the
+burst, so a slower CPU, a heavier profile or a long idle can make most updates
+late with no fault on the wire. Compare late updates only between runs with
+the same settings. The first failure keeps its
 expected and received values. No peer is Wait, and a clean run needs ten
 minutes before reporting Pass. Waiting for the other console, however long,
 is not a failure; the first packet ends the wait.

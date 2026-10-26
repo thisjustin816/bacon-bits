@@ -104,8 +104,8 @@ interval clock. Custom bursts of 8 bytes with 488 us between them must stay
 clean and move at least 1.2 times the Burst preset's bytes. With 8 lines
 masked each frame on both ends, Burst must stay clean. The loop's own work
 spaces bytes about 6 ms apart even with no idle, so Custom All with no idle
-fails only once the peer masks 64 lines (7.3 ms) and loses edges. 64 masked lines on the host must stay clean and move fewer bytes than
-Full.
+fails only once the peer masks 64 lines (7.3 ms) and loses edges. 64 masked
+lines on the host must stay clean and move fewer bytes than Full.
 
 `link_snapshot` starts the peer 150 frames before the host. That wait must
 not count as a failure, a gap or a recovery, and the first packet must clear
@@ -119,10 +119,12 @@ test and must stay under 2500.
 `link_long` runs two benches under All stress with their frame counters
 starting just short of the 65536-frame wrap, so ordinary intervals cross
 it and must not read as gaps. It then unplugs the cable and moves each
-counter forward 80000 frames in steps, as 22 minutes of silence would. The
-gap, the recovery and the host's reply wait must each count all 80000
-frames, and the first failure must survive the recovery. On a build that
-kept these intervals in 16 bits it reads about 14500.
+counter forward 100000 frames in steps, as 28 minutes of silence would, more
+than 65536 of them after no sync has latched. The gap, the recovery and the
+host's reply wait must each count all 100000 frames, and the first failure
+must survive the recovery. A build that kept these intervals in 16 bits, or
+one that sampled its 32-bit clock only while packets flowed, reads about
+34500, the part past the wrap.
 
 `upstream` rebuilds and runs every vendored standalone suite. `link_combined`
 uses a separate autorun build and synthetic paired byte transport.

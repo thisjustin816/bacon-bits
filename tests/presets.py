@@ -53,7 +53,7 @@ for choice,want in LINK.items():
   def text():return '\n'.join(''.join(chr(t+32).upper() if t<96 else '#' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
   try:
    p.tick(240,True);press('right');press('a');p.tick(60,True);assert 'LINK PRESETS' in text() and 'MANUAL' in text(),text()
-   # A Custom pacing and a role left from earlier must not survive a preset.
+   # A Custom pacing left from earlier must not survive a preset; the role must.
    put('host',0);put('rate_mode',3);put('burst_len',9);put('idle_step',2);put('masked_step',7)
    for _ in range(choice-1):press('down')
    press('a');p.tick(60,True);assert 'LINK SETUP' in text(),text()
