@@ -42,7 +42,7 @@ static const char *elapsed(char *s,uint32_t seconds){char *end;uint16_t low;
  *end++='0'+low/10u;*end++='0'+low%10u;*end=0;return s;}
 static void status_body(uint8_t page){if(!page){uint8_t i;char s[12];
  ui_hardware(2,(uint8_t)burn_seconds&3u);
- ui_text(10,6,"Time");ui_pad(10,7,elapsed(s,burn_seconds),9);ui_text(10,9,"Cycles");ui_count(10,10,burn_cycles,9);ui_text(10,12,"Errors");ui_count(10,13,burn_errors,9);
+ ui_text(10,6,"Time");ui_pad(10,7,elapsed(s,burn_seconds),9);ui_text(10,9,"Cycles");ui_count(10,10,burn_cycles,9);ui_text(10,12,"Errors");ui_count(17,12,burn_errors,2);
  for(i=0;i<8;++i)ui_cell(10+i,14,burn_first_kind==1 && burn_first_bank==i?UI_FAIL:burn_bank==i?UI_PASS:UI_EMPTY);
 }else{if(burn_first_kind==4){ui_value(0,"RTC reg",burn_first_offset,0);ui_value(1,"Maximum",burn_first_expected,0);ui_value(2,"Read",burn_first_read,0);ui_value(3,"Errors",burn_errors,0);}
  else if(!burn_first_kind){ui_field(0,"Result","No error",0);ui_value(1,"Cycles",burn_cycles,0);ui_value(2,"Seconds",burn_seconds,0);ui_field(3,"Scratch","Pass",0);}

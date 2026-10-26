@@ -97,7 +97,8 @@ class Cable:
     armed, not by whether it has armed by the time the step reaches the
     edge. fault() flips a received bit or drops an edge at one end, and
     connected=False unplugs it: the clocking end reads 1 bits and the other
-    gets no edges."""
+    gets no edges. flip_in_packet() waits for a packet's sync bytes at one
+    end and flips a bit later in that packet."""
 
     def __init__(self) -> None:
         self.ends = []
@@ -109,12 +110,21 @@ class Cable:
         self.injected = []
         # How long before a byte's first edge the receiving end armed.
         self.slack = []
+        self.received = [[], []]
+        self.packet_fault = None
 
     def fault(self, kind: str, edge: int, receiver: int) -> None:
         """Flip the bit end receiver takes at absolute edge, or drop that edge."""
         if kind not in ('flip', 'drop') or receiver not in (0, 1) or edge <= self.edges:
             raise ValueError((kind, edge, receiver))
         self.faults[edge] = (kind, receiver)
+
+    def flip_in_packet(self, receiver: int, offset: int, sync=(0xD3, 0x91)) -> None:
+        """Flip the first bit of the byte offset bytes into the next packet
+        receiver takes, counting the first sync byte as 0."""
+        if receiver not in (0, 1) or offset < len(sync):
+            raise ValueError((receiver, offset))
+        self.packet_fault = (receiver, offset, tuple(sync))
 
     def advance(self, now: float) -> None:
         while True:
@@ -149,6 +159,12 @@ class Cable:
                     end.SC &= 0x7F
                     end.mb.cpu.set_interruptflag(8)
                     self.bytes[i] += 1
+                    self.received[i] = (self.received[i] + [end.SB])[-2:]
+                    if self.packet_fault and self.packet_fault[0] == i and tuple(self.received[i]) == self.packet_fault[2]:
+                        # Edges count only while the wire is clocked, so the
+                        # packet's later bytes follow eight edges apart.
+                        self.faults[self.edges + (self.packet_fault[1] - 2) * 8 + 1] = ('flip', i)
+                        self.packet_fault = None
             if sender.transfer_enabled:
                 sender.edge = at + sender.period
 

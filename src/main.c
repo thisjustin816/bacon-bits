@@ -52,8 +52,8 @@ typedef char label_slots_fit[(LABEL_SLOTS(CARD_0)+LABEL_SLOTS(CARD_1)+LABEL_SLOT
  && LABEL_SLOTS(CARD_8)+LABEL_SLOTS(CARD_9)+LABEL_SLOTS(CARD_10)<=sizeof(label_slots))?1:-1];
 void ui_cell(uint8_t x,uint8_t y,uint8_t tile) {set_bkg_tile_xy(x,y,tile);}
 void ui_text(uint8_t x,uint8_t y,const char *s) {while(*s) ui_cell(x++,y,(uint8_t)*s++-32u);}
-/* On Color the header is the logo, drawn from VRAM bank 1, which nothing
-   else loads; on monochrome it is the name in the shared font. */
+/* On Color the header is the logo, drawn from VRAM bank 1; on monochrome
+   it is the name in the shared font. */
 static void logo(void) {
  VBK_REG=1;fill_bkg_rect(0,0,20,3,0x09);VBK_REG=0;set_bkg_tiles(0,0,20,3,bb_logo_map);
 }
@@ -184,7 +184,10 @@ static void rumble_run(void) {
 void main(void) {
  uint8_t keys,previous=0,pressed,phase=255,last_group=0;
  NR52_REG=0;
- /* Nothing else writes tile data to VRAM bank 1, so the logo loads once. */
+ /* Nothing else writes tile data to VRAM bank 1, so the logo loads once.
+    Without a boot ROM the LCD starts with $9000 tile addressing, so select
+    $8000 first or the tiles land where the map never reads them. */
+ LCDC_REG|=0x10u;
  if(_cpu==CGB_TYPE){if(LCDC_REG&0x80u)vsync();set_bkg_palette(0,4,breakfast);VBK_REG=1;set_bkg_data(0,BB_LOGO_TILES,bb_logo_tiles);VBK_REG=0;}
  DISPLAY_ON;
  browser(1);

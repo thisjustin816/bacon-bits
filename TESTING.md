@@ -92,8 +92,8 @@ is shorter than the gap between reads.
 behaves as the hardware's does: the host's clock never waits, and an edge that
 finds the peer unarmed is lost. Clean runs at each pairing of CPU speeds, with
 the peer's frames half a frame apart and under all stress, must lose no edge
-and count no error. A flipped bit must count as one CRC error and no SEQ
-error, a dropped edge must recover without a two-second gap, and a 40-frame
+and count no error. A bit flipped in a packet's payload must count as one CRC
+error and no SEQ error, a dropped edge must recover without a two-second gap, and a 40-frame
 unplug must count one host dropout and packets missing at the peer.
 
 `upstream` rebuilds and runs every vendored standalone suite. `link_combined`

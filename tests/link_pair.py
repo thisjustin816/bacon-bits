@@ -6,8 +6,8 @@ never waits: an edge that finds the peer unarmed is lost, as on a real cable.
 Uses the two-console harness in two_consoles.py.
 
 Clean runs must lose no edge and count no error, at both CPU speeds on each
-end and with the consoles' frames apart. A flipped bit must show as one CRC
-error and not as a SEQ error too. A dropped edge must leave the link
+end and with the consoles' frames apart. A bit flipped in a packet's payload
+must show as one CRC error and not as a SEQ error too. A dropped edge must leave the link
 recovering. A 40-frame unplug must show as one dropout on the host, packets
 missing at the peer, and no two-second gap.
 """
@@ -70,6 +70,10 @@ def faulted(rom,kind,receiver,**settings):
    before=counters(pair,syms)
    if kind=='unplug':
     pair.cable.connected=False;run_frames_paired(pair,40);pair.cable.connected=True
+   elif kind=='flip':
+    # A flipped sync byte hides its packet, which then counts as missing,
+    # so the flip goes into a payload byte the CRC covers.
+    pair.cable.flip_in_packet(receiver,8)
    else:
     pair.cable.fault(kind,pair.cable.edges+1,receiver)
    run_frames_paired(pair,360)
