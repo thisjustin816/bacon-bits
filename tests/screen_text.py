@@ -31,7 +31,7 @@ def run(cgb):
   assert c.row(15).strip('# ')=='Taps up to 1 fr',c.row(15)
   c.leave()
   # Link: every detail page, and a minutes:seconds timer at the right edge.
-  c.go(1);c.press('a');c.tick(60);c.press('start');c.tick(130)
+  c.go(1);c.press('a');c.tick(60);c.press('a');c.tick(60);c.press('start');c.tick(130)
   # A stress profile opens on the shared-ball page, which has no settings rows.
   for page in range(4):
    for detail in range(4):

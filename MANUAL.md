@@ -41,6 +41,25 @@ Five profiles cover sustained packets, scene waits, unequal CPU load, a shared
 ball, and combined stress. Settings select host/peer, profile, pacing, wire
 clock, and CPU speed. Fast wire clock and double CPU speed require CGB hardware.
 
+Link opens on four presets, each setting everything but the role, which each
+console still picks. Soak runs All load in 4-byte bursts on the normal wire,
+as at power-on. Packets only runs the Sustain profile at one byte a frame.
+Full speed runs All load without frame waits on the CGB fast wire at double
+CPU speed, or on the normal wire on DMG. Busy game is Soak with 8 lines masked
+each frame on both ends, a game's load that a healthy link carries
+cleanly. Manual, then Continue, keeps the settings as they were.
+
+The rate presets are Paced (one byte a frame), Burst (four bytes a frame) and
+Full (no frame wait), each with 2 ms after every byte. Custom sets its own
+pacing on the second settings page: Burst sends 1 to 16 bytes before waiting
+for the next frame, or All for no wait, and Idle waits 0 us to 4 ms after each
+byte. Changing Burst or Idle under a preset switches Rate to Custom, starting
+from that preset's values. The host's pacing applies to both ends, so the peer
+shows By host. Masked runs a number of scanlines with interrupts off each
+frame, from 1 to 64, on whichever end sets it. Too little idle or too many
+masked lines on the peer leaves bytes the peer is not ready for, and the run
+fails. The timing page's second view shows the wire's bit rate on the host.
+
 Start begins the test. B stops it; Start then returns to settings. Left/Right
 changes between traffic, shared-state, timing, and ball pages. A or Up/Down
 changes the detail page. Select holds or resumes the displayed results while
@@ -57,7 +76,15 @@ a gap. The reply budget depends only on the rate, so a slower CPU or a heavier
 profile can make most updates late with no fault on the wire. Compare late
 updates only between runs with the same settings. The first failure keeps its
 expected and received values. No peer is Wait, and a clean run needs ten
-minutes before reporting Pass.
+minutes before reporting Pass. Waiting for the other console, however long,
+is not a failure; the first packet ends the wait.
+
+The traffic page's last four views keep the state when the first failure
+opened, until the next test starts: SB, SC, IF, IE, KEY1 and LY, read one
+after another rather than at one instant; the receive ring's in and out
+positions, the transmit packet and byte, and any reply still pending; the
+settings in use; and the rejected packet's 16 bytes, when a packet was
+rejected.
 
 ## Rumble (MBC5)
 

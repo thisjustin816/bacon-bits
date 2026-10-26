@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory() as td:
   for k in ['a','b','start','select']:p.button_release(k)
   p.tick(20,True)
  try:
-  p.tick(240,True);press('right');press('a');p.tick(120,True)
+  p.tick(240,True);press('right');press('a');p.tick(60,True);press('a');p.tick(120,True)
   assert p.memory[syms['_running']]==0
   chord();press('b');p.tick(90,True)
   p.screen.image.save(ROOT/'build/modal-regression-link.png')

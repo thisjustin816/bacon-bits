@@ -24,7 +24,7 @@ for variant in ['mbc5','mbc3']:
    def opened(title):assert title in c.row(4),(title,c.text())
    def leave():c.leave();assert c.get('selected_test')<11
    c.go(0);c.press('a',after=120);opened('Platform');c.press('select');c.press('right');c.press('a');c.press('b',after=60);leave()
-   c.go(1);c.press('a',after=60);opened('Link');c.press('down');c.press('right');c.press('start',after=90)
+   c.go(1);c.press('a',after=60);c.press('a',after=60);opened('Link');c.press('down');c.press('right');c.press('start',after=90)
    for _ in range(4):c.press('right')
    c.press('a');c.press('select');c.press('b');c.press('start',after=40);leave()
    c.go(2)

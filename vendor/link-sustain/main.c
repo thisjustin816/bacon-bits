@@ -14,6 +14,11 @@ volatile uint8_t running, host = 1, fast, done;
 volatile uint8_t tx[TX_BUFFERS][PACKET_SIZE], ready[TX_BUFFERS], active, txpos;
 volatile uint8_t ring[128], wr, rd;
 volatile uint16_t overflow, underrun;
+/* Custom pacing: bytes per frame (0 sends without waiting for a frame), an
+   idle after each byte as an index into idle_ticks, and an index into
+   masked_lines for the scanlines run each frame with interrupts off. The
+   presets keep their own fixed pacing. */
+uint8_t burst_len = 4, idle_step = 6, masked_step;
 uint8_t rate_mode = 1, frozen, lost, have_seq, window[16], candidate[16], window_len, window_pos;
 uint32_t next_tx, expected, good, crc_errors, seq_errors, data_errors, dropouts, rejected;
 uint8_t ff_run;
@@ -21,6 +26,12 @@ uint32_t timeouts, first_sec, first_seq, first_wanted_seq, elapsed_seconds, seco
 uint16_t old_time, last_draw, first_expected_crc, first_received_crc;
 uint8_t first_code, first_kind, first_got_kind, first_test_mismatch;
 uint16_t first_wanted_epoch, first_got_epoch, first_wanted_hash, first_got_hash;
+/* The state when the first failure opened, kept until the next test starts.
+   snap_regs holds SB, SC, IF, IE, KEY1 and LY, read one after another.
+   snap_pending is 0, 1 for a host waiting for an ack of snap_command, or 2
+   for a peer holding a scene reply. snap_bytes is the rejected packet. */
+uint8_t snap_regs[6], snap_wr, snap_rd, snap_active, snap_txpos, snap_pending, snap_command;
+uint8_t snap_host, snap_rate, snap_burst, snap_idle, snap_masked, snap_rejected, snap_bytes[16];
 uint8_t profile = 4, double_cpu, page, waiting, deadline_latched, scene_pending;
 uint8_t pending_payload[6], outgoing_payload[6];
 stress_state simulation;
@@ -58,7 +69,7 @@ const uint8_t ui_tiles[128] = {
     0x00, 0x00, 0x00, 0x00, 0x3c, 0x3c, 0x7e, 0x7e, 0x7e, 0x7e, 0x3c, 0x3c, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x3c, 0x3c, 0x42, 0x42, 0x42, 0x42, 0x3c, 0x3c, 0x00, 0x00, 0x00, 0x00
 };
-const char *modes[] = {"1 BYTE/FRAME", "4 BYTE BURST", "CONTINUOUS"};
+const char *modes[] = {"1 BYTE/FRAME", "4 BYTE BURST", "CONTINUOUS", "CUSTOM"};
 const char *profiles[] = {"SUSTAIN", "SCENE WAIT", "UNEQUAL LOAD", "SHARED BALL", "ALL STRESS"};
 const char *failures[] = {"NONE", "CRC/FRAME", "ROLE", "PAYLOAD", "SEQUENCE", "NO SYNC", "RX OVERRUN", "TX UNDERRUN", "SERIAL HANG", "BAD STATE", "BAD BARRIER", "UPDATE ORDER"};
 
@@ -101,12 +112,25 @@ void serial_isr(void) {
 /* The NO SYNC before the first packet is the wait for the other console; a real error replaces it. */
 uint8_t first_error_open(void) { return !first_code || (first_code == 5 && !good); }
 
+uint8_t burst(void);
 void latch(uint8_t code, uint32_t seq) {
     if (first_error_open() && code != first_code) {
         first_code = code;
         first_sec = elapsed_seconds;
         first_wanted_seq = expected;
         first_seq = seq;
+        CRITICAL {
+            snap_regs[0] = SB_REG; snap_regs[1] = SC_REG; snap_regs[2] = IF_REG;
+            snap_regs[3] = IE_REG; snap_regs[4] = KEY1_REG; snap_regs[5] = LY_REG;
+            snap_wr = wr; snap_rd = rd; snap_active = active; snap_txpos = txpos;
+        }
+        snap_pending = host ? (waiting ? 1u : 0u) : (scene_pending ? 2u : 0u);
+        snap_command = simulation.command;
+        snap_host = host; snap_rate = rate_mode; snap_burst = burst();
+        snap_idle = idle_step; snap_masked = masked_step;
+        /* Codes 1 to 3 reject the packet in candidate. */
+        snap_rejected = code <= 3u;
+        if (snap_rejected) memcpy(snap_bytes, candidate, 16); else memset(snap_bytes, 0, 16);
     }
 }
 
@@ -167,15 +191,25 @@ void stress_receive(const uint8_t *payload, uint32_t sequence) {
     accept_update(payload, sequence);
 }
 
-uint16_t reply_budget(void) { return rate_mode == 0 ? 360u : (rate_mode == 1 ? 120u : 60u); }
+/* Bytes sent before the host waits for the next frame; 0 never waits. */
+uint8_t burst(void) { return rate_mode == 0 ? 1u : rate_mode == 1 ? 4u : rate_mode == 2 ? 0u : burst_len; }
+/* DIV ticks at normal speed, 61 us each: 0 us up to about 4 ms. */
+const uint8_t idle_ticks[8] = {0, 1, 2, 4, 8, 16, 33, 66};
+const uint16_t idle_us[8] = {0, 61, 122, 244, 488, 977, 2014, 4028};
+const uint8_t masked_lines[8] = {0, 1, 2, 4, 8, 16, 32, 64};
+uint16_t reply_budget(void) {
+    uint8_t n;
+    if (rate_mode != 3) return rate_mode == 0 ? 360u : (rate_mode == 1 ? 120u : 60u);
+    n = burst();
+    return !n ? 60u : n == 1 ? 360u : n < 8 ? 480u / n : 60u;
+}
 
-void stress_service(void) {
+void stress_service(uint8_t ticked) {
     uint16_t now = frame_now();
-    uint16_t budget = reply_budget();
     if (scene_pending && (uint16_t)(now - scene_started) >= 6u) {
         scene_pending = 0; accept_update(pending_payload, pending_sequence);
     }
-    if (host && waiting && !deadline_latched && frames() - wait_started > budget) {
+    if (ticked && host && waiting && !deadline_latched && frames() - wait_started > reply_budget()) {
         ++deadlines; deadline_latched = 1;
     }
 }
@@ -196,6 +230,21 @@ void refill(void) {
             ready[b] = 1;
             return;
         }
+    }
+}
+
+/* Interrupts off for masked_lines scanlines, once a frame: the serial
+   interrupt waits, so a peer cannot re-arm until it ends. Under a frame,
+   so at most one VBlank interrupt is late. */
+void masked_workload(void) {
+    static uint16_t masked_frame;
+    uint8_t start, line;
+    uint8_t lines = masked_lines[masked_step];
+    if (!lines || !(LCDC_REG & 0x80u) || frame_now() == masked_frame) return;
+    masked_frame = frame_now();
+    CRITICAL {
+        start = LY_REG;
+        do { line = LY_REG; } while ((uint8_t)(line >= start ? line - start : line + 154u - start) < lines);
     }
 }
 
@@ -251,7 +300,8 @@ void receive(void) {
             {
                 uint32_t now = frames(), gap = now - last_good;
                 if (good && gap > max_gap) max_gap = gap;
-                if (lost && gap > max_recovery) max_recovery = gap;
+                if (good && lost && gap > max_recovery) max_recovery = gap;
+                if (!good && first_code == 5) first_code = 0;
                 ++good; last_good = now; lost = 0;
             }
             if (profile) stress_receive(candidate + 7, seq);
@@ -260,18 +310,23 @@ void receive(void) {
     }
 }
 
+/* service() runs many times a frame while a byte is in flight, so the checks
+   on the 32-bit clock, which change only when a frame passes, wait for one. */
 void service(void) {
     uint16_t now = frame_now();
+    uint8_t ticked = now != old_time;
     /* 70224 CPU cycles per frame; divide both clock constants by 16. */
     second_phase += (uint32_t)(uint16_t)(now - old_time) * 4389u;
     old_time = now;
     while (second_phase >= 262144ul) { second_phase -= 262144ul; ++elapsed_seconds; }
     refill(); receive();
-    if (profile) stress_service();
+    if (profile) stress_service(ticked);
     if (overflow) latch(6, expected);
     if (underrun) latch(7, expected);
-    if (frames() - last_good >= 120u && !lost) {
-        lost = 1; ++timeouts; latch(5, expected);
+    if (ticked && !lost && frames() - last_good >= 120u) {
+        /* Before the first packet this is the wait for the other console,
+           not a gap; the first packet clears it. */
+        lost = 1; if (good) ++timeouts; latch(5, expected);
     }
 }
 
@@ -288,7 +343,7 @@ void service(void) {
 #define PAL_PASS 1u
 #define PAL_FAIL 2u
 #define PAL_WAIT 3u
-enum { ROW_ROLE, ROW_TEST, ROW_RATE, ROW_LINK, ROW_CPU, MENU_ROWS };
+enum { ROW_ROLE, ROW_TEST, ROW_RATE, ROW_LINK, ROW_CPU, ROW_BURST, ROW_IDLE, ROW_MASK, MENU_ROWS };
 
 char line[32], digits[11];
 uint8_t tiles[20], attrs[20], font_base, cursor, shown_running;
@@ -437,7 +492,7 @@ void draw_detail(uint8_t y) {
     } else if (first_code == 4) {
         put(0, "WANT "); put_n(5, first_wanted_seq, 16);
     } else if (first_code == 5) {
-        put(0, first_sec < 5u ? "STARTED LATE? REDO" : "NO PACKETS FOR 2 S");
+        put(0, "NO PACKETS FOR 2 S");
     } else if (first_code >= 9) {
         if (first_code == 9) { tag = "HASH "; want = first_wanted_hash; got = first_got_hash; }
         else if (first_code == 10) {
@@ -599,34 +654,65 @@ uint8_t transfer(void) {
     }
     service();
     /* Allow the external-clock peer ISR to load the next byte. */
-    delay(double_cpu ? 4u : 2u);
+    if (rate_mode != 3) delay(double_cpu ? 4u : 2u);
+    else if (idle_ticks[idle_step]) {
+        /* DIV runs twice as fast at double speed. */
+        uint8_t start = DIV_REG, ticks = idle_ticks[idle_step] << (double_cpu ? 1u : 0u);
+        while ((uint8_t)(DIV_REG - start) < ticks);
+    }
     return 1;
 }
 
-const char *menu_label[MENU_ROWS] = {"ROLE", "TEST", "RATE", "LINK", "CPU"};
+const char *menu_label[MENU_ROWS] = {"ROLE", "TEST", "RATE", "LINK", "CPU", "BURST", "IDLE", "MASK"};
 const char *role_help[2][2] = {{"START THIS ONE FIRST", "THEN START THE HOST"}, {"START THIS WITHIN", "2 SEC OF THE PEER"}};
 const char *test_help[5][2] = {
     {"PACKETS WITH CRC AND", "ORDER CHECKS"}, {"SCENE READY EVERY 32", "PEER STALLS 6 FRAMES"},
     {"3 BUSY FRAMES PER 8", "UPDATES IN TURNS"}, {"BOTH RUN A BALL AND", "COMPARE ITS STATE"},
     {"SCENES + LOAD + BALL", "THE HARDEST TEST"}
 };
-const char *rate_help[4][2] = {
+const char *rate_help[5][2] = {
     {"ONE BYTE THEN WAIT", "FOR THE NEXT FRAME"}, {"FOUR BYTES THEN WAIT", "FOR THE NEXT FRAME"},
-    {"NO FRAME WAIT. 2 MS", "GAP BETWEEN BYTES"}, {"PEER IGNORES RATE", "THE HOST SETS IT"}
+    {"NO FRAME WAIT. 2 MS", "GAP BETWEEN BYTES"}, {"BURST AND IDLE BELOW", "SET THE PACING"},
+    {"PEER IGNORES RATE", "THE HOST SETS IT"}
 };
+const char *burst_help[2] = {"BYTES BEFORE A FRAME", "WAIT. ALL: NO WAIT"};
+const char *idle_help[2] = {"WAIT AFTER EACH BYTE", "SO THE PEER RE-ARMS"};
+const char *mask_help[2] = {"INTERRUPTS OFF FOR", "N LINES EACH FRAME"};
 const char *link_help[2][2] = {{"MUST MATCH ON BOTH", "8192 BIT/S AT 1X"}, {"MUST MATCH ON BOTH", "262144 BIT/S AT 1X"}};
 const char *cpu_help[2][2] = {{"CPU SPEED CAN DIFFER", "HOST CPU SETS WIRE"}, {"2X CPU DOUBLES THE", "HOST WIRE CLOCK"}};
 
+/* Changing Burst or Idle under a preset starts Custom from that preset. */
+void make_custom(void) {
+    if (rate_mode == 3) return;
+    burst_len = burst(); idle_step = 6; rate_mode = 3;
+}
+/* A number and a unit, for the rows whose values are counts. */
+char value_text[12];
+const char *with_unit(uint16_t n, const char *unit) {
+    strcpy(value_text, number(n, 10)); strcat(value_text, unit);
+    return value_text;
+}
+const char *burst_text(uint8_t n) { return !n ? "ALL" : with_unit(n, n == 1 ? " BYTE" : " BYTES"); }
+const char *idle_text(uint8_t rate, uint8_t step) {
+    if (rate != 3) return "2 MS";
+    return idle_us[step] >= 1000u ? with_unit(idle_us[step] / 1000u, " MS") : with_unit(idle_us[step], " US");
+}
+const char *masked_text(uint8_t step) {
+    return !step ? "OFF" : with_unit(masked_lines[step], step == 1 ? " LINE" : " LINES");
+}
 const char *menu_value(uint8_t r) {
     switch (r) {
     case ROW_ROLE: return host ? "HOST" : "PEER";
     case ROW_TEST: return profiles[profile];
     case ROW_RATE: return host ? modes[rate_mode] : "SET BY HOST";
     case ROW_LINK: return fast ? "CGB FAST" : "NORMAL";
-    default: return double_cpu ? "DOUBLE" : "NORMAL";
+    case ROW_CPU: return double_cpu ? "DOUBLE" : "NORMAL";
+    case ROW_BURST: return host ? burst_text(burst()) : "SET BY HOST";
+    case ROW_IDLE: return host ? idle_text(rate_mode, idle_step) : "SET BY HOST";
+    default: return masked_text(masked_step);
     }
 }
-void menu_help(const char **two) { row(10, two[0]); row(11, two[1]); }
+void menu_help(const char **two) { row(13, two[0]); row(14, two[1]); }
 void draw_menu_row(uint8_t r) {
     const char *value = menu_value(r);
     uint8_t length = strlen(value);
@@ -643,9 +729,12 @@ void change_setting(int8_t step) {
     switch (cursor) {
     case ROW_ROLE: host ^= 1u; break;
     case ROW_TEST: profile = (profile + 5u + step) % 5u; break;
-    case ROW_RATE: rate_mode = (rate_mode + 3u + step) % 3u; break;
+    case ROW_RATE: rate_mode = (rate_mode + 4u + step) % 4u; break;
     case ROW_LINK: fast ^= 1u; break;
-    default: if (_cpu == CGB_TYPE) double_cpu ^= 1u;
+    case ROW_CPU: if (_cpu == CGB_TYPE) double_cpu ^= 1u; break;
+    case ROW_BURST: make_custom(); burst_len = (burst_len + 17u + step) % 17u; break;
+    case ROW_IDLE: make_custom(); idle_step = (idle_step + 8u + step) % 8u; break;
+    default: masked_step = (masked_step + 8u + step) % 8u;
     }
 }
 
@@ -654,7 +743,7 @@ void menu(void) {
     HIDE_SPRITES;
     clear_screen();
     row(0, "LINK SUSTAIN v1.2");
-    draw_box(2, 8);
+    draw_box(2, 11);
     while (joypad() & J_START) vsync();
     for (;;) {
         if (dirty) {
@@ -663,9 +752,12 @@ void menu(void) {
             switch (cursor) {
             case ROW_ROLE: menu_help(role_help[host ? 1 : 0]); break;
             case ROW_TEST: menu_help(test_help[profile]); break;
-            case ROW_RATE: menu_help(rate_help[host ? rate_mode : 3]); break;
+            case ROW_RATE: menu_help(rate_help[host ? rate_mode : 4]); break;
             case ROW_LINK: menu_help(link_help[fast ? 1 : 0]); break;
-            default: menu_help(cpu_help[double_cpu ? 1 : 0]);
+            case ROW_CPU: menu_help(cpu_help[double_cpu ? 1 : 0]); break;
+            case ROW_BURST: menu_help(burst_help); break;
+            case ROW_IDLE: menu_help(idle_help); break;
+            default: menu_help(mask_help);
             }
         }
         phase = (frame_now() >> 5) & 1u;
@@ -704,11 +796,12 @@ void main(void) {
     menu(); shown_running = running; draw();
     for (;;) {
         if (running) {
-            workload(); begin_update();
+            workload(); masked_workload(); begin_update();
             if (host) {
-                for (i = 0; i != (rate_mode == 0 ? 1u : 4u) && running; ++i)
+                uint8_t n = burst();
+                for (i = 0; i != (n ? n : 4u) && running; ++i)
                     if (!transfer()) break;
-                if (rate_mode != 2) vsync();
+                if (n) vsync();
             } else vsync();
             service();
         } else vsync();

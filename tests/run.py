@@ -13,7 +13,7 @@ commands['mbc3_audio_dacs']=[sys.executable,'tests/audio_dacs.py','--rom','build
 sameboy=['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art','raster_transitions','burn_rumble','screen_tour','flicker_sameboy','platform_mode3_sameboy']
 if args.core:
  for name in sameboy:commands[name]=[sys.executable,'tests/'+(name[:-len('_sameboy')] if name in ('flicker_sameboy','platform_mode3_sameboy') else name)+'.py','--core',str(args.core)]
-slow=['link_combined','upstream','link_pair','link_long']
+slow=['link_combined','upstream','link_pair','link_long','link_stress','link_snapshot']
 known=set(commands)|set(sameboy)|set(slow)
 unknown=[name for name in args.cases if name not in known]
 if unknown:a.error('unknown suites: '+', '.join(unknown))

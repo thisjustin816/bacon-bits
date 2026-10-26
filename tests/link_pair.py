@@ -22,9 +22,10 @@ from two_consoles import Pair,FRAME,run_frames,press
 LINK_TEST=1
 COUNTERS=(('good',4),('crc_errors',4),('seq_errors',4),('data_errors',4),('timeouts',4),('dropouts',4),('first_code',1),('overflow',2),('underrun',2))
 
-def start(rom,d,*,host_cpu=0,peer_cpu=0,test=0,rate=1,offset=0):
+def start(rom,d,*,host_cpu=0,peer_cpu=0,test=0,rate=1,link=0,offset=0,setup=None,host_wait=30):
  """Two benches in Link, settings chosen, the peer started and the host
- started half a second later, paired with the given frame offset."""
+ started host_wait frames later, paired with the given frame offset. setup,
+ if given, takes each console's index and press after the first page."""
  syms=symbols(rom)
  paths=[Path(d)/f'{i}.gbc' for i in range(2)]
  for path in paths:shutil.copy(rom,path)
@@ -36,12 +37,14 @@ def start(rom,d,*,host_cpu=0,peer_cpu=0,test=0,rate=1,offset=0):
    if get('selected_test')==LINK_TEST:break
    press(pb,'right')
   else:raise AssertionError('browser never reached Link')
-  press(pb,'a')
-  configure(get,lambda key,pb=pb:press(pb,key),host=index==0,test=test,rate=rate,cpu=host_cpu if index==0 else peer_cpu)
+  # The presets screen opens on Soak, which matches the power-on settings.
+  press(pb,'a');press(pb,'a')
+  configure(get,lambda key,pb=pb:press(pb,key),host=index==0,test=test,rate=rate,link=link,cpu=host_cpu if index==0 else peer_cpu)
+  if setup:setup(index,lambda key,pb=pb:press(pb,key))
  pair.start(step_cycles=64,offset=offset)
  pair.press(1,'start')
  peer_started=pair.machines[1].frame_count
- pair.run_until(lambda:pair.machines[1].frame_count>=peer_started+30,60*FRAME)
+ pair.run_until(lambda:pair.machines[1].frame_count>=peer_started+host_wait,(host_wait+30)*FRAME)
  pair.press(0,'start')
  return pair,syms
 

@@ -47,7 +47,7 @@ def configure_from_power_on(press, host=True, test=0, rate=1, link=0, cpu=0):
     for _ in range((test - 4) % 5):
         press("right")
     press("down")
-    for _ in range((rate - 1) % 3):
+    for _ in range((rate - 1) % 4):
         press("right")
     press("down")
     if link:

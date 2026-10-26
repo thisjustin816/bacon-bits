@@ -40,7 +40,7 @@ def main():
     for _ in range(12):
      if get(pb,'selected_test')==LINK_TEST:break
      press(pb,'right')
-    press(pb,'a')
+    press(pb,'a');press(pb,'a')
     configure(lambda name,size=1,pb=pb:get(pb,name,size),lambda key,pb=pb:press(pb,key),host=index==0,test=4,rate=1,cpu=0)
     set_time(pb,0x10000-64)
    pair.start(step_cycles=64)

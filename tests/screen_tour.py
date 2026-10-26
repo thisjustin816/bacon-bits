@@ -118,7 +118,7 @@ for variant in ['', 'mbc3']:
    t.step='browser up/down'
    for key in ['down','down','up','up']:t.press(key)
    t.step='platform';t.go(0);t.press('a',120);t.expect('Platform');t.press('select');t.press('right');t.press('a');t.press('select');t.press('b',60);t.leave()
-   t.step='link';t.go(1);t.press('a',60);t.expect('Link setup');t.press('down');t.press('right');t.press('start',90)
+   t.step='link';t.go(1);t.press('a',60);t.expect('Link presets');t.press('a',60);t.expect('Link setup');t.press('down');t.press('right');t.press('start',90)
    for _ in range(4):t.press('right',30)
    t.press('a');t.press('a');t.press('select');t.press('select');t.press('b');t.press('start',40);t.leave()
    if variant:
