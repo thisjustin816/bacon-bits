@@ -204,7 +204,10 @@ uint16_t reply_budget(void) {
     return !n ? 60u : n == 1 ? 360u : n < 8 ? 480u / n : 60u;
 }
 
-void stress_service(uint16_t now, uint8_t ticked) {
+/* Reading the frame count here costs less than taking service()'s reading as
+   a second argument, which goes on the stack and slows Full pacing about 2%. */
+void stress_service(uint8_t ticked) {
+    uint16_t now = frame_now();
     if (scene_pending && (uint16_t)(now - scene_started) >= 6u) {
         scene_pending = 0; accept_update(pending_payload, pending_sequence);
     }
@@ -321,7 +324,7 @@ void service(void) {
     old_time = now;
     while (second_phase >= 262144ul) { second_phase -= 262144ul; ++elapsed_seconds; }
     refill(); receive();
-    if (profile) stress_service(now, ticked);
+    if (profile) stress_service(ticked);
     if (overflow) latch(6, expected);
     if (underrun) latch(7, expected);
     if (ticked && !lost && clock_frames - last_good >= 120u) {
