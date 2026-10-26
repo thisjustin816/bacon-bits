@@ -90,7 +90,7 @@ a=p.index('            switch (cursor) {',p.index('void menu(void)'));b=p.index(
 p=p[:a]+'            ui_status(cursor==ROW_TEST?profiles[profile]:"STOPPED");\n'+p[b:]
 p=patch(p,'if (phase != blink) { blink = phase; row(16, phase ? "    PRESS START" : ""); }','if (phase != blink) blink=phase;')
 p=patch(p,'    clear_screen(); start_test();','    link_begin(); start_test();')
-p=patch(p,'    set_interrupts(VBL_IFLAG | SIO_IFLAG);\n','    set_interrupts(VBL_IFLAG | SIO_IFLAG);\n    {uint8_t preset=ui_presets("Link presets",link_preset_names,link_preset_notes,link_seen);if(preset==255)goto cleanup;link_seen=1;link_preset(preset);}\n')
+p=patch(p,'    set_interrupts(VBL_IFLAG | SIO_IFLAG);\n','    set_interrupts(VBL_IFLAG | SIO_IFLAG);\n#ifndef BB_AUTORUN\n    {uint8_t preset=ui_presets("Link presets",link_preset_names,link_preset_notes,link_seen);if(preset==255)goto cleanup;link_seen=1;link_preset(preset);}\n#endif\n')
 a=p.index('    font_init(); handle',p.index('void link_run'));b=p.index('    SHOW_BKG;',a)
 p=p[:a]+'''    link_exit=0;running=0;link_view=255;ui_init();
     vsync();set_sprite_palette(0,1,colors);

@@ -39,14 +39,15 @@ for role in ("host", "peer"):
         assert get("host") == (role == "host")
         press("start"); p.tick(240)
         assert get("running") == 1 and get("good", 4) == 0
-        assert get("timeouts", 4) == 1 and get("first_code") == 5
+        # Waiting for the other console is not a gap.
+        assert get("timeouts", 4) == 0 and get("first_code") == 5
         assert get("overflow", 2) == get("underrun", 2) == 0
         p.screen.image.save(str(ROOT / "build" / f"no-cable-{role}.png"))
         press("select"); assert get("frozen") == 1
-        p.tick(90); assert get("timeouts", 4) == 1
+        p.tick(90); assert get("timeouts", 4) == 0
         press("select"); assert get("frozen") == 0
         press("b"); assert get("running") == 0
-        p.tick(90); assert get("first_code") == 5 and get("timeouts", 4) == 1
+        p.tick(90); assert get("first_code") == 5 and get("timeouts", 4) == 0
         press("start"); assert get("running") == 0
         press("start"); assert get("running") == 1 and get("first_code") == 0
         evidence[role] = "boot, controls, one no-sync episode, hold, stop, new-test reset passed"
