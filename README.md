@@ -89,6 +89,25 @@ Made by CptBacon. All artwork and the font are original. The font is also
 published as [assets/font.png](assets/font.png): ASCII 32 to 127 in 8x8 cells,
 16 per row.
 
+## Diagnostic development
+
+This repository is the home for reusable Game Boy and Game Boy Color diagnostic
+cartridges. Add new instruments, diagnostic improvements, fixes and test
+coverage here, and report [diagnostic issues](https://github.com/thisjustin816/bacon-bits/issues) here.
+
+Platform Detect and Link Sustain in
+[gameboy-homebrew-patches](https://github.com/thisjustin816/gameboy-homebrew-patches/tree/main/diagnostics)
+and Rumble Pulse in
+[pokepinball-rumble-patch](https://github.com/thisjustin816/pokepinball-rumble-patch/tree/main/rumble-pulse)
+are historical predecessors. Use this bench's **Platform**, **Link** and
+**Rumble** instruments for current tests, with the [manual](MANUAL.md) and
+[release cartridges](https://github.com/thisjustin816/bacon-bits/releases/latest). Rumble requires the MBC5 build.
+
+Keep game patch changes and game-specific debugging in their game repositories.
+Bring reusable measurement logic and hardware stress tests here.
+The original source revisions in [vendor/README.md](vendor/README.md) provide
+provenance; read the adaptation workflow before changing an imported engine.
+
 ## Building
 
 Requires GBDK-2020 4.5.0 and Python 3:
