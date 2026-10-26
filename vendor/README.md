@@ -9,7 +9,10 @@
 
 Platform Detect and Link Sustain are developed here now. Platform Detect
 v1.5's mode-3 write probe, Link Sustain's DROPOUTS count and its SEQ rule,
-which leaves out a packet already counted as rejected, were added here. Rumble Pulse is kept unchanged.
+which leaves out a packet already counted as rejected, its 32-bit interval
+clock, its Custom rate with Burst, Idle and Mask settings, its first-failure
+snapshot, and the rule that the wait for the other console is not a failure
+were added here. Rumble Pulse is kept unchanged.
 `tools/adapt.py` generates banked entry points and the return-to-menu hooks
 in `build/adapted/`. Rumble's assembly is resolved at address $4000 and
 keeps its original polled playback routines. The launcher reuses Rumble

@@ -99,8 +99,8 @@ def worker(role, buffer, fault, rate, profile, cpu, output):
                        ("data_errors", 4), ("timeouts", 4), ("dropouts", 4), ("first_code", 1),
                        ("overflow", 2), ("underrun", 2), ("expected", 4), ("next_tx", 4), ("first_seq", 4),
                        ("updates", 4), ("barriers", 4), ("state_errors", 4),
-                       ("barrier_errors", 4), ("epoch_errors", 4), ("max_reply", 2),
-                       ("max_gap", 2), ("max_recovery", 2), ("deadlines", 4),
+                       ("barrier_errors", 4), ("epoch_errors", 4), ("max_reply", 4),
+                       ("max_gap", 4), ("max_recovery", 4), ("deadlines", 4),
                        ("stale_replies", 4), ("last_load", 2)]:
         result[name] = read_value(p, syms, name, size)
     result["frames"] = frames

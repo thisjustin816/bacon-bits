@@ -20,7 +20,7 @@ with tempfile.TemporaryDirectory() as td:
     for _ in range(40):p.tick(2,True);frames.append(p.screen.image.convert('RGB').resize((480,432),Image.Resampling.NEAREST))
     frames[0].save(ROOT/'assets/browser.gif',save_all=True,append_images=frames[1:],duration=34,loop=0)
    press('a');p.tick(90,True)
-   if pick>=3 or selected==11:
+   if pick>=3 or pick==1 or selected==11:
     if pick==4:
      for _ in range(3):press('down')
     if pick==6:press('down')
@@ -46,15 +46,15 @@ with tempfile.TemporaryDirectory() as td:
  board.resize((1360,1328),Image.Resampling.NEAREST).save(ROOT/'assets/review.png')
  # Presets remain part of the shared UI.
  preset_shots=[]
- for selected in [3,4,5,6,7]:
+ for selected in [1,3,4,5,6,7]:
   f=Path(td)/f'preset-{selected}.gbc';shutil.copy(ROOT/'build/bacon-bits.gbc',f);p=PyBoy(str(f),window='null',sound_emulated=False);p.set_emulation_speed(0);p.tick(240,True)
   try:
    for _ in range(selected):press('right')
    press('a');p.tick(60,True);preset_shots.append(p.screen.image.convert('RGB'))
   finally:p.stop(save=False)
- board=Image.new('RGB',(840,160),(227,219,200))
+ board=Image.new('RGB',(1016,160),(227,219,200))
  for i,im in enumerate(preset_shots):board.paste(im,(8+i*168,8))
- board.resize((1680,320),Image.Resampling.NEAREST).save(ROOT/'assets/presets.png')
+ board.resize((2032,320),Image.Resampling.NEAREST).save(ROOT/'assets/presets.png')
  # Native menu focus and live controls, in both display modes.
  controls=[]
  for cgb in [True,False]:

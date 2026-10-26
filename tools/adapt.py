@@ -77,19 +77,20 @@ a=p.index('void draw_header(void)');b=p.index('void set_cpu_speed(void)',a)
 p=p[:a]+'#include "link_ui.inc"\n'+p[b:]
 a=p.index('void draw_menu_row(uint8_t r)');b=p.index('void change_setting',a)
 p=p[:a]+'''static const char *const short_tests[]={"SUSTAIN","SCENE","UNEQUAL","BALL","ALL LOAD"};
-static const char *const short_rates[]={"PACED","BURST","FULL"};
+static const char *const short_rates[]={"PACED","BURST","FULL","CUSTOM"};
 void draw_menu_row(uint8_t r) {
- if(cursor<4 && r<4)ui_field(r,menu_label[r],r==ROW_TEST?short_tests[profile]:r==ROW_RATE?short_rates[rate_mode]:menu_value(r),cursor==r);
- else if(cursor==4 && r==4)ui_field(0,"CPU",menu_value(r),1);
+ if(cursor<ROW_CPU && r<ROW_CPU)ui_field(r,menu_label[r],r==ROW_TEST?short_tests[profile]:r==ROW_RATE?(host?short_rates[rate_mode]:"BY HOST"):menu_value(r),cursor==r);
+ else if(cursor>=ROW_CPU && r>=ROW_CPU)ui_field(r-ROW_CPU,r==ROW_MASK?"MASKED":menu_label[r],!host && (r==ROW_BURST || r==ROW_IDLE)?"BY HOST":menu_value(r),cursor==r);
 }
 '''+p[b:]
-p=patch(p,'    clear_screen();\n    row(0, "LINK SUSTAIN v1.2");\n    draw_box(2, 8);','    link_cpu_page=0;ui_screen("LINK SETUP","1/2");')
+p=patch(p,'    clear_screen();\n    row(0, "LINK SUSTAIN v1.2");\n    draw_box(2, 11);','    link_cpu_page=0;ui_screen("LINK SETUP","1/2");')
 # Rows rewrite in place; only a change between the two settings pages redraws the screen.
-p=patch(p,'            for (r = 0;', '            if ((cursor==4)!=link_cpu_page) {link_cpu_page=cursor==4;ui_screen("LINK SETUP",link_cpu_page?"2/2":"1/2");}\n            for (r = 0;')
+p=patch(p,'            for (r = 0;', '            if ((cursor>=ROW_CPU)!=link_cpu_page) {link_cpu_page=cursor>=ROW_CPU;ui_screen("LINK SETUP",link_cpu_page?"2/2":"1/2");}\n            for (r = 0;')
 a=p.index('            switch (cursor) {',p.index('void menu(void)'));b=p.index('        }\n        phase',a)
 p=p[:a]+'            ui_status(cursor==ROW_TEST?profiles[profile]:"STOPPED");\n'+p[b:]
 p=patch(p,'if (phase != blink) { blink = phase; row(16, phase ? "    PRESS START" : ""); }','if (phase != blink) blink=phase;')
 p=patch(p,'    clear_screen(); start_test();','    link_begin(); start_test();')
+p=patch(p,'    set_interrupts(VBL_IFLAG | SIO_IFLAG);\n','    set_interrupts(VBL_IFLAG | SIO_IFLAG);\n#ifndef BB_AUTORUN\n    {uint8_t preset=ui_presets("Link presets",link_preset_names,link_preset_notes,link_seen);if(preset==255)goto cleanup;link_seen=1;link_preset(preset);}\n#endif\n')
 a=p.index('    font_init(); handle',p.index('void link_run'));b=p.index('    SHOW_BKG;',a)
 p=p[:a]+'''    link_exit=0;running=0;link_view=255;ui_init();
     vsync();set_sprite_palette(0,1,colors);

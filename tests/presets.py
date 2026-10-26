@@ -40,4 +40,32 @@ for test in range(3,8):
       if not get('burn_running'):break
      assert not get('burn_running') and get('burn_seconds',4)==60 and not get('burn_errors',4),(get('burn_seconds',4),get('burn_errors',4))
    finally:p.stop(save=False)
-print('Twenty presets: expected scenario settings, no automatic playback/writes, and CONTINUE keeps customized audio values')
+# Link: each preset sets every setting but the role, and Continue keeps a
+# masked-lines value set by hand.
+LINK={1:dict(profile=4,rate_mode=1,fast=0,double_cpu=0,masked_step=0),2:dict(profile=0,rate_mode=0,fast=0,double_cpu=0,masked_step=0),
+      3:dict(profile=4,rate_mode=2,fast=1,double_cpu=1,masked_step=0),4:dict(profile=4,rate_mode=1,fast=0,double_cpu=0,masked_step=4)}
+for choice,want in LINK.items():
+ with tempfile.TemporaryDirectory() as td:
+  f=Path(td)/'test.gbc';shutil.copy(ROOT/'build/bacon-bits.gbc',f);p=PyBoy(str(f),window='null',sound_emulated=True);p.set_emulation_speed(0)
+  def get(n,size=1):return int.from_bytes(bytes(p.memory[syms['_'+n]:syms['_'+n]+size]),'little')
+  def put(n,v):p.memory[syms['_'+n]]=v
+  def press(k):p.button_press(k);p.tick(8,True);p.button_release(k);p.tick(30,True)
+  def text():return '\n'.join(''.join(chr(t+32).upper() if t<96 else '#' for t in p.memory[0,0x9800+y*32:0x9800+y*32+20]) for y in range(18))
+  try:
+   p.tick(240,True);press('right');press('a');p.tick(60,True);assert 'LINK PRESETS' in text() and 'MANUAL' in text(),text()
+   # A Custom pacing left from earlier must not survive a preset; the role must.
+   put('host',0);put('rate_mode',3);put('burst_len',9);put('idle_step',2);put('masked_step',7)
+   for _ in range(choice-1):press('down')
+   press('a');p.tick(60,True);assert 'LINK SETUP' in text(),text()
+   got={n:get(n) for n in want};assert got==want,(choice,got,want)
+   assert get('burst_len')==4 and get('idle_step')==6 and get('host')==0,(choice,get('burst_len'),get('idle_step'),get('host'))
+   if choice==4:
+    for k in ('a','b','start','select'):p.button_press(k)
+    p.tick(70,True)
+    for k in ('a','b','start','select'):p.button_release(k)
+    p.tick(30,True);press('down');press('a');p.tick(40,True)
+    press('a');p.tick(60,True);assert 'CONTINUE' in text(),text()
+    put('masked_step',2);press('a');p.tick(60,True);assert get('masked_step')==2 and get('rate_mode')==1
+  finally:p.stop(save=False)
+print('Twenty presets: expected scenario settings, no automatic playback/writes, and CONTINUE keeps customized audio values; '
+      'Link presets set every setting but the role, and CONTINUE keeps a hand-set masked value')

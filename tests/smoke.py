@@ -30,7 +30,7 @@ for cgb in [True,False]:
    press('a');p.tick(240,True)
    assert ('PYBOY' if cgb else 'NO CGB PROBES') in text(p),text(p)
    modal();leave();assert 'PLATFORM' in text(p)
-   press('right');press('a');p.tick(100,True)
+   press('right');press('a');p.tick(60,True);assert 'LINK PRESETS' in text(p),text(p);press('a');p.tick(100,True)
    assert p.memory[syms['_running']]==0
    modal();leave();assert 'LINK' in text(p)
    press('right');press('a');p.tick(100,True)

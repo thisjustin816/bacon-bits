@@ -13,7 +13,7 @@ with tempfile.TemporaryDirectory() as td:
    injected.append(get('wr'));p.memory[0xff02]=0;p.memory[0xff01]=0x3c;injected.append(p.memory[0xff01]);p.memory[0xff0f]|=8
  try:
   p.tick(240,True)
-  if get('selected_test')==0:press('right');press('a')
+  if get('selected_test')==0:press('right');press('a');press('a')
   press('left');press('down');press('right');assert not get('host') and get('profile')==0
   a=syms['_ui_scene'];p.hook_register(a>>16,a&65535,interrupt,None);press('start');p.tick(60,True)
   assert injected,'The graphical bank was never reached during serial operation'

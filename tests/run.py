@@ -13,7 +13,7 @@ commands['mbc3_audio_dacs']=[sys.executable,'tests/audio_dacs.py','--rom','build
 sameboy=['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art','raster_transitions','burn_rumble','screen_tour','flicker_sameboy','platform_mode3_sameboy']
 if args.core:
  for name in sameboy:commands[name]=[sys.executable,'tests/'+(name[:-len('_sameboy')] if name in ('flicker_sameboy','platform_mode3_sameboy') else name)+'.py','--core',str(args.core)]
-slow=['link_combined','upstream','link_pair']
+slow=['link_combined','upstream','link_pair','link_long','link_stress','link_snapshot']
 known=set(commands)|set(sameboy)|set(slow)
 unknown=[name for name in args.cases if name not in known]
 if unknown:a.error('unknown suites: '+', '.join(unknown))
@@ -30,7 +30,7 @@ def run(item):
  if name=='mbc3_build_check':env['BB_BUILD_DIR']='build/mbc3'
  log=ROOT/'build'/('verify-'+name+'.log')
  with log.open('w') as out:
-  try:code=subprocess.run(command,cwd=ROOT,env=env,stdout=out,stderr=subprocess.STDOUT,timeout=1800 if name in ['link_combined','upstream','link_pair'] else 600).returncode
+  try:code=subprocess.run(command,cwd=ROOT,env=env,stdout=out,stderr=subprocess.STDOUT,timeout=1800 if name in slow else 600).returncode
   except subprocess.TimeoutExpired:
    out.write('\nSuite exceeded its time limit\n');code=124
  print(name,'PASS' if code==0 else 'FAIL',flush=True);return name,code
