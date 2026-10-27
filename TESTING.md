@@ -15,6 +15,13 @@ Without `--core` the SameBoy suites are listed as not run, and the run is not
 a full verification. Both mapper builds receive the header, bank, symbol,
 tile-budget, CRC and screen-text width checks.
 
+The runner records each suite's pass in `build/verification-progress.json` as it
+finishes. A run cut short, as by a restart of the machine, can continue with
+`--resume`, which skips the suites that passed under the same ROMs, test and tool
+sources, and SameBoy core and runs the rest. Any change to those starts a new
+record, and a failed suite always runs again. `build/verification.json` lists the
+suites it resumed rather than ran. Without `--resume` every suite runs.
+
 SameBoy 26a56bd builds with `make libretro`, RGBDS and `hexdump`. Build it
 with `make -j1`: the parallel build can race on a helper program.
 

@@ -1,8 +1,8 @@
 """Run the cartridge suites and retain a log and ROM identity for every group."""
 from pathlib import Path
-import argparse,concurrent.futures,hashlib,json,os,subprocess,sys
+import argparse,concurrent.futures,hashlib,json,os,subprocess,sys,threading
 ROOT=Path(__file__).resolve().parents[1]
-a=argparse.ArgumentParser();a.add_argument('--core',type=Path,help='SameBoy libretro core; without it the SameBoy suites are reported as not run');a.add_argument('--jobs',type=int,default=4);a.add_argument('cases',nargs='*',help='run only these suites, for example the ones a change touches');args=a.parse_args()
+a=argparse.ArgumentParser();a.add_argument('--core',type=Path,help='SameBoy libretro core; without it the SameBoy suites are reported as not run');a.add_argument('--jobs',type=int,default=4);a.add_argument('--resume',action='store_true',help='skip suites that already passed for the same ROMs, test sources and core, as recorded in build/verification-progress.json');a.add_argument('cases',nargs='*',help='run only these suites, for example the ones a change touches');args=a.parse_args()
 commands={name:[sys.executable,'tests/'+name+'.py'] for name in ['smoke','modal_regression','rumble_combined','audio_ui','audio_backend','audio_shapes','audio_responsiveness','additions','sram_patterns','burn_faults','presets','lettering','menu_alignment','ui_spacing','diagonals','graphical_ui','serial_ui_bank','cartridge_features','ir_cycles','ir_pair','preset_bounce','platform_mode3','rtc','variants','flicker','display_font','screen_text','display_timing','buttons_chord','burn_cadence','sram_burn','audio_dacs','stack_depth']}
 commands['build_check']=[sys.executable,'tools/check_build.py']
 commands['mbc3_build_check']=[sys.executable,'tools/check_build.py']
@@ -25,15 +25,36 @@ if args.cases:
 paths=[('mbc5','build/bacon-bits.gbc'),('mbc3','build/mbc3/bacon-bits.gbc')]
 identities={name:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for name,path in paths}
 if args.jobs<1:a.error('--jobs must be positive')
+# Every finished suite is recorded at once, so a run cut short by a restart loses only the suites in
+# flight. A pass is reused only under the ROMs, test and tool sources and core that produced it.
+def fingerprint():
+ h=hashlib.sha256()
+ for name,digest in sorted(identities.items()):h.update(f'{name} {digest}\n'.encode())
+ for folder in ('tests','tools'):
+  for path in sorted((ROOT/folder).rglob('*.py')):h.update(path.relative_to(ROOT).as_posix().encode()+b'\0'+path.read_bytes()+b'\0')
+ if args.core:h.update(hashlib.sha256(args.core.read_bytes()).digest())
+ return h.hexdigest()
+progress=ROOT/'build/verification-progress.json';key=fingerprint()
+try:saved=json.loads(progress.read_text())
+except (OSError,ValueError):saved={}
+passed=set(saved.get('passed',[])) if saved.get('fingerprint')==key else set()
+reusable=set(passed) if args.resume else set()
+resumed=[];lock=threading.Lock()
+def record(name,code):
+ with lock:
+  (passed.add if code==0 else passed.discard)(name)
+  temporary=progress.with_name(progress.name+'.tmp');temporary.write_text(json.dumps({'fingerprint':key,'passed':sorted(passed)},indent=2)+'\n');temporary.replace(progress)
 def run(item):
  name,command=item;env=dict(os.environ)
+ if name in reusable:
+  resumed.append(name);print(name,'PASS (resumed)',flush=True);return name,0
  if name=='mbc3_build_check':env['BB_BUILD_DIR']='build/mbc3'
  log=ROOT/'build'/('verify-'+name+'.log')
  with log.open('w') as out:
   try:code=subprocess.run(command,cwd=ROOT,env=env,stdout=out,stderr=subprocess.STDOUT,timeout=1800 if name in slow else 600).returncode
   except subprocess.TimeoutExpired:
    out.write('\nSuite exceeded its time limit\n');code=124
- print(name,'PASS' if code==0 else 'FAIL',flush=True);return name,code
+ record(name,code);print(name,'PASS' if code==0 else 'FAIL',flush=True);return name,code
 with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:results=dict(pool.map(run,commands.items()))
 # Each paired suite owns its workers and temporary emulator, so run the two
 # slow groups separately from one another and from the sample-capture suites.
@@ -42,5 +63,5 @@ after={name:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for name,path i
 if identities!=after:results['rom_changed_during_verification']=1
 skipped=[] if args.core or args.cases else sameboy
 if skipped:print('NOT RUN (no --core):',', '.join(skipped),flush=True)
-(ROOT/'build/verification.json').write_text(json.dumps({'rom_sha256':identities,'results':results,'not_run':skipped,'selected':args.cases or 'all'},indent=2)+'\n')
+(ROOT/'build/verification.json').write_text(json.dumps({'rom_sha256':identities,'results':results,'not_run':skipped,'resumed':sorted(resumed),'selected':args.cases or 'all'},indent=2)+'\n')
 raise SystemExit(any(results.values()))
