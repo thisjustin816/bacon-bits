@@ -38,7 +38,9 @@ with `make -j1`: the parallel build can race on a helper program.
 `smoke`, `variants` and `graphical_ui` cover entry routes and safe initial
 states. Their broad checks supplement the diagnostic-specific suites.
 `modal_regression`, `sameboy` and `rumble_return` cover dialog restoration,
-consumed input and shared-memory cleanup. `preset_bounce` picks Flicker's and
+consumed input and shared-memory cleanup. `modal_regression` also presses
+Start a frame ahead of the rest of the chord in Link setup; the dialog must
+open and Link must not start. `preset_bounce` picks Flicker's and
 Infrared's presets with an A press that reads released for one frame, as a
 bouncing button can; neither instrument may start from the held button. `lettering`, `menu_alignment`,
 `menu_art`, `ui_spacing` and `ui_transitions` cover glyphs, layout, animation,

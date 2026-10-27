@@ -1,5 +1,14 @@
 /* Included in the link engine's bank so serial state stays directly accessible. */
 static uint8_t link_detail,link_view=255;
+/* A reading counts once two frames agree. A hand lands the return chord's
+   buttons a frame or so apart, and a bouncing contact reads released for a
+   frame; either would otherwise act on one button alone, and Start starts
+   the test. */
+static uint8_t link_raw;
+static uint8_t link_keys(uint8_t previous) {
+ uint8_t raw=joypad(),keys=raw==link_raw?raw:previous;
+ link_raw=raw;return keys;
+}
 const char *burst_text(uint8_t n);
 const char *idle_text(uint8_t rate,uint8_t step);
 const char *masked_text(uint8_t step);

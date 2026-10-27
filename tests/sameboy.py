@@ -18,7 +18,8 @@ try:
   assert before[0x3800:0x3c00]==after[0x3800:0x3c00],'Modal changed CGB attributes after CONTINUE'
  def leave():p.chord();p.press('down');p.press('a');p.tick(30)
  p.press('a');p.tick(150);shot('platform');modal();leave()
- p.press('right');p.press('a');p.tick(100);shot('link');assert p.vram()[0:16]==bytes(16),'The ball tile overwrote the space glyph';modal();leave()
+ # Link opens on its presets screen; A picks Soak, the power-on settings.
+ p.press('right');p.press('a');p.tick(60);p.press('a');p.tick(100);shot('link');assert p.vram()[0:16]==bytes(16),'The ball tile overwrote the space glyph';modal();leave()
  p.press('right');p.press('a');p.tick(100);shot('rumble');modal()
  p.transitions.clear();p.press('start');p.tick(90);shot('rumble-play');assert any(on for _,on in p.transitions),p.transitions
  p.press('b');leave()

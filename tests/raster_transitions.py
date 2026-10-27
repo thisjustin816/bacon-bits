@@ -27,7 +27,7 @@ for variant in ['', 'mbc3']:
     assert get('selected_test')==selected,('Navigation missed a route',selected)
     revision=get('ui_revision',2);press('a')
     assert get('ui_revision',2)!=revision,('Diagnostic did not open',selected)
-    if selected>=3 or (variant and selected==2):
+    if selected>=3 or selected==1 or (variant and selected==2):
      press('up');press('a') # Manual settings, with outputs stopped.
      press('select');press('select')
     shots.append(p.image.copy())

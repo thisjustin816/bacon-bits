@@ -66,6 +66,10 @@ p=patch(p,'font_min[2u + c] + font_base', '(c >= 97 && c <= 122 ? c-32 : c)-32+1
 p=patch(p,'    menu(); shown_running', '    menu(); if (link_exit) goto cleanup; shown_running')
 p=patch(p,'        keys = joypad(); pressed = keys & ~previous; previous = keys;','        if (!running && bb_exit()) goto cleanup;\n        keys = joypad(); pressed = keys & ~previous; previous = keys;')
 p=patch(p,'menu(); previous = J_START;', 'menu(); if (link_exit) goto cleanup; previous = J_START;')
+# The return chord's buttons land a frame or so apart, so the setup menu and the
+# test read buttons through link_keys(), which waits for two frames to agree.
+p=patch(p,'vsync(); keys = joypad(); pressed','vsync(); keys = link_keys(previous); pressed')
+p=patch(p,'        keys = joypad(); pressed','        keys = link_keys(previous); pressed')
 pos=p.rfind('\n}')
 p=p[:pos]+'''\ncleanup:
     running = 0; SC_REG = 0; double_cpu = 0; set_cpu_speed();

@@ -1,4 +1,5 @@
-"""A CONTINUE choice must consume the buttons used to open the modal."""
+"""A CONTINUE choice must consume the buttons used to open the modal, and the
+return chord must open it when Start lands a frame ahead of the others."""
 from pathlib import Path
 import tempfile,shutil,re,sys
 from pyboy import PyBoy
@@ -10,6 +11,7 @@ with tempfile.TemporaryDirectory() as td:
  f=Path(td)/'test.gbc';shutil.copy(rom,f)
  p=PyBoy(str(f),window='null',sound_emulated=False);p.set_emulation_speed(0)
  def press(k):p.button_press(k);p.tick(8,True);p.button_release(k);p.tick(20,True)
+ def screen():return ''.join(chr(t+32) if t<96 else '#' for t in p.memory[0,0x9800:0x9800+32*18])
  def chord():
   for k in ['a','b','start','select']:p.button_press(k)
   p.tick(8,True)
@@ -21,9 +23,17 @@ with tempfile.TemporaryDirectory() as td:
   chord();press('b');p.tick(90,True)
   p.screen.image.save(ROOT/'build/modal-regression-link.png')
   assert p.memory[syms['_running']]==0,'CONTINUE replayed START and started Link Sustain'
+  p.button_press('start');p.tick(1,True)
+  for k in ['a','b','select']:p.button_press(k)
+  p.tick(80,True)
+  for k in ['start','a','b','select']:p.button_release(k)
+  p.tick(40,True)
+  assert 'CONTINUE' in screen().upper(),'Start a frame ahead of the chord acted alone in Link setup'
+  press('b');p.tick(90,True)
+  assert p.memory[syms['_running']]==0,'CONTINUE after a skewed chord started Link Sustain'
   chord();press('down');press('a');press('right');press('a');p.tick(120,True)
   chord();press('b');p.tick(90,True)
   p.screen.image.save(ROOT/'build/modal-regression-rumble.png')
   assert p.memory[0xc011]==0,'CONTINUE replayed START and started Rumble Pulse'
-  print('CONTINUE consumes the chord in Link Sustain and Rumble Pulse')
+  print('CONTINUE consumes the chord in Link Sustain and Rumble Pulse, and Start a frame early still opens the modal')
  finally:p.stop(save=False)
