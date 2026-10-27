@@ -39,4 +39,23 @@ try:
  c.press('start');assert 'Confirm' in c.row(4),'Start tap did not open Clear counts'
  c.press('down');c.press('a');assert c.get('button_presses',32)==0,'Yes did not clear counters'
 finally:c.close()
-print('Buttons: staged and simultaneous chords on all four pages keep page, units, view and counts; Select, A and Start taps act on release')
+# Start clears from the count, timing and diagonal pages, and the screens say how to clear, change page and leave.
+HINTS={'Select: next page','Start: clear all','Hold all 4: exit'}
+c=Cart(args.rom)
+try:
+ c.go(4);c.preset(1)
+ assert c.row(15).strip('# ')=='Hold all 4: exit',('Live page does not say how to leave',c.row(15))
+ before=c.get('button_presses',32);c.press('start')
+ assert 'Confirm' not in c.row(4),'Start opened Clear counts on the live page, where it is a tested button'
+ assert c.get('button_presses',32)!=before,'Start was not counted on the live page'
+ for page in (1,2,3):
+  c.press('select');assert c.get('button_page')==page,page
+  c.press('start');assert 'Confirm' in c.row(4),(names[page],'Start did not open Clear counts')
+  c.press('a');c.tick(20);assert 'Confirm' not in c.row(4) and c.get('button_presses',32)!=bytes(32),(names[page],'No cleared the counts or kept the dialog')
+  seen=set()
+  for _ in range(60):
+   c.tick(16);seen.add(c.row(17).strip('# '))
+  if page==3:assert any(line.startswith('Opposites') for line in seen) and not seen&HINTS,('Diagonals line under the box',seen)
+  else:assert HINTS<=seen,(names[page],'Hint line did not cycle through every hint',seen)
+finally:c.close()
+print('Buttons: staged and simultaneous chords on all four pages keep page, units, view and counts; Select, A and Start taps act on release; Start clears from every counts page and the screens say how to clear, change page and leave')

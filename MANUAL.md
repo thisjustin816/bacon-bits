@@ -175,11 +175,18 @@ changes between live, press-count, timing, and diagonal views. Left/Right
 chooses a button on the count and timing pages. Taps (short presses) and gaps
 (short releases) have separate counters; Up/Down changes their threshold from
 1-8 frames. A changes hold units between frames and milliseconds. Start opens
-the clear-counts confirmation.
+the clear-counts confirmation on the count, timing and diagonal pages. On the
+live page Start is only a tested button, so checking it opens nothing.
 
 Select, A and Start act when the button is released, and only when no other
 button was held with it. Holding combinations, or the return chord, leaves the
-page, units and counters as they were.
+page, units and counters as they were. On the count and timing pages the D-pad
+also moves the selection, and those presses count as D-pad tests too; check
+the D-pad on the live or diagonal page.
+
+To leave, hold all four buttons for about a second. The live page says so under
+the box. The count and timing pages show a line that cycles through Select: next
+page, Start: clear all and Hold all 4: exit.
 
 The D-pad diagram marks the current corner. Each of the four corners has an
 entry count and longest hold. A changes between counts, hold frames, and hold

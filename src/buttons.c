@@ -29,12 +29,24 @@ static void live_dpad(uint8_t held) {
 }
 static uint8_t initialized;
 static const char *const presets[]={"","Button check","Short events","Hold timing","Diagonals"};
+static const char *const hints[]={"Select: next page","Start: clear all","Hold all 4: exit"};
+static uint8_t drawn_hint;
 static const char *const notes[]={"Keep counters","Live button states","1 frame threshold","Hold milliseconds","D-pad corners"};
 static void clear_counts(void) {
  uint8_t i;button_opposites=0;memset(button_diagonal,0,sizeof(button_diagonal));memset(button_diagonal_hold,0,sizeof(button_diagonal_hold));memset(button_diagonal_peak,0,sizeof(button_diagonal_peak));memset(button_presses,0,sizeof(button_presses));memset(button_short,0,sizeof(button_short));memset(button_gaps,0,sizeof(button_gaps));
  memset(button_longest,0,sizeof(button_longest));memset(button_held,0,sizeof(button_held));for(i=0;i<8;++i)button_released[i]=65535;button_peak=0;
 }
-static void screen(void) {drawn_directions=255;ui_screen(button_page==3?"Diagonals":"Buttons",button_page==0?"1/4":button_page==1?"2/4":button_page==2?"3/4":"4/4");}
+static void screen(void) {
+ drawn_directions=255;drawn_hint=255;
+ ui_screen(button_page==3?"Diagonals":"Buttons",button_page==0?"1/4":button_page==1?"2/4":button_page==2?"3/4":"4/4");
+ if(button_page==0)ui_status("Hold all 4: exit");
+}
+/* The count and timing pages have a free line under the box. It cycles through what the buttons do, and only
+   redraws when the hint changes. The live page keeps Start for testing, and Diagonals uses the line for a reading. */
+static void hint(uint16_t now) {
+ uint8_t phase=(now>>7)%3u;
+ if((button_page==1 || button_page==2) && phase!=drawn_hint){drawn_hint=phase;ui_line(UI_DETAIL,hints[phase]);}
+}
 static void show(uint8_t held) {
  uint8_t i,n=0;uint32_t corner_value;char str[20],*end;
  if(button_page==0){
@@ -85,10 +97,11 @@ void buttons_run(void) BANKED {
   if(button_page==1 || button_page==2){if(pressed&J_LEFT)button_pick=(button_pick+7u)&7u;if(pressed&J_RIGHT)button_pick=(button_pick+1u)&7u;}
   if(button_page==2){if((pressed&J_UP)&&button_threshold<8)++button_threshold;if((pressed&J_DOWN)&&button_threshold>1)--button_threshold;
    if(tap&J_A)button_units^=1;
-   if(tap&J_START){if(ui_confirm("Clear counts?"))clear_counts();screen();key=0;old=bb_frame();}
   }
+  if(button_page && (tap&J_START)){if(ui_confirm("Clear counts?"))clear_counts();screen();key=0;old=bb_frame();}
   if(button_page==3 && (tap&J_A))button_diagonal_view=(button_diagonal_view+1u)%3u;
   if((key&0xf0u)==0xf0u){if(chord<60)chord+=delta;if(chord>=60){if(bb_exit())return;screen();key=0;chord=0;old=bb_frame();}}else chord=0;
-  if(key!=previous || pressed || (button_page>=2 && !(now&15u)))show(key);previous=key;
+  if(key!=previous || pressed || (button_page>=2 && !(now&15u)))show(key);
+  hint(now);previous=key;
  }
 }
