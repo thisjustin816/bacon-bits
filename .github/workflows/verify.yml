@@ -1,0 +1,161 @@
+name: Verify
+
+# Builds both ROMs and the SameBoy core once, then runs every suite of
+# tests/run.py in parallel jobs and checks that each ran once and passed. The
+# fast suites run in four slices, each slow suite in a job of its own, so the
+# 25-minute Link stress run does not hold up the rest. The last job, Verification,
+# is the one result to require. The suites run in PyBoy and SameBoy; none of
+# this is evidence from a real console.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'assets/**', 'LICENSE']
+  pull_request:
+    paths-ignore: ['**.md', 'assets/**', 'LICENSE']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GBDK_HOME: /tmp/gbdk/
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/toolchain
+
+      - name: Build and check both cartridges
+        run: make releases PYTHON=python
+
+      - name: Check the build matches the committed hashes
+        run: git diff --exit-code -- SHA256SUMS
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: roms
+          path: build/
+          if-no-files-found: error
+          retention-days: 3
+
+  core:
+    name: SameBoy core
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      # The core builds from the commit the suites' results were checked against, with
+      # the RGBDS release and digest that cloud-setup-gb.sh pins. -j1 avoids a race on a helper program.
+      - name: Build RGBDS
+        env:
+          RGBDS_VERSION: 0.9.0
+          RGBDS_SHA256: e15721fe11a943a9fc6d11958abe1951d65fd285ade5af75c968d1bd1774caf6
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bison libpng-dev bsdextrautils > /dev/null
+          curl --fail --location --retry 3 --output /tmp/rgbds.tar.gz \
+            "https://github.com/gbdev/rgbds/releases/download/v${RGBDS_VERSION}/rgbds-${RGBDS_VERSION}.tar.gz"
+          echo "${RGBDS_SHA256}  /tmp/rgbds.tar.gz" | sha256sum --check
+          mkdir /tmp/rgbds
+          tar -xzf /tmp/rgbds.tar.gz -C /tmp/rgbds --strip-components=1
+          cmake -S /tmp/rgbds -B /tmp/rgbds/build -DCMAKE_BUILD_TYPE=Release > /dev/null
+          cmake --build /tmp/rgbds/build -j"$(nproc)" > /dev/null
+          sudo cmake --install /tmp/rgbds/build --prefix /usr/local > /dev/null
+
+      - name: Build SameBoy
+        env:
+          SAMEBOY_COMMIT: 26a56bd6a122a6318a456abd80558408742d5adf
+        run: |
+          git init -q /tmp/sameboy
+          git -C /tmp/sameboy fetch -q --depth 1 https://github.com/LIJI32/SameBoy.git "$SAMEBOY_COMMIT"
+          git -C /tmp/sameboy -c advice.detachedHead=false checkout -q FETCH_HEAD
+          make -C /tmp/sameboy -j1 libretro > /tmp/sameboy.log 2>&1 || { tail -n 30 /tmp/sameboy.log; exit 1; }
+          sha256sum /tmp/sameboy/build/bin/sameboy_libretro.so
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sameboy-core
+          path: /tmp/sameboy/build/bin/sameboy_libretro.so
+          if-no-files-found: error
+          retention-days: 3
+
+  suites:
+    name: Suites (${{ matrix.name }})
+    needs: [build, core]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: fast 1 of 4, id: fast-1, args: '--shard 1/4'}
+          - {name: fast 2 of 4, id: fast-2, args: '--shard 2/4'}
+          - {name: fast 3 of 4, id: fast-3, args: '--shard 3/4'}
+          - {name: fast 4 of 4, id: fast-4, args: '--shard 4/4'}
+          - {name: link_combined, id: link_combined, args: link_combined}
+          - {name: upstream, id: upstream, args: upstream}
+          - {name: link_pair, id: link_pair, args: link_pair}
+          - {name: link_long, id: link_long, args: link_long}
+          - {name: link_stress, id: link_stress, args: link_stress}
+          - {name: link_snapshot, id: link_snapshot, args: link_snapshot}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/toolchain
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: roms
+          path: build
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sameboy-core
+          path: core
+
+      - name: Run the suites
+        env:
+          SUITE_ARGS: ${{ matrix.args }}
+        run: python tests/run.py --core core/sameboy_libretro.so --jobs 3 $SUITE_ARGS
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: verification-${{ matrix.id }}
+          path: |
+            build/verification.json
+            build/verify-*.log
+          retention-days: 14
+
+  verification:
+    name: Verification
+    needs: suites
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: verification-*
+          path: verified
+
+      - name: Check every suite ran once and passed
+        run: |
+          python3 tests/run.py --core core/sameboy_libretro.so --list > expected.txt
+          python3 tools/verify_summary.py expected.txt verified
