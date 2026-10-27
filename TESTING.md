@@ -22,8 +22,8 @@ sources, and SameBoy core and runs the rest. Any change to those starts a new
 record, and a failed suite always runs again. `build/verification.json` lists the
 suites it resumed rather than ran. Without `--resume` every suite runs.
 
-The Verify workflow runs the whole suite on every pull request and every push to
-`main`, and from the Actions page. It builds both ROMs and the SameBoy core
+The Verify workflow runs the whole suite on every pull request and from the
+Actions page, not on pushes to `main`. It builds both ROMs and the SameBoy core
 once, then runs the suites in parallel jobs: the fast ones in four slices
 (`--shard K/4`) and each slow suite alone. `--list` prints the suites a run
 would start. The Verification job merges the shards' `verification.json` files
