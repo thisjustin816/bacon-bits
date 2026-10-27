@@ -26,10 +26,10 @@ The Verify workflow runs the whole suite on pull requests that change more than
 Markdown or `LICENSE`, and from the Actions page, not on pushes to `main`. It
 builds both ROMs and the SameBoy core once, then runs the suites in parallel
 jobs: the fast ones in four slices (`--shard K/4`) and each slow suite alone.
-`--list` prints the suites a run would start. The Verification job merges the shards' `verification.json` files
-and fails unless every suite ran once and passed, all on one pair of ROM
-hashes. Each shard's logs are kept as an artifact for 14 days. These are PyBoy
-and SameBoy results, not hardware.
+`--list` prints the suites a run would start. The Verification job merges the
+shards' `verification.json` files and fails unless every suite ran once and
+passed, all on one pair of ROM hashes. Each shard's logs are kept as an artifact
+for 14 days. These are PyBoy and SameBoy results, not hardware.
 
 Verify does not block a merge, so read its result on every pull request that
 runs it before merging. A pull request that changes only Markdown files or
