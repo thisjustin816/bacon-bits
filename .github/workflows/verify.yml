@@ -4,12 +4,14 @@ name: Verify
 # tests/run.py in parallel jobs and checks that each ran once and passed. The
 # fast suites run in four slices, each slow suite in a job of its own, so the
 # 25-minute Link stress run does not hold up the rest. The last job, Verification,
-# is the one result to require. It runs on pull requests and from the Actions page,
-# not on pushes to main. The suites run in PyBoy and SameBoy; none of this is
+# is the one result to read before merging. It runs on pull requests and from the
+# Actions page, not on pushes to main, and a pull request that changes only Markdown
+# files or LICENSE skips it. assets/ is not skipped: tests/lettering.py reads
+# assets/font.png. The suites run in PyBoy and SameBoy; none of this is
 # evidence from a real console.
 on:
   pull_request:
-    paths-ignore: ['**.md', 'assets/**', 'LICENSE']
+    paths-ignore: ['**.md', 'LICENSE']
   workflow_dispatch:
 
 permissions:

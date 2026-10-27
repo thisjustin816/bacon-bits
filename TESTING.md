@@ -22,14 +22,19 @@ sources, and SameBoy core and runs the rest. Any change to those starts a new
 record, and a failed suite always runs again. `build/verification.json` lists the
 suites it resumed rather than ran. Without `--resume` every suite runs.
 
-The Verify workflow runs the whole suite on every pull request and from the
-Actions page, not on pushes to `main`. It builds both ROMs and the SameBoy core
-once, then runs the suites in parallel jobs: the fast ones in four slices
-(`--shard K/4`) and each slow suite alone. `--list` prints the suites a run
-would start. The Verification job merges the shards' `verification.json` files
-and fails unless every suite ran once and passed, all on one pair of ROM
-hashes; require that job. Each shard's logs are kept as an artifact for 14
-days. These are PyBoy and SameBoy results, not hardware.
+The Verify workflow runs the whole suite on pull requests that change more than
+Markdown or `LICENSE`, and from the Actions page, not on pushes to `main`. It
+builds both ROMs and the SameBoy core once, then runs the suites in parallel
+jobs: the fast ones in four slices (`--shard K/4`) and each slow suite alone.
+`--list` prints the suites a run would start. The Verification job merges the
+shards' `verification.json` files and fails unless every suite ran once and
+passed, all on one pair of ROM hashes. Each shard's logs are kept as an artifact
+for 14 days. These are PyBoy and SameBoy results, not hardware.
+
+Verify does not block a merge, so read its result on every pull request that
+runs it before merging. A pull request that changes only Markdown files or
+`LICENSE` skips it and merges without a run. Any other change, including one
+under `assets/`, runs the whole suite.
 
 SameBoy 26a56bd builds with `make libretro`, RGBDS and `hexdump`. Build it
 with `make -j1`: the parallel build can race on a helper program.
