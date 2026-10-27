@@ -11,10 +11,12 @@ def main():
  for variant,(scene,item) in enumerate(variants):
   x,y=[(4,37),(82,37),(4,85),(82,85)][item]
   im=picture(scene,0)
-  # Fill background pixels only. Component pins can reach this shared row.
+  # Fill background pixels only. Component pins can reach this shared row. The edge tiles take the
+  # fill out to the tile boundary on both sides, which sits at a different offset for each column.
+  inner_left=(x-1)//8*8+8;inner_right=(x+74)//8*8
   for yy in range(y+1,y+43):
    for xx in range(x+1,x+73):
-    if (xx<x+4 or xx>=x+68 or yy<y+3) and im.getpixel((xx,yy))==0:im.putpixel((xx,yy),1)
+    if (xx<inner_left or xx>=inner_right or yy<y+3) and im.getpixel((xx,yy))==0:im.putpixel((xx,yy),1)
   ImageDraw.Draw(im).rounded_rectangle((x-1,y-1,x+74,y+44),radius=2,outline=3,width=2)
   tiles=[];mapping=[]
   for row in range(7):
