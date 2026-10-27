@@ -29,24 +29,30 @@ static void live_dpad(uint8_t held) {
 }
 static uint8_t initialized;
 static const char *const presets[]={"","Button check","Short events","Hold timing","Diagonals"};
-static const char *const hints[]={"Select: next page","Start: clear all","Hold all 4: exit"};
-static uint8_t drawn_hint;
+static const char *const hints[]={"Select: next page","Start: zero counts","Hold A+B+Sel+Start"};
+static uint8_t hint_phase;
+static uint16_t hint_at;
 static const char *const notes[]={"Keep counters","Live button states","1 frame threshold","Hold milliseconds","D-pad corners"};
 static void clear_counts(void) {
  uint8_t i;button_opposites=0;memset(button_diagonal,0,sizeof(button_diagonal));memset(button_diagonal_hold,0,sizeof(button_diagonal_hold));memset(button_diagonal_peak,0,sizeof(button_diagonal_peak));memset(button_presses,0,sizeof(button_presses));memset(button_short,0,sizeof(button_short));memset(button_gaps,0,sizeof(button_gaps));
  memset(button_longest,0,sizeof(button_longest));memset(button_held,0,sizeof(button_held));for(i=0;i<8;++i)button_released[i]=65535;button_peak=0;
 }
 static void screen(void) {
- drawn_directions=255;drawn_hint=255;
+ drawn_directions=255;hint_phase=0;hint_at=bb_frame();
  ui_screen(button_page==3?"Diagonals":"Buttons",button_page==0?"1/4":button_page==1?"2/4":button_page==2?"3/4":"4/4");
  if(button_page==0)ui_status("Hold all 4: exit");
+ if(button_page==1 || button_page==2)ui_line(UI_DETAIL,hints[0]);
 }
-/* The count and timing pages have a free line under the box. It cycles through what the buttons do, and only
-   redraws when the hint changes. The live page keeps Start for testing, and Diagonals uses the line for a reading. */
+/* The count and timing pages have a free line under the box. It shows the first hint when the page opens and
+   moves to the next every 128 frames, drawn only on the middle frame of the timing page's 16-frame refresh
+   cycle. The refresh pass has almost no slack before the next VBlank, so the redraw stays clear of it. The live
+   page keeps Start for testing, and Diagonals uses the line for a reading. */
 static void hint(uint16_t now) {
- uint8_t phase=(now>>7)%3u;
- if((button_page==1 || button_page==2) && phase!=drawn_hint){drawn_hint=phase;ui_line(UI_DETAIL,hints[phase]);}
+ if((uint16_t)(now-hint_at)<128u)return;
+ hint_phase=hint_phase==2u?0u:hint_phase+1u;hint_at=now;ui_line(UI_DETAIL,hints[hint_phase]);
 }
+/* A dialog hides how long it stayed open, so no button counts as just released when it closes. */
+static void dialog_closed(void) {uint8_t i;for(i=0;i<8;++i)button_released[i]=65535;}
 static void show(uint8_t held) {
  uint8_t i,n=0;uint32_t corner_value;char str[20],*end;
  if(button_page==0){
@@ -98,10 +104,11 @@ void buttons_run(void) BANKED {
   if(button_page==2){if((pressed&J_UP)&&button_threshold<8)++button_threshold;if((pressed&J_DOWN)&&button_threshold>1)--button_threshold;
    if(tap&J_A)button_units^=1;
   }
-  if(button_page && (tap&J_START)){if(ui_confirm("Clear counts?"))clear_counts();screen();key=0;old=bb_frame();}
+  if(button_page && (tap&J_START)){if(ui_confirm("Clear counts?"))clear_counts();dialog_closed();screen();key=0;now=old=bb_frame();}
   if(button_page==3 && (tap&J_A))button_diagonal_view=(button_diagonal_view+1u)%3u;
-  if((key&0xf0u)==0xf0u){if(chord<60)chord+=delta;if(chord>=60){if(bb_exit())return;screen();key=0;chord=0;old=bb_frame();}}else chord=0;
+  if((key&0xf0u)==0xf0u){if(chord<60)chord+=delta;if(chord>=60){if(bb_exit())return;dialog_closed();screen();key=0;chord=0;now=old=bb_frame();}}else chord=0;
   if(key!=previous || pressed || (button_page>=2 && !(now&15u)))show(key);
-  hint(now);previous=key;
+  else if((now&15u)==8u && (button_page==1 || button_page==2))hint(now);
+  previous=key;
  }
 }

@@ -47,7 +47,7 @@ with `make -j1`: the parallel build can race on a helper program.
 | Link cable | Original features and paired stress suites on standalone and banked ROMs; an interrupt during a graphics-bank switch must queue its byte; two benches on a free-running cable at both CPU speeds on each end, with a flipped bit, a dropped edge and a 40-frame unplug | Two consoles and a cable for electrical timing, connectors and sustained operation |
 | Rumble | Compiled assembly timing, output transitions in SameBoy, retained settings and output cleanup | Motor response, strength and cartridge compatibility |
 | Audio | Compiled APU calls and ordinary UI inputs; frequencies, clocks, waveform bytes, levels, stereo samples, mute, bursts and input responsiveness | Speaker/headphone response and audible artifacts |
-| Buttons | Counts, short presses, hold durations, diagonals, opposing inputs, confirmations, live D-pad graphics, retained counters, and staged or simultaneous return chords on every page | Contacts, physical bounce and combinations the emulator filters |
+| Buttons | Counts, short presses, hold durations, diagonals, opposing inputs, confirmations, live D-pad graphics, retained counters, on-screen hints, the loop's poll rate, and staged or simultaneous return chords on every page | Contacts, physical bounce and combinations the emulator filters |
 | Display | All seven default patterns checked as pixels, including checker parity, stripe spacing, scroll columns and ramp bands; preparation preserves font tiles on every sampled frame; flicker phases of 1, 2 and 30 frames measured frame by frame; controls during the full view | Panel faults, response time, color accuracy and motion appearance |
 | SRAM | All patterns, confirmation defaults, bank limits, power cycling, injected data errors, copied bank tags and damaged records | Cartridge retention, banking and electrical reliability |
 | Burn in | Complete ROM checksums, an altered ROM, retained first-error details, duration, CPU switching and cleanup; scratch and SRAM paths run in the cartridge; motor pulse width and spacing at every load from SameBoy's rumble output; RTC watch and redraw cadence at every load | Sustained hardware stability under load |
@@ -71,8 +71,9 @@ focus changes and counter formatting.
 value, along with the Buttons timing status, the Link timer, Infrared after a mode
 switch, the Audio frequency unit and the Clock counters. `tools/check_build.py`
 enforces the same eight-column limit on every settings label and value in the
-source. `display_timing`, `buttons_chord`, `burn_cadence` and `burn_rumble`
-cover flicker phase lengths, the Buttons return chord, and Burn In timing.
+source. `display_timing`, `buttons_chord`, `buttons_poll`, `burn_cadence` and
+`burn_rumble` cover flicker phase lengths, the Buttons return chord, hints and
+clear confirmation, how often the Buttons loop reads the pad, and Burn In timing.
 `sram_burn` covers browser Up/Down order, SRAM cycle passes, a stopped write,
 and Burn In's SRAM watch passing and then catching a flipped bit.
 
