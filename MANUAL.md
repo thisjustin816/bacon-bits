@@ -66,7 +66,9 @@ rate on the host.
 Start begins the test. B stops it; Start then returns to settings. Left/Right
 changes between traffic, shared-state, timing, and ball pages. A or Up/Down
 changes the detail page. Select holds or resumes the displayed results while
-the test continues.
+the test continues. Link takes a button reading once two frames
+agree, so a return chord whose buttons land a frame apart opens the dialog
+instead of acting on Start alone.
 
 The traffic instrument advances with accepted packets. Detailed pages retain
 CRC, sequence, payload, overflow, underrun, timeout, barrier, state, and order
