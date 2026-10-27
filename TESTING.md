@@ -31,10 +31,12 @@ and fails unless every suite ran once and passed, all on one pair of ROM
 hashes. Each shard's logs are kept as an artifact for 14 days. These are PyBoy
 and SameBoy results, not hardware.
 
-Verify does not block a merge, so read its result on every pull request before
-merging it. A pull request that changes only Markdown files, `assets/` or
-`LICENSE` skips Verify. Before merging one, run Verify by hand on its branch
-(Actions, Verify, Run workflow) and wait for the Verification job to pass.
+Verify does not block a merge, so read its result on every pull request that
+runs it before merging. A pull request that changes only Markdown files,
+`assets/` or `LICENSE` skips Verify, and it merges without a run. If such a
+pull request changes something the suites or the build depend on, run Verify by
+hand on its branch first (Actions, Verify, Run workflow) and wait for the
+Verification job to pass.
 
 SameBoy 26a56bd builds with `make libretro`, RGBDS and `hexdump`. Build it
 with `make -j1`: the parallel build can race on a helper program.
