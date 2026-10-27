@@ -28,8 +28,13 @@ once, then runs the suites in parallel jobs: the fast ones in four slices
 (`--shard K/4`) and each slow suite alone. `--list` prints the suites a run
 would start. The Verification job merges the shards' `verification.json` files
 and fails unless every suite ran once and passed, all on one pair of ROM
-hashes; require that job. Each shard's logs are kept as an artifact for 14
-days. These are PyBoy and SameBoy results, not hardware.
+hashes. Each shard's logs are kept as an artifact for 14 days. These are PyBoy
+and SameBoy results, not hardware.
+
+Verify does not block a merge, so read its result on every pull request before
+merging it. A pull request that changes only Markdown files, `assets/` or
+`LICENSE` skips Verify. Before merging one, run Verify by hand on its branch
+(Actions, Verify, Run workflow) and wait for the Verification job to pass.
 
 SameBoy 26a56bd builds with `make libretro`, RGBDS and `hexdump`. Build it
 with `make -j1`: the parallel build can race on a helper program.
