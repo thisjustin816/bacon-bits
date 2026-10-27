@@ -17,6 +17,15 @@ def check_edges(v,page,context):
   assert all(pixel(v,x,top)==3 and pixel(v,x,top+43)==3 for x in range(left+2,left+72)),(context,card,"Card top or bottom erased")
   assert all(pixel(v,left,y)==3 and pixel(v,left+73,y)==3 for y in range(top+2,top+42)),(context,card,"Card side erased")
  if page==2:assert all(pixel(v,x,85)==0 for x in range(80,160)),(context,"Focus drew an absent lower card")
+def check_fill(v,card,model,context):
+ # A focused card's edge tiles carry the highlight fill out to the card's border. A pixel left as
+ # background there shows as a white line on Color, where the interior takes the fill from its palette.
+ if model!='Game Boy Color':return
+ left,top=[(4,37),(82,37),(4,85),(82,85)][card]
+ strips=[(x,y) for x in list(range(left+1,(left-1)//8*8+8))+list(range((left+74)//8*8,left+73)) for y in range(top+1,top+43)]
+ strips+=[(x,y) for x in range(left+1,left+73) for y in (top+1,top+2)]
+ bare=[(x,y) for x,y in strips if pixel(v,x,y)==0]
+ assert not bare,(context,card,'Focus fill left background pixels at',bare[:6])
 shots=[]
 for variant in ['', 'mbc3']:
  for model in ['Game Boy Color','Game Boy']:
@@ -59,6 +68,7 @@ for variant in ['', 'mbc3']:
        (OUT/'first-failing-input.json').write_text(json.dumps({'variant':variant,'model':model,'page':page,'card':card,'frame':frame})+'\n')
        raise AssertionError((variant,model,page,card,frame,'Mixed rasterized animation pose'))
      check_edges(v,page,(variant,model,page,frame))
+     check_fill(v,0,model,(variant,model,page,frame))
      if page==1:
       assert all(pixel(v,136,y)==3 for y in range(42,65)),'Checker crossed the display frame'
      if page==2:
@@ -66,7 +76,7 @@ for variant in ['', 'mbc3']:
      if frame%16==0:shots.append(p.image.copy())
     # Focus each other card, then restore the first before changing pages.
     for selected in range(1,3 if page==2 else 4):
-     press('right');check_edges(p.vram(),page,(variant,model,page,selected))
+     press('right');check_edges(p.vram(),page,(variant,model,page,selected));check_fill(p.vram(),selected,model,(variant,model,page,selected))
     for _ in range(2 if page==2 else 3):press('left')
   except Exception as error:
    p.image.save(OUT/'first-failing-frame.png')
