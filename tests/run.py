@@ -2,7 +2,7 @@
 from pathlib import Path
 import argparse,concurrent.futures,hashlib,json,os,subprocess,sys,threading
 ROOT=Path(__file__).resolve().parents[1]
-a=argparse.ArgumentParser();a.add_argument('--core',type=Path,help='SameBoy libretro core; without it the SameBoy suites are reported as not run');a.add_argument('--jobs',type=int,default=4);a.add_argument('--resume',action='store_true',help='skip suites that already passed for the same ROMs, test sources and core, as recorded in build/verification-progress.json');a.add_argument('cases',nargs='*',help='run only these suites, for example the ones a change touches');args=a.parse_args()
+a=argparse.ArgumentParser();a.add_argument('--core',type=Path,help='SameBoy libretro core; without it the SameBoy suites are reported as not run');a.add_argument('--jobs',type=int,default=4);a.add_argument('--resume',action='store_true',help='skip suites that already passed for the same ROMs, test sources and core, as recorded in build/verification-progress.json');a.add_argument('--shard',metavar='K/N',help='run slice K of N of the suites a full run starts together, as in 2/4; the slow suites run only when named');a.add_argument('--list',action='store_true',help='print the suites this run would start, one per line, and exit');a.add_argument('cases',nargs='*',help='run only these suites, for example the ones a change touches');args=a.parse_args()
 commands={name:[sys.executable,'tests/'+name+'.py'] for name in ['smoke','modal_regression','rumble_combined','audio_ui','audio_backend','audio_shapes','audio_responsiveness','additions','sram_patterns','burn_faults','presets','lettering','menu_alignment','ui_spacing','diagonals','graphical_ui','serial_ui_bank','cartridge_features','ir_cycles','ir_pair','preset_bounce','platform_mode3','rtc','variants','flicker','display_font','screen_text','display_timing','buttons_chord','burn_cadence','sram_burn','audio_dacs','stack_depth']}
 commands['build_check']=[sys.executable,'tools/check_build.py']
 commands['mbc3_build_check']=[sys.executable,'tools/check_build.py']
@@ -22,6 +22,13 @@ if args.cases:
  if missing:a.error('these suites need --core: '+', '.join(missing))
  commands={name:command for name,command in commands.items() if name in args.cases}
  slow=[name for name in slow if name in args.cases]
+if args.shard:
+ try:index,count=map(int,args.shard.split('/'));assert 1<=index<=count
+ except (ValueError,AssertionError):a.error('--shard takes K/N with 1 <= K <= N')
+ if args.cases:a.error('--shard takes the place of suite names')
+ commands={name:command for position,(name,command) in enumerate(commands.items()) if position%count==index-1};slow=[]
+if args.list:
+ print('\n'.join([*commands,*slow]));raise SystemExit(0)
 paths=[('mbc5','build/bacon-bits.gbc'),('mbc3','build/mbc3/bacon-bits.gbc')]
 identities={name:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for name,path in paths}
 if args.jobs<1:a.error('--jobs must be positive')
