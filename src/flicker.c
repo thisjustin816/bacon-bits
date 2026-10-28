@@ -50,7 +50,7 @@ static void actor(void) {
 static void prepare(void) {
  uint8_t n=2,t,phase,x,y,k,lo,hi,c,tile[16],row[20],count;
  /* The full view replaces the settings map and the cover map. */
- flicker_ready=0;++ui_revision;HIDE_SPRITES;HIDE_WIN;SCX_REG=SCY_REG=0;VBK_REG=0;bb_cover_dirty=1;
+ flicker_ready=0;++ui_revision;HIDE_SPRITES;HIDE_WIN;SCX_REG=SCY_REG=0;VBK_REG=0;bb_cover_dirty=bb_header_dirty=1;
  if(flicker_pattern==2){n=flicker_cell;if(!(n&1u))n>>=1;if(!(n&1u))n>>=1;}
  if(flicker_pattern==3)n=1;
  count=n*n;

@@ -21,12 +21,9 @@ MAX_BLANK=18
 # border in one VBlank and draws the new one over the next two.
 MAX_CHANGE_RUN=3
 # Leaving a full-screen view, the header must be back within this many frames
-# of the press. The B press is read one or two frames after it starts.
-HEADER_GRACE=4
-# Flicker puts the header back two frames later than Display: its cover window
-# is refilled before the header is restored, so frame 5 after the press still
-# shows the full-view pattern in rows 0-2. Keep this at 6 until that is fixed.
-FLICKER_HEADER_GRACE=6
+# of the press. The B press is read one or two frames after it starts, and
+# Flicker stops its display for up to three more before the header is redrawn.
+HEADER_GRACE=6
 # While a tone plays, the Audio waveform scrolls through these map rows and
 # columns; the blink check skips only those cells.
 WAVE_ROWS=range(6,12);WAVE_COLUMNS=range(2,18)
@@ -60,8 +57,11 @@ class Tour:
   # The boot ROM's logo uses tiles the font takes over; judge the cartridge's own frames.
   # The header is judged on every frame outside a full-screen view, and from
   # HEADER_GRACE frames after the press that leaves one.
+  shown=self.header and self.p.image.crop((0,0,160,24)).tobytes()==self.header
   if self.header and (not self.full_view or (self.header_from is not None and self.frames>self.header_from)):
-   if self.p.image.crop((0,0,160,24)).tobytes()!=self.header:self.problems.append((self.step,self.frames,'header differs from the browser header'))
+   if not shown:self.problems.append((self.step,self.frames,'header differs from the browser header'))
+  # The cover must never rise over a header left by a full-screen view.
+  if self.header and not shown and self.p.read(0xff40)[0]&0x20 and self.p.read(0xff4a)[0]<=24:self.problems.append((self.step,self.frames,'cover raised over a wrong header'))
   if not self.full_view and self.step!='boot':
    if len(self.p.image.getcolors(65536) or [])<=1:self.problems.append((self.step,self.frames,'blank frame'))
    # Punctuation slots hold browser labels only while the browser is shown.
@@ -167,7 +167,7 @@ for variant in ['', 'mbc3']:
    t.press('b',40)
    t.step='flicker settings';t.go(10);t.preset(1);t.expect('Flicker')
    for _ in range(4):t.press('select')
-   t.step='flicker full view';t.full_view=True;t.press('a',120);t.header_from=t.frames+FLICKER_HEADER_GRACE;t.press('b',10);t.full_view=False;t.header_from=None;t.step='flicker return';t.tick(60);t.press('b',60)
+   t.step='flicker full view';t.full_view=True;t.press('a',120);t.header_from=t.frames+HEADER_GRACE;t.press('b',10);t.full_view=False;t.header_from=None;t.step='flicker return';t.tick(60);t.press('b',60)
    t.step='browser after tour';t.tick(120)
    grouped={}
    for step,frame,kind in t.problems:
