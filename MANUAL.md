@@ -9,7 +9,7 @@ custom settings. A confirmation starts on No.
 
 Each test page is a box. Its title and page count sit in the top border, and
 what the test is doing, such as Stopped or Running, sits in the bottom border.
-A line under the box adds one more reading.
+A line under the box adds one more reading, or on Buttons' count and timing pages a hint.
 
 Platform, Link, Rumble, Buttons and Flicker use A+B+Start+Select to open a
 return dialog. Continue is selected first; Test menu returns to the browser.
@@ -175,11 +175,20 @@ changes between live, press-count, timing, and diagonal views. Left/Right
 chooses a button on the count and timing pages. Taps (short presses) and gaps
 (short releases) have separate counters; Up/Down changes their threshold from
 1-8 frames. A changes hold units between frames and milliseconds. Start opens
-the clear-counts confirmation.
+the clear-counts confirmation on the count, timing and diagonal pages. On the
+live page Start is only a tested button, so checking it opens nothing.
 
 Select, A and Start act when the button is released, and only when no other
 button was held with it. Holding combinations, or the return chord, leaves the
-page, units and counters as they were.
+page, units and counters as they were. On the count and timing pages the D-pad
+also moves the selection, and those presses count as D-pad tests too; check
+the D-pad on the live or diagonal page.
+
+To leave, hold A+B+Select+Start for about a second. The live page says so in
+the bottom border. The count and timing pages show a hint line under the box that
+cycles through Select: next page, Start: zero counts and Hold A+B+Sel+Start,
+starting from the first each time the page opens. The diagonals page uses that
+line for its Opposites reading, so it has no hint.
 
 The D-pad diagram marks the current corner. Each of the four corners has an
 entry count and longest hold. A changes between counts, hold frames, and hold
