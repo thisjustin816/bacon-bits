@@ -109,7 +109,9 @@ PyBoy that steps two consoles a few cycles at a time on one clock, with their
 infrared ports facing each other. PyBoy's own infrared port reads as idle.
 The receiver must count every pulse the sender's LED makes, read the port
 at least every 56 cycles, and stop for no more than 3,000 cycles a frame
-outside its redraw after a burst. The ON 1 width is not covered: its pulse
+outside its redraw after a burst. That redraw must end within two frames.
+`ir_cycles` requires every pulse of the compiled burst to write the LED on
+and then off with reading enabled. The ON 1 width is not covered: its pulse
 is shorter than the gap between reads.
 
 `link_pair` runs two benches in Link on the same harness with a cable that

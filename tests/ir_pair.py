@@ -2,7 +2,8 @@
 
 The receiver must count every pulse of each transmit preset, with its frames
 at three offsets from the sender's. It may stop reading the port once a
-frame for its VBlank work, and for its redraw just after a burst. A burst
+frame for its VBlank work, and for its redraw just after a burst, which must
+end within two frames so the receiver is not blind long after. A burst
 that arrives during either loses the pulses sent then, so the offsets keep
 the bursts clear of the VBlank work.
 Uses the two-console harness in two_consoles.py.
@@ -20,6 +21,8 @@ SAMPLE_GAP=56
 FRAME_GAP=3000
 # How soon after a burst the receiver's redraw starts.
 REDRAW_AFTER=2*FRAME
+# Longest the redraw after a burst may keep the receiver off the port.
+REDRAW_LONGEST=2*FRAME
 
 def row(pb,y):return ''.join(chr(t+32) if t<96 else '#' for t in pb.memory[0,0x9800+y*32:0x9814+y*32])
 def text(pb):return '\n'.join(row(pb,y) for y in range(18))
@@ -62,7 +65,7 @@ def run(rom,preset,offset,bursts=3):
    ends=[t for t,n in zip(offs,offs[1:]+[float('inf')]) if n-t>FRAME_GAP]
    redraws=[(a,b) for a,b in gaps if b-a>FRAME_GAP and any(e<=a<=e+REDRAW_AFTER for e in ends)]
    gaps=[b-a for a,b in gaps if (a,b) not in redraws]
-   return ir.pulses(0),get(receiver,'ir_edges',2),get(sender,'ir_pulses'),gaps,(reads[-1]-reads[0])/FRAME,len(redraws)
+   return ir.pulses(0),get(receiver,'ir_edges',2),get(sender,'ir_pulses'),gaps,(reads[-1]-reads[0])/FRAME,[b-a for a,b in redraws]
   finally:pair.close()
 
 def main():
@@ -74,14 +77,15 @@ def main():
    sent,counted,per_burst,gaps,frames,redraws=run(rom,preset,offset)
    print(f'{name} offset {offset}: sent {sent} pulses ({per_burst} per burst), counted {counted} edges; '
          f'{len(gaps)} gaps over {SAMPLE_GAP} cycles in {frames:.0f} frames, longest {max(gaps,default=0):.0f}, '
-         f'{redraws} redraws after bursts; '
+         f'{len(redraws)} redraws after bursts, longest {max(redraws,default=0)/FRAME:.2f} frames; '
          f'{time.monotonic()-started:.0f} s',flush=True)
    assert sent>=3*per_burst,(sent,per_burst)
    if counted!=sent:failures.append((name,offset,'counted',counted,'of',sent))
    if len(gaps)>frames+1 or max(gaps,default=0)>FRAME_GAP:failures.append((name,offset,'gaps',len(gaps),max(gaps,default=0)))
+   if max(redraws,default=0)>REDRAW_LONGEST:failures.append((name,offset,'redraws',redraws))
  assert not failures,failures
  print(f'Infrared receive counts every pulse of each transmit preset at three frame offsets, '
        f'reading the port every {SAMPLE_GAP} cycles or sooner outside one VBlank gap of at most {FRAME_GAP} per frame '
-       f'and a redraw after each burst')
+       f'and a redraw after each burst of at most {REDRAW_LONGEST/FRAME:.0f} frames')
 
 if __name__=='__main__':main()
