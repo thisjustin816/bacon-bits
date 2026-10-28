@@ -48,7 +48,7 @@ with `make -j1`: the parallel build can race on a helper program.
 | Rumble | Compiled assembly timing, output transitions in SameBoy, retained settings and output cleanup | Motor response, strength and cartridge compatibility |
 | Audio | Compiled APU calls and ordinary UI inputs; frequencies, clocks, waveform bytes, levels, stereo samples, mute, bursts and input responsiveness | Speaker/headphone response and audible artifacts |
 | Buttons | Counts, short presses, hold durations, diagonals, opposing inputs, confirmations, live D-pad graphics, retained counters, on-screen hints, the loop's poll rate, and staged or simultaneous return chords on every page | Contacts, physical bounce and combinations the emulator filters |
-| Display | All seven default patterns checked as pixels, including checker parity, stripe spacing, scroll columns and ramp bands; preparation preserves font tiles on every sampled frame; flicker phases of 1, 2 and 30 frames measured frame by frame; controls during the full view | Panel faults, response time, color accuracy and motion appearance |
+| Display | All seven default patterns checked as pixels, including checker parity, stripe spacing, scroll columns and ramp bands; preparation preserves font tiles on every sampled frame; flicker phases of 1, 2 and 30 frames measured frame by frame on the screen and in the palette registers, with no phase change inside a frame; controls during the full view | Panel faults, response time, color accuracy and motion appearance |
 | SRAM | All patterns, confirmation defaults, bank limits, power cycling, injected data errors, copied bank tags and damaged records | Cartridge retention, banking and electrical reliability |
 | Burn in | Complete ROM checksums, an altered ROM, retained first-error details, duration, CPU switching and cleanup; scratch and SRAM paths run in the cartridge; motor pulse width and spacing at every load from SameBoy's rumble output; RTC watch and redraw cadence at every load | Sustained hardware stability under load |
 | Clock (MBC3) | Live tick, held latch, halt, rollover, confirmation, journal recovery and restoration in PyBoy; halt/restore in SameBoy; displayed change counters | Battery-backed accuracy and long-term retention |
@@ -65,13 +65,24 @@ open and Link must not start. `preset_bounce` picks Flicker's and
 Infrared's presets with an A press that reads released for one frame, as a
 bouncing button can; neither instrument may start from the held button. `lettering`, `menu_alignment`,
 `menu_art`, `ui_spacing` and `ui_transitions` cover glyphs, layout, animation,
-focus changes and counter formatting.
+focus changes and counter formatting. `ui_transitions` also requires the cards
+below the header to stay visible on every frame of a focus move.
+
+The build regenerates `assets/font.png` from `tools/lettering.py`, so `lettering`
+also compares the font with a SHA-256 digest pinned in `FONT_SHA256` at the top
+of `tests/lettering.py`. A damaged glyph fails there even though the sheet, the
+ROM and the other suites all follow the same data. To change the font on purpose,
+edit `tools/lettering.py`, rebuild, review the regenerated `assets/font.png`,
+and set `FONT_SHA256` to the digest the failing assertion prints. Commit the
+three files together.
 
 `screen_text` walks the settings pages and checks that no label touches its
-value, along with the Buttons timing status, the Link timer, Infrared after a mode
+value, including every button name on both Buttons count pages, along with the
+Buttons timing status, the Link timer, Infrared after a mode
 switch, the Audio frequency unit and the Clock counters. `tools/check_build.py`
 enforces the same eight-column limit on every settings label and value in the
-source. `display_timing`, `buttons_chord`, `buttons_poll`, `burn_cadence` and
+source, including the entries of string tables indexed in the call, such as
+the button names. `display_timing`, `buttons_chord`, `buttons_poll`, `burn_cadence` and
 `burn_rumble` cover flicker phase lengths, the Buttons return chord, hints and
 clear confirmation, how often the Buttons loop reads the pad, and Burn In timing.
 `sram_burn` covers browser Up/Down order, SRAM cycle passes, a stopped write,
@@ -92,8 +103,14 @@ lowest changed byte to stay above the static RAM limit in
 `screen_tour` walks every screen of both builds in SameBoy, in color and
 monochrome, and judges each frame as shown. It rejects a font slot showing
 anything but its glyph, a cell that blinks off and back within four frames, a
-change that takes more than three frames to land, and a blank body longer than
-18 frames. `--frames` keeps every other frame for review.
+change that takes more than three frames to land, a blank body longer than
+18 frames, and a header that differs from the browser's on any frame outside
+the Display and Flicker full views or more than four frames after the B press
+that leaves Display's, or six after the one that leaves Flicker's, which restores
+the header two frames later. Punctuation slots may hold label pieces only while the browser
+is shown, and the blink check skips only the Audio waveform's cells while a tone
+plays. A step that cannot reach its test or opens the wrong screen stops the
+tour. `--frames` keeps every other frame for review.
 
 `raster_transitions` compares the displayed header on every frame during
 navigation, diagnostic entry, settings-page changes and return, in CGB/DMG
