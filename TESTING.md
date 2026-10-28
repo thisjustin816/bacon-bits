@@ -100,7 +100,8 @@ anything but its glyph, a cell that blinks off and back within four frames, a
 change that takes more than three frames to land, a blank body longer than
 18 frames, and a header that differs from the browser's on any frame outside
 the Display and Flicker full views or more than four frames after the B press
-that leaves one. Punctuation slots may hold label pieces only while the browser
+that leaves Display's, or six after the one that leaves Flicker's, which restores
+the header two frames later. Punctuation slots may hold label pieces only while the browser
 is shown, and the blink check skips only the Audio waveform's cells while a tone
 plays. A step that cannot reach its test or opens the wrong screen stops the
 tour. `--frames` keeps every other frame for review.
