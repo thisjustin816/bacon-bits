@@ -43,8 +43,8 @@ with `make -j1`: the parallel build can race on a helper program.
 
 | Diagnostic | Automated evidence | Remaining hardware check |
 | --- | --- | --- |
-| Platform | Probe observations, evidence pages, register signatures, summary restoration, upstream classifier suite; the mode-3 write probe fails in PyBoy, which lets the writes through, and passes in SameBoy, which drops them | Classification on a real console; signatures identify observed behavior, not emulator authenticity |
-| Link cable | Original features and paired stress suites on standalone and banked ROMs; an interrupt during a graphics-bank switch must queue its byte; two benches on a free-running cable at both CPU speeds on each end, with a flipped bit, a dropped edge and a 40-frame unplug | Two consoles and a cable for electrical timing, connectors and sustained operation |
+| Platform | Probe observations, evidence pages, register signatures, summary restoration, upstream classifier suite; the mode-3 write probe fails in PyBoy, which lets the writes through, and passes in SameBoy, which drops them, where its port must show the passed mark | Classification on a real console; signatures identify observed behavior, not emulator authenticity |
+| Link cable | Original features and paired stress suites on standalone and banked ROMs; an interrupt during a graphics-bank switch must queue the byte it read; two benches on a free-running cable at both CPU speeds on each end, with a flipped bit, a dropped edge and a 40-frame unplug | Two consoles and a cable for electrical timing, connectors and sustained operation |
 | Rumble | Compiled assembly timing, output transitions in SameBoy, retained settings and output cleanup | Motor response, strength and cartridge compatibility |
 | Audio | Compiled APU calls and ordinary UI inputs; frequencies, clocks, waveform bytes, levels, stereo samples, mute, bursts and input responsiveness | Speaker/headphone response and audible artifacts |
 | Buttons | Counts, short presses, hold durations, diagonals, opposing inputs, confirmations, live D-pad graphics, retained counters, on-screen hints, the loop's poll rate, and staged or simultaneous return chords on every page | Contacts, physical bounce and combinations the emulator filters |
@@ -131,7 +131,9 @@ PyBoy that steps two consoles a few cycles at a time on one clock, with their
 infrared ports facing each other. PyBoy's own infrared port reads as idle.
 The receiver must count every pulse the sender's LED makes, read the port
 at least every 56 cycles, and stop for no more than 3,000 cycles a frame
-outside its redraw after a burst. The ON 1 width is not covered: its pulse
+outside its redraw after a burst. That redraw must end within two frames.
+`ir_cycles` requires every pulse of the compiled burst to write the LED on
+and then off with reading enabled. The ON 1 width is not covered: its pulse
 is shorter than the gap between reads.
 
 `link_pair` runs two benches in Link on the same harness with a cable that
@@ -144,23 +146,28 @@ unplug must count one host dropout and packets missing at the peer.
 
 `link_stress` runs the same cable with the rate settings at both CPU speeds.
 Paced, Burst, Full and Full on the fast wire must stay clean and move the
-same bytes per run as the build before Custom pacing, within 3%. Paced and
-Burst match it within 1%; Full moves about 1.5% fewer, the cost of the 32-bit
-interval clock. Custom bursts of 8 bytes with 488 us between them must stay
-clean and move at least 1.2 times the Burst preset's bytes. With 8 lines
-masked each frame on both ends, Burst must stay clean. The loop's own work
-spaces bytes about 6 ms apart even with no idle, so Custom All with no idle
-fails only once the peer masks 64 lines (7.3 ms) and loses edges. 64 masked
-lines on the host must stay clean and move fewer bytes than Full.
+same bytes per run as the build before Custom pacing: Paced and Burst within
+1%, Full within 3%, since it moves about 1.5% fewer, the cost of the 32-bit
+interval clock. The loop's work, not the wire, limits Full, so the fast wire
+moves no more bytes; the host must clock the wire at 16 cycles a bit on it
+and 512 otherwise, halved at double speed. Each case must also find the Burst,
+Idle and masked-lines steps it set held on each end. Custom bursts of 8 bytes
+with 488 us between them must stay clean and move at least 1.2 times the
+Burst preset's bytes. With 8 lines masked each frame on both ends, Burst must
+stay clean. The loop's own work spaces bytes about 6 ms apart even with no
+idle, so Custom All with no idle fails only once the peer masks 64 lines
+(7.3 ms) and loses edges. 64 masked lines on the host must stay clean and
+move fewer bytes than Full.
 
 `link_snapshot` starts the peer 150 frames before the host. That wait must
 not count as a failure, a gap or a recovery, and the first packet must clear
 it. A bit then flipped in a payload byte must leave the peer a snapshot of the
-rejected packet, sync bytes first and CRC bytes as the CRC view reports them,
-with the settings in use and the serial registers. The snapshot must not
-change through recovery, page and view changes, or a stop. Its cost, timed on
-one console stepped an instruction at a time, is about 2000 cycles once a
-test and must stay under 2500.
+rejected packet byte for byte as the cable delivered it, with a CRC that
+fails over those bytes and holds once the flipped bit is restored, CRC bytes
+as the CRC view reports them, the settings in use and the serial registers.
+The snapshot must not change through recovery, page and view changes, or a
+stop. Its cost, timed on one console stepped an instruction at a time, is
+about 2000 cycles once a test and must stay under 2500.
 
 `link_long` runs two benches under All stress with their frame counters
 starting just short of the 65536-frame wrap, so ordinary intervals cross

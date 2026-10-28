@@ -98,7 +98,8 @@ class Cable:
     edge. fault() flips a received bit or drops an edge at one end, and
     connected=False unplugs it: the clocking end reads 1 bits and the other
     gets no edges. flip_in_packet() waits for a packet's sync bytes at one
-    end and flips a bit later in that packet."""
+    end and flips a bit later in that packet; flipped_packet then holds that
+    end and where the packet starts in its received bytes."""
 
     def __init__(self) -> None:
         self.ends = []
@@ -110,8 +111,10 @@ class Cable:
         self.injected = []
         # How long before a byte's first edge the receiving end armed.
         self.slack = []
+        # Every byte each end has taken, in order.
         self.received = [[], []]
         self.packet_fault = None
+        self.flipped_packet = None
 
     def fault(self, kind: str, edge: int, receiver: int) -> None:
         """Flip the bit end receiver takes at absolute edge, or drop that edge."""
@@ -159,11 +162,12 @@ class Cable:
                     end.SC &= 0x7F
                     end.mb.cpu.set_interruptflag(8)
                     self.bytes[i] += 1
-                    self.received[i] = (self.received[i] + [end.SB])[-2:]
-                    if self.packet_fault and self.packet_fault[0] == i and tuple(self.received[i]) == self.packet_fault[2]:
+                    self.received[i].append(end.SB)
+                    if self.packet_fault and self.packet_fault[0] == i and tuple(self.received[i][-2:]) == self.packet_fault[2]:
                         # Edges count only while the wire is clocked, so the
                         # packet's later bytes follow eight edges apart.
                         self.faults[self.edges + (self.packet_fault[1] - 2) * 8 + 1] = ('flip', i)
+                        self.flipped_packet = (i, len(self.received[i]) - 2)
                         self.packet_fault = None
             if sender.transfer_enabled:
                 sender.edge = at + sender.period
@@ -178,6 +182,8 @@ def _end_class(serial, utils):
             self.edge = utils.MAX_CYCLES
             self.bits = 0
             self.armed_at = utils.MAX_CYCLES
+            # Every edge period this end has clocked the wire at.
+            self.clock_periods = set()
             self.mb = None
             self.base = 0.0
 
@@ -197,6 +203,8 @@ def _end_class(serial, utils):
             # 8192 Hz, or 262144 Hz with CGB fast clock; double speed doubles either.
             self.period = (16 if value & 2 else 512) / (2 if self.mb.double_speed else 1)
             self.edge = now + self.period if self.transfer_enabled and self.internal_clock else utils.MAX_CYCLES
+            if self.transfer_enabled and self.internal_clock:
+                self.clock_periods.add(self.period)
             self._cycles_to_interrupt = utils.MAX_CYCLES
 
         def tick(self, cycles):

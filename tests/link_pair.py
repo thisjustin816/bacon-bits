@@ -27,6 +27,9 @@ def start(rom,d,*,host_cpu=0,peer_cpu=0,test=0,rate=1,link=0,offset=0,setup=None
  started host_wait frames later, paired with the given frame offset. setup,
  if given, takes each console's index and press after the first page."""
  syms=symbols(rom)
+ # A counter the ROM lacks must stop the run, since read as zero it would pass every check.
+ missing=[name for name,_ in COUNTERS if '_'+name not in syms]
+ assert not missing,('The ROM has no symbol for these counters',missing)
  paths=[Path(d)/f'{i}.gbc' for i in range(2)]
  for path in paths:shutil.copy(rom,path)
  pair=Pair(paths,cable=True)
@@ -49,8 +52,7 @@ def start(rom,d,*,host_cpu=0,peer_cpu=0,test=0,rate=1,link=0,offset=0,setup=None
  return pair,syms
 
 def counters(pair,syms):
- # A build from before a counter existed reads it as None.
- return [{name:int.from_bytes(bytes(pb.memory[syms['_'+name]:syms['_'+name]+size]),'little') if '_'+name in syms else None for name,size in COUNTERS} for pb in pair.machines]
+ return [{name:int.from_bytes(bytes(pb.memory[syms['_'+name]:syms['_'+name]+size]),'little') for name,size in COUNTERS} for pb in pair.machines]
 
 def run_frames_paired(pair,frames):
  end=min(pair.now(0),pair.now(1))+frames*FRAME
