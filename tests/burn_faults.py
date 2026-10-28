@@ -1,7 +1,9 @@
-"""A damaged ROM must fail burn-in and keep its first failure when continuing."""
+"""A damaged ROM must fail burn-in and keep its first failure when continuing;
+Stop must turn off the audio that the Output load preset plays."""
 from pathlib import Path
 import re,tempfile
 from pyboy import PyBoy
+from cart import Cart,ROMS
 ROOT=Path(__file__).resolve().parents[1]
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'build/bacon-bits.noi').read_text(),re.M)}
 with tempfile.TemporaryDirectory() as td:
@@ -30,5 +32,14 @@ with tempfile.TemporaryDirectory() as td:
   assert get('burn_errors',4)>=2 and first==(get('burn_first_expected',2),get('burn_first_read',2))
   assert get('burn_seconds',4)>0 and p.memory[0xff4d]&0x80
   press('b');assert not get('burn_running') and not p.memory[0xff4d]&0x80 and not p.memory[0xff26]&0x80,(get('burn_running'),p.memory[0xff4d],p.memory[0xff26])
-  print('Burn-in: altered ROM padding detected in bank 7, repeated failure retains first evidence, elapsed time advances at double CPU speed, exit restores speed/APU')
+  print('Burn-in: altered ROM padding detected in bank 7, repeated failure retains first evidence, elapsed time advances at double CPU speed, exit restores speed')
  finally:p.stop(save=False)
+# The run above leaves Audio off. Output load plays a pulse, which Stop must silence.
+for variant,rom in ROMS.items():
+ c=Cart(rom,sound=True)
+ try:
+  c.go(7);c.preset(3);c.press('a');c.tick(60)
+  assert c.get('burn_running') and c.p.memory[0xff26]&0x81==0x81,(variant,'Output load is not playing pulse 1',hex(c.p.memory[0xff26]))
+  c.press('b');assert not c.get('burn_running') and not c.p.memory[0xff26]&0x80,(variant,'APU left on after Burn In stopped',hex(c.p.memory[0xff26]))
+ finally:c.close()
+print('Burn-in: Output load plays audio and Stop turns the APU off on both mappers')

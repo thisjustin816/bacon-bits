@@ -14,13 +14,19 @@ for load in LOADS:
   def row(y):v=p.vram();return ''.join(chr(t+32) if t<96 else '#' for t in v[0x1800+y*32:0x1814+y*32])
   try:
    p.tick(600)
-   while get('selected_test')!=7:p.press('right')
+   for _ in range(12):
+    if get('selected_test')==7:break
+    p.press('right')
+   else:raise AssertionError(('Browser never reached Burn In',get('selected_test')))
    p.press('a');p.tick(30);p.press('down');p.press('down');p.press('a');p.tick(30)  # Output load
    assert 'Rumble f' in row(8),row(8)
    p.press('down')
    for _ in range(frames-1):p.press('right')
    p.press('select');p.press('down')
-   while LOADS[[l in row(8) for l in LOADS].index(True)]!=load:p.press('left')
+   for _ in range(4):
+    if load in row(8):break
+    p.press('left')
+   else:raise AssertionError((load,frames,'Load setting never reached',row(8)))
    p.transitions.clear();p.press('a');start=p.frame;p.tick(600)
    edges=[(frame-start,on) for frame,on in p.transitions if frame>start+60]
    pulses=[off-on_at for (on_at,on),(off,_) in zip(edges,edges[1:]) if on]

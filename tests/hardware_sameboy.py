@@ -19,7 +19,10 @@ for variant,rom in [('mbc5',ROOT/'build/bacon-bits.gbc'),('mbc3',ROOT/'build/mbc
   if variant=='mbc3':
    go(2);assert 'CLOCK PRESETS' in text();p.press('down');p.press('down');p.press('a');p.press('a');assert 'CONFIRM' in text();p.press('down');p.press('a');assert get('rtc_dirty') and get('rtc_data',5).to_bytes(5,'little')[4]&64
    frozen=p.read(syms['_rtc_data'],5);p.tick(180);assert p.read(syms['_rtc_data'],5)==frozen and not get('rtc_halt_errors',2)
-   p.image.save(ROOT/'build/sameboy-rtc.png');p.press('b');assert not get('rtc_dirty');go(8);assert 'MBC5 RGB CART' in text();p.press('b')
+   p.image.save(ROOT/'build/sameboy-rtc.png');p.press('b');assert not get('rtc_dirty')
+   # Reopen the clock read only: exit must have restarted the halted clock.
+   go(2);assert 'CONTINUE' in text(),text();p.press('down');p.press('a');p.tick(60);assert not get('rtc_data',5).to_bytes(5,'little')[4]&64,('Exit left the RTC halted',p.read(syms['_rtc_data'],5).hex());p.press('b')
+   go(8);assert 'MBC5 RGB CART' in text();p.press('b')
   else:
    go(8);p.press('a');assert not get('led_active');p.press('a');assert get('led_active');p.tick(90);assert len(p.image.getcolors(65536))>4;p.image.save(ROOT/'build/sameboy-led.png');p.press('b');assert not get('led_active')
   go(9);p.press('down');p.press('a');p.press('a');p.tick(120);assert get('ir_running') and get('ir_bursts',2)>1

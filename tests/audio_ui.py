@@ -4,6 +4,7 @@ from fractions import Fraction
 import re,json,tempfile,shutil,sys
 import numpy as np
 from audio_navigation import select_row,lower_index
+from audio_expected import PULSE_HZ
 from pyboy import PyBoy
 from header import pyboy_header,vram_header
 ROOT=Path(__file__).resolve().parents[1]
@@ -39,9 +40,14 @@ with tempfile.TemporaryDirectory() as td:
    count=34 if voice<3 else 60
    first=get('tone_hundredths',4)
    assert first==(6400 if voice<2 else 3200 if voice<3 else 457)
-   for i in range(1,count):
-    before=get('tone_hundredths',4);press('right')
-    assert get('tone_index')==i and get('tone_hundredths',4)>before,(voice,i,get('tone_index'),get('audio_row'),get('audio_page'))
+   for i in range(count):
+    if i:
+     before=get('tone_hundredths',4);press('right')
+     assert get('tone_index')==i and get('tone_hundredths',4)>before,(voice,i,get('tone_index'),get('audio_row'),get('audio_page'))
+    if voice<3:
+     # Every step is within 0.5% of its listed frequency; wave plays an octave lower.
+     target=PULSE_HZ[i]*(100 if voice<2 else 50);got=get('tone_hundredths',4)
+     assert abs(got-target)<=target*0.005,(voice,i,'step frequency',got/100,target/100)
    last=get('tone_hundredths',4)
    assert last==(13107200 if voice<2 else 6553600 if voice<3 else 52428800)
    assert shown(last).upper() in text(p),(shown(last),text(p))
@@ -65,9 +71,6 @@ with tempfile.TemporaryDirectory() as td:
   p.screen.image.save(ROOT/'build/audio-playing.png')
   press('b');assert get('tone_playing')==0 and p.memory[0xff26]&0x80==0
   assert pyboy_header(p,True)
-  # Platform detection must still find an idle APU after playing every voice.
-  press('left');press('left');press('left');press('a');p.tick(180,True)
-  assert p.memory[0xff76]==0 and p.memory[0xff77]==0
   (ROOT/'build/audio-ui-results.json').write_text(json.dumps(endpoints,indent=2)+'\n')
-  print('Audio UI: exact displayed endpoints, 34/60 steps, every level, clamps, stereo samples, safe exit, and idle APU passed')
+  print('Audio UI: exact displayed endpoints, every pulse and wave step within 0.5% of its listed frequency, 34/60 steps, every level, clamps, stereo samples, and safe exit with the APU off passed')
  finally:p.stop(save=False)

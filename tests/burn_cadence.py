@@ -7,7 +7,10 @@ a=argparse.ArgumentParser();a.add_argument('--rom',type=Path,default=ROMS['mbc5'
 def set_load(c,load):
  # Settings row 1 is Load: Light, Medium, High.
  c.press('down')
- while c.get('burn_running') or 'Load' not in c.row(8):c.tick()
+ for _ in range(120):
+  if not c.get('burn_running') and 'Load' in c.row(8):break
+  c.tick()
+ else:raise AssertionError((load,'Load row never appeared',c.get('burn_running'),c.row(8)))
  for _ in range(3):
   if load.lower() in c.row(8).lower():break
   c.press('right')

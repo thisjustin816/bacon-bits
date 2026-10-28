@@ -76,6 +76,12 @@ source. `display_timing`, `buttons_chord`, `buttons_poll`, `burn_cadence` and
 clear confirmation, how often the Buttons loop reads the pad, and Burn In timing.
 `sram_burn` covers browser Up/Down order, SRAM cycle passes, a stopped write,
 and Burn In's SRAM watch passing and then catching a flipped bit.
+The cartridge verifies SRAM with the generator it writes with, so
+`sram_patterns` also compares every written byte with each pattern's definition.
+`rtc` and `hardware_sameboy` reopen the clock after each run that changes it and
+require exit to have restored it. `rumble_return` holds B, Select and Start in
+turn ahead of the rest of the return chord. `burn_faults` runs the Output load
+preset and requires Stop to turn the APU off.
 
 `stack_depth` fills the WRAM between static data and the stack with `$A5`,
 opens and runs every instrument in each build and model, and requires the
@@ -160,18 +166,25 @@ PyBoy reads the sound registers as zero unless it emulates sound, so every
 suite that checks the APU is off afterwards runs with sound emulated.
 `audio_backend` redirects startup to a call stub; `audio_ui`, `audio_shapes`
 and `audio_sameboy` additionally exercise ordinary cartridge inputs.
-`audio_dacs` reads all four DAC enables on every frame through bursts, voice
+`audio_dacs` reads all four DAC enables on every frame, and before every
+instruction of `tone_stop`, `tone_power` and `tone_apply`, through bursts, voice
 changes, frequency steps, level 0 and stop/start, since a DAC switched off and
-on pops on hardware and PyBoy does not reproduce the pop.
+on pops on hardware and PyBoy does not reproduce the pop. Only loading wave RAM may turn a
+DAC off, and the suite requires exactly one load. `audio_shapes` requires
+silent samples in each burst's gap.
 `audio_responsiveness` taps Right for one frame at twelve animation phases and
 requires each tap to step the frequency. It also requires the scrolling graph's
 map copy to finish before line 48, where the graph starts. Frequency
 measurements find the strongest spectral peak above 10 Hz before comparing it
 with the requested frequency; they do not restrict the search to that frequency.
-`cart`, `libretro`, `audio_navigation` and `display_assertions` are helpers,
-not standalone test suites. `capture_review` and `capture_flicker` generate review
-media and do not establish a pass by themselves. They record each image's ROM
-hashes, the commit it was built from and the emulator in `assets/media.json`.
+`audio_ui` checks every pulse and wave step against a list of frequencies kept in
+`audio_expected`, which also holds the expected wave RAM bytes, and
+`audio_backend` measures the 440 Hz step.
+`cart`, `libretro`, `audio_navigation`, `audio_expected` and
+`display_assertions` are helpers, not standalone test suites. `capture_review`
+and `capture_flicker` generate review media and do not establish a pass by
+themselves. They record each image's ROM hashes, the commit it was built from
+and the emulator in `assets/media.json`.
 
 When adding a regression, retain the prior ROM and matching symbols. Reproduce
 the failure there first, then run the same inputs against the fixed build.
