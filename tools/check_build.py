@@ -115,12 +115,21 @@ def call_arguments(source,name):
    elif c==',' and depth==1:args.append(source[start:at]);start=at+1
    at+=1
   args.append(source[start:at-1]);yield args
-too_long=[]
+# Text can also come from a string table indexed in the call, such as a list of
+# button names, so the entries of every table named there are checked too.
+def tables(source):
+ return {name:body for name,body in re.findall(r'\b(\w+)\s*\[[^\]]*\]\s*=\s*\{([^{}]*)\}',source)}
+too_long=[];checked=0
 for path in sorted(ROOT.glob('src/*.c'))+sorted(ROOT.glob('src/*.inc'))+[BUILD/'adapted/link.c']:
  source=path.read_text()
+ # A table may sit in an included file.
+ known=tables(source)
+ for include in re.findall(r'#include "(\w+\.inc)"',source):known.update(tables((ROOT/'src'/include).read_text()))
  for name,columns in [('ui_field',(1,2)),('ui_value',(1,))]:
   for args in call_arguments(source,name):
    for column in columns:
-    too_long+=[(path.name,text) for text in re.findall(r'"((?:[^"\\]|\\.)*)"',args[column]) if len(text)>8]
+    texts=re.findall(r'"((?:[^"\\]|\\.)*)"',args[column])
+    for table in re.findall(r'\b(\w+)\s*\[',args[column]):texts+=re.findall(r'"((?:[^"\\]|\\.)*)"',known.get(table,''))
+    checked+=len(texts);too_long+=[(path.name,text) for text in texts if len(text)>8]
 assert not too_long,('Settings text wider than its eight columns',too_long)
-print('Every settings label and value fits its eight columns')
+print(f'Every settings label and value fits its eight columns ({checked} strings, including indexed tables)')

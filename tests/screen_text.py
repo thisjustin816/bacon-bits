@@ -29,6 +29,11 @@ def run(cgb):
   # Buttons timing: separated rows and one readable footer.
   c.go(4);c.preset(3);rows_separated(c,'buttons timing')
   assert c.row(15).strip('# ')=='Taps up to 1 fr',c.row(15)
+  # Both count pages name each button from a table: as labels on 2/4 and as
+  # the value on 3/4. Right steps through all eight names on both pages.
+  for page in (2,1):
+   while c.get('button_page')!=page:c.press('select')
+   for _ in range(8):rows_separated(c,('buttons',page,c.get('button_pick')));c.press('right')
   c.leave()
   # Link: every detail page, and a minutes:seconds timer at the right edge.
   c.go(1);c.press('a');c.tick(60);c.press('a');c.tick(60);c.press('start');c.tick(130)
@@ -53,7 +58,7 @@ def run(cgb):
   for _ in range(12):c.press('right')
   assert c.get('tone_index')==33,c.get('tone_index')
   assert c.row(13)[16:19]==' Hz',('Frequency runs into its unit',c.row(13))
-  print(('CGB' if cgb else 'DMG')+': settings rows, Buttons footer, Link pages and timer, Infrared mode switch and Audio cursor read cleanly',flush=True)
+  print(('CGB' if cgb else 'DMG')+': settings rows, both Buttons count pages and footer, Link pages and timer, Infrared mode switch and Audio cursor read cleanly',flush=True)
  finally:c.close()
 
 def clock():

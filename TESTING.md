@@ -76,10 +76,12 @@ and set `FONT_SHA256` to the digest the failing assertion prints. Commit the
 three files together.
 
 `screen_text` walks the settings pages and checks that no label touches its
-value, along with the Buttons timing status, the Link timer, Infrared after a mode
+value, including every button name on both Buttons count pages, along with the
+Buttons timing status, the Link timer, Infrared after a mode
 switch, the Audio frequency unit and the Clock counters. `tools/check_build.py`
 enforces the same eight-column limit on every settings label and value in the
-source. `display_timing`, `buttons_chord`, `buttons_poll`, `burn_cadence` and
+source, including the entries of string tables indexed in the call, such as
+the button names. `display_timing`, `buttons_chord`, `buttons_poll`, `burn_cadence` and
 `burn_rumble` cover flicker phase lengths, the Buttons return chord, hints and
 clear confirmation, how often the Buttons loop reads the pad, and Burn In timing.
 `sram_burn` covers browser Up/Down order, SRAM cycle passes, a stopped write,
