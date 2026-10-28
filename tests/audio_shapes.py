@@ -1,8 +1,10 @@
 """Check every waveform, raw divisor stepping, and timed playback through the UI."""
 from pathlib import Path
 import re,tempfile,shutil
+import numpy as np
 from pyboy import PyBoy
 from audio_navigation import select_row
+from audio_expected import WAVES
 ROOT=Path(__file__).resolve().parents[1]
 syms={n:int(v,16) for n,v in re.findall(r'^DEF (\S+) (0x[\da-fA-F]+)$',(ROOT/'build/bacon-bits.noi').read_text(),re.M)}
 with tempfile.TemporaryDirectory() as td:
@@ -29,11 +31,7 @@ with tempfile.TemporaryDirectory() as td:
      # only while the channel is off, so the harness turns the DAC off to read it.
      press('a');assert p.memory[0xff1a]&0x80 and not p.memory[0xff1c]&0x60
      p.memory[0xff1a]=0;samples=bytes(p.memory[0xff30:0xff40]);p.memory[0xff1a]=0x80;waveforms.append(samples);press('a')
-     if shape==1:assert samples==bytes([0xff]*8+[0]*8)
-     if shape==2:assert samples==bytes([(i<<4)|(i+1) for i in range(0,16,2)]+[(i<<4)|(i-1) for i in range(15,0,-2)])
-     if shape==3:assert samples==bytes([i*17 for i in range(16)])
-     if shape==4:assert samples==bytes([i*17 for i in range(15,-1,-1)])
-     if shape==5:assert samples==bytes([0xff]*4+[0]*12)
+     assert samples==WAVES[shape],(shape,'wave RAM',samples.hex(),WAVES[shape].hex())
     else:assert bool(p.memory[0xff22]&8)==bool(shape)
     press('right')
    assert set(shapes)==set(range(limit)),shapes
@@ -51,11 +49,16 @@ with tempfile.TemporaryDirectory() as td:
   for _ in range(30):press('right')
   assert get('tone_on')==30 and get('tone_gap')==30
   if not get('tone_playing'):press('a')
-  gates=[]
-  for _ in range(200):p.tick(1,True);gates.append(get('tone_gate'))
+  gates=[];levels=[]
+  for _ in range(200):p.tick(1,True);gates.append(get('tone_gate'));levels.append(float(np.std(p.sound.ndarray.astype(float))))
   assert 0 in gates and 1 in gates
   edges=[i for i in range(1,len(gates)) if gates[i]!=gates[i-1]]
   assert len(edges)>=4 and all(30<=b-a<=35 for a,b in zip(edges,edges[1:])),edges
+  # The samples must follow the gate. Skip the two frames after each edge,
+  # which hold the change part way through.
+  steady=[i for i in range(2,len(gates)) if gates[i]==gates[i-1]==gates[i-2]]
+  loud=[i for i in steady if gates[i] and levels[i]<0.1];heard=[i for i in steady if not gates[i] and levels[i]>=0.1]
+  assert not loud and not heard,('Burst samples do not follow the gate: silent while on',loud[:8],'audible while resting',heard[:8],[round(levels[i],2) for i in heard[:8]])
   press('b');assert not p.memory[0xff26]&0x80
-  print('Audio: eight pulse duties, six distinct wave RAM patterns, two noise widths, single-register fine steps, timed bursts/gaps, and safe exit passed')
+  print('Audio: eight pulse duties, six exact wave RAM patterns, two noise widths, single-register fine steps, timed bursts with silent gaps, and safe exit passed')
  finally:p.stop(save=False)

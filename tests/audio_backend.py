@@ -27,6 +27,12 @@ with tempfile.TemporaryDirectory() as td:
   for _ in range(frames):p.tick(1,True);chunks.append(p.sound.ndarray.copy())
   a=np.concatenate(chunks,axis=0)
   return a
+ def fundamental(a):
+  mono=a.astype(float).mean(axis=1);mono-=mono.mean();spectrum=np.abs(np.fft.rfft(mono*np.hanning(len(mono))))
+  freqs=np.fft.rfftfreq(len(mono),1/p.sound.sample_rate)
+  # Search the spectrum independently of the expected result; a
+  # narrow expected-frequency window can mistake leakage for the fundamental.
+  region=np.flatnonzero(freqs>=10);return float(freqs[region[np.argmax(spectrum[region])]])
  def level(a):return float(np.std(a.astype(float)))
  results=[]
  try:
@@ -36,15 +42,16 @@ with tempfile.TemporaryDirectory() as td:
    assert level(a)>0.1,(voice,'silent capture')
    if voice<3:
     # Nyquist-safe fundamentals at the lowest stepped frequency.
-    mono=a.astype(float).mean(axis=1);mono-=mono.mean();spectrum=np.abs(np.fft.rfft(mono*np.hanning(len(mono))))
-    freqs=np.fft.rfftfreq(len(mono),1/p.sound.sample_rate);expected=64 if voice<2 else 32
-    # Search the spectrum independently of the expected result; a
-    # narrow expected-frequency window can mistake leakage for the fundamental.
-    region=np.flatnonzero(freqs>=10);peak=float(freqs[region[np.argmax(spectrum[region])]])
+    expected=64 if voice<2 else 32;peak=fundamental(a)
     assert abs(peak-expected)<1,(voice,peak,expected)
     results.append({'voice':voice,'expected_hz':expected,'captured_peak_hz':peak})
+   if voice==0:
+    # The 440 Hz step the Pulse pair and Stereo check presets use.
+    put('tone_index',22);call('tone_apply');peak=fundamental(record())
+    assert abs(peak-440)<1,(voice,'index 22',peak)
+    results.append({'voice':voice,'index':22,'expected_hz':440,'captured_peak_hz':peak});put('tone_index',0)
    put('tone_level',0);call('tone_apply');silent=record(60)
    assert level(silent)<0.1,(voice,'mute was audible in capture',level(silent))
   (ROOT/'build/audio-backend-results.json').write_text(json.dumps(results,indent=2)+'\n')
-  print('Compiled APU: four channels produce emulator samples, mute is silent, pulse/wave low endpoints have the expected fundamental')
+  print('Compiled APU: four channels produce emulator samples, mute is silent, pulse/wave low endpoints and the 440 Hz pulse step have the expected fundamental')
  finally:p.stop(save=False)
