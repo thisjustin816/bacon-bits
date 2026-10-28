@@ -21,7 +21,7 @@ static void palettes(uint8_t flip,uint8_t wait) {
 static void prepare(void) {
  uint8_t tile,x,y,px,py,on,kind,width=1u<<display_width;
  /* The full view replaces the settings map, so settings must redraw after it. */
- display_ready=0;++ui_revision;HIDE_SPRITES;HIDE_WIN;SCX_REG=SCY_REG=0;VBK_REG=0;
+ display_ready=0;++ui_revision;HIDE_SPRITES;HIDE_WIN;SCX_REG=SCY_REG=0;VBK_REG=0;bb_header_dirty=1;
  for(tile=0;tile<16;++tile){for(y=0;y<8;++y){uint8_t bits=0;
   for(x=0;x<8;++x){px=(tile&3u)*8u+x;py=(tile>>2)*8u+y;kind=display_pattern;
    if(kind==0 || kind==6)on=0;

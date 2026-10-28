@@ -5,7 +5,7 @@
 
 uint8_t selected_test,bb_keys,bb_raw_rumble;
 uint16_t ui_revision;
-uint8_t bb_tiles_dirty=UI_TILES_ALL,bb_cover_dirty=1;
+uint8_t bb_tiles_dirty=UI_TILES_ALL,bb_cover_dirty=1,bb_header_dirty;
 static uint8_t covered;
 /* A blank window over rows 3-17 hides a screen while it is rebuilt, so a
    change shows the old screen, then the finished new one. */
@@ -77,9 +77,20 @@ void ui_header(void) {
  fill_bkg_rect(0,0,20,1,0);fill_bkg_rect(0,2,20,1,0);fill_bkg_rect(0,1,2,1,0);fill_bkg_rect(17,1,3,1,0);
  ui_text(2,1,BRAND_NAME);
 }
+/* A full-screen view draws over the header. Put it back while the view still
+   shows, so the cover never rises over a header from the view. */
+static void restore_header(void) {
+ if(!bb_header_dirty)return;
+ bb_header_dirty=0;
+ /* Starting in VBlank, the writes finish before the beam reaches the header. */
+ vsync();
+ /* The ramp pattern replaces palette 1, which the logo uses. */
+ if(_cpu==CGB_TYPE){set_bkg_palette(1,1,breakfast+4);logo();}else ui_header();
+}
 void ui_init(void) {
  ++ui_revision;
  uint8_t i;
+ restore_header();
  HIDE_SPRITES;SHOW_BKG;
  if(!bb_raw_rumble)for(i=0;i!=40;++i)move_sprite(i,0,0);
  SCX_REG=SCY_REG=0;VBK_REG=0;LCDC_REG|=0x10u;

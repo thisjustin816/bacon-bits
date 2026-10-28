@@ -71,7 +71,7 @@ extern uint16_t ui_revision;
 #define UI_TILES_ALL 2u
 extern uint8_t bb_tiles_dirty;
 /* Set when the window map (9C00) holds something other than the blank cover. */
-extern uint8_t bb_cover_dirty;
+extern uint8_t bb_cover_dirty,bb_header_dirty;
 void ui_reveal(void) NONBANKED;
 void ui_cover(void) NONBANKED;
 uint8_t ui_page(const char *title,const char *page,uint8_t key);
