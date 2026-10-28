@@ -10,6 +10,7 @@ commands['mbc3_additions']=[sys.executable,'tests/additions.py','build/mbc3/baco
 commands['mbc3_audio_backend']=[sys.executable,'tests/audio_backend.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio']=[sys.executable,'tests/audio_ui.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio_dacs']=[sys.executable,'tests/audio_dacs.py','--rom','build/mbc3/bacon-bits.gbc']
+commands['mbc3_ir_cycles']=[sys.executable,'tests/ir_cycles.py','--rom','build/mbc3/bacon-bits.gbc']
 sameboy=['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art','raster_transitions','burn_rumble','screen_tour','flicker_sameboy','platform_mode3_sameboy']
 if args.core:
  for name in sameboy:commands[name]=[sys.executable,'tests/'+(name[:-len('_sameboy')] if name in ('flicker_sameboy','platform_mode3_sameboy') else name)+'.py','--core',str(args.core)]

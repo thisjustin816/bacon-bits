@@ -4,11 +4,13 @@ Uses the cable of two_consoles.py. The peer starts alone and waits 150
 frames, longer than the 120 that count as no sync. That wait is not a
 failure, a gap or a recovery: the peer's views must say so, and the first
 packet must clear it. Then the host starts, and once packets flow a bit is
-flipped in a payload byte the peer receives. The
-peer's snapshot must hold that packet, its sync bytes first and its CRC
-bytes those the CRC view reports as received, with the settings in use and
-the serial registers read when the failure opened. It must not change while
-the link recovers, while the views and pages change, or after a stop.
+flipped in a payload byte the peer receives. The peer's snapshot must hold
+that packet byte for byte as the cable delivered it. Its CRC must fail over
+those bytes and hold once the flipped bit is restored, and its CRC bytes must
+be those the CRC view reports as received. The snapshot must also hold the
+settings in use and the serial registers read when the failure opened. It
+must not change while the link recovers, while the views and pages change,
+or after a stop.
 
 The snapshot runs once a test, outside the serial interrupt. Its cost is
 timed on one console stepped an instruction at a time: a peer waiting alone
@@ -25,6 +27,17 @@ from two_consoles import pyboy_module,run_frames,press
 SNAPSHOT=(('snap_regs',6),('snap_wr',1),('snap_rd',1),('snap_active',1),('snap_txpos',1),('snap_pending',1),('snap_command',1),
           ('snap_host',1),('snap_rate',1),('snap_burst',1),('snap_idle',1),('snap_masked',1),('snap_rejected',1),('snap_bytes',16))
 PEER=1
+# Peer settings at power on: Burst rate (4 bytes a frame), Idle step 6, no masked lines.
+SETTINGS={'snap_host':0,'snap_rate':1,'snap_burst':4,'snap_idle':6,'snap_masked':0}
+
+def crc16(data):
+ """CRC-16/CCITT-FALSE, the packet CRC, written here apart from the cartridge's."""
+ c=0xffff
+ for b in data:
+  c^=b<<8
+  for _ in range(8):c=((c<<1)^0x1021 if c&0x8000 else c<<1)&0xffff
+ return c
+assert crc16(b'123456789')==0x29b1
 
 def snapshot_cost(rom):
  """CPU cycles from latch()'s entry to its return when it opens the first
@@ -81,7 +94,8 @@ def main():
    flowing=get('good',4);connected=(get('first_code'),get('timeouts',4),get('max_recovery',4))
    pair.cable.flip_in_packet(PEER,8)
    run_frames_paired(pair,60)
-   first=snapshot();code=get('first_code');received=get('first_received_crc',2)
+   first=snapshot();code=get('first_code');received=get('first_received_crc',2);expected_crc=get('first_expected_crc',2)
+   at=pair.cable.flipped_packet;delivered=bytes(pair.cable.received[PEER][at[1]:at[1]+16]) if at and at[0]==PEER else None
    failure_views=[view(n) for n in (4,5,6,7)]
    run_frames_paired(pair,240)
    recovered=get('good',4)
@@ -99,8 +113,13 @@ def main():
  assert connected==(0,0,0),('The initial wait outlived the first packet as a failure, gap or recovery',connected)
  assert flowing>10 and code==1,('No CRC failure after packets flowed',flowing,code)
  bytes_=first['snap_bytes']
- assert first['snap_rejected']==b'\1' and bytes_[:2]==b'\xd3\x91' and int.from_bytes(bytes_[13:15],'little')==received,('Snapshot is not the rejected packet',bytes_.hex(),hex(received))
- assert first['snap_host']==b'\0' and first['snap_rate']==b'\1' and first['snap_burst']==b'\4' and first['snap_masked']==b'\0',('Settings in use not kept',first)
+ assert delivered is not None and len(delivered)==16,('The cable never flipped a bit in a packet the peer took',at)
+ # The flip lands on the first bit of byte 8, which ends up as its top bit.
+ original=delivered[:8]+bytes([delivered[8]^0x80])+delivered[9:]
+ assert crc16(original[:13])==int.from_bytes(original[13:15],'little')!=crc16(delivered[:13]),('The flipped packet was not a CRC failure',delivered.hex())
+ assert first['snap_rejected']==b'\1' and bytes_==delivered,('Snapshot is not the rejected packet',bytes_.hex(),delivered.hex())
+ assert int.from_bytes(bytes_[13:15],'little')==received and crc16(bytes_[:13])==expected_crc!=received,('CRC view does not match the rejected packet',bytes_.hex(),hex(received),hex(expected_crc))
+ assert {name:first[name][0] for name in SETTINGS}==SETTINGS,('Settings in use not kept',first)
  assert first['snap_regs'][1]&0x81==0x80,('Peer SC was not armed on the external clock',first['snap_regs'].hex())
  assert recovered>flowing+10,('Link did not recover',flowing,recovered)
  assert after_views==first and stopped==(0,first),('Snapshot changed after recovery, page changes or stop',after_views,stopped)

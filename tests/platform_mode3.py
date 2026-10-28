@@ -2,7 +2,8 @@
 
 PyBoy lets both writes through, so the tell must fail there and the 13th
 port, a sprite over the chip, must show the failed mark. SameBoy drops them
-as a console does, so with --core the tell must pass there.
+as a console does, so with --core the tell must pass there and the port must
+show the passed mark.
 """
 import argparse,shutil,sys,tempfile
 from pathlib import Path
@@ -33,5 +34,7 @@ if args.core:
   s.tick(600);s.press('a');s.tick(200)
   read=s.read
   assert mode3_obs(read)==[0,0] and not mask(read)&(1<<12),(mode3_obs(read),hex(mask(read)))
+  oam=list(read(0xfe00,4))
+  assert oam[2]==UI_PASS and oam[1]==84 and oam[0]==72,('The 13th port does not show the passed mark',oam)
  finally:s.close()
- print('SameBoy: both mode-3 writes were dropped and the 13th tell passed')
+ print('SameBoy: both mode-3 writes were dropped, the 13th tell passed and its port shows the passed mark')

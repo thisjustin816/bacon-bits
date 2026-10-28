@@ -5,8 +5,11 @@ unarmed is lost. Each case runs both benches for 420 frames and reads the
 counters and the bytes each end took, at normal and at double speed.
 
 The Paced, Burst and Full presets, on either wire, must stay clean and move
-the bytes the build before Custom pacing moved, within 3%: Full moves about
-1.5% fewer, the cost of the 32-bit interval clock. Custom bursts of 8 bytes
+the bytes the build before Custom pacing moved: Paced and Burst within 1%,
+Full within 3%, as Full moves about 1.5% fewer, the cost of the 32-bit
+interval clock. The host must clock the wire at the period the Link setting
+names, since the loop's work, not the wire, limits Full on either one, and
+each end must hold the Burst, Idle and masked-lines steps the case set. Custom bursts of 8 bytes
 with 488 us between them must stay clean and move at least 1.2 times the
 Burst preset's bytes; the loop's own work, not the burst, limits both.
 That work also spaces bytes about 6 ms apart even with no idle, so a mask
@@ -30,6 +33,7 @@ MASKED_8,MASKED_64=4,7
 # Peer bytes in 420 frames on the build before Custom pacing (dc0f716), by CPU speed.
 BASELINE={0:{'Paced':340,'Burst':639,'Full':896,'Full on the fast wire':896},
           1:{'Paced':386,'Burst':1236,'Full':1456,'Full on the fast wire':1456}}
+TOLERANCE={'Paced':0.01,'Burst':0.01,'Full':0.03,'Full on the fast wire':0.03}
 
 def custom(burst=None,idle=None,masked=(0,0)):
  """A setup() for start() that sets Burst and Idle on the host and the
@@ -43,14 +47,22 @@ def custom(burst=None,idle=None,masked=(0,0)):
    for _ in range((idle-IDLE_DEFAULT)%8):press('right')
   press('down')
   for _ in range(masked[index]):press('right')
+ # What each end must hold afterwards: masked lines on both, Burst and Idle on the host.
+ setup.want=[{'masked_step':masked[0],'burst_len':burst,'idle_step':idle},{'masked_step':masked[1]}]
  return setup
 
 def measure(rom,**settings):
+ """Counters, edges lost and bytes taken by each end, the edge periods each
+ end clocked the wire at, and the steps each end held that the case set."""
+ want=getattr(settings.get('setup'),'want',[{'masked_step':0},{'masked_step':0}])
  with tempfile.TemporaryDirectory() as d:
   pair,syms=start(rom,d,**settings)
   try:
+   held=[{name:pb.memory[syms['_'+name]] for name,value in w.items() if value is not None} for pb,w in zip(pair.machines,want)]
+   expected=[{name:value for name,value in w.items() if value is not None} for w in want]
    run_frames_paired(pair,420)
-   return counters(pair,syms),list(pair.cable.missed),list(pair.cable.bytes)
+   periods=[sorted(pb.mb.serial.clock_periods) for pb in pair.machines]
+   return counters(pair,syms),list(pair.cable.missed),list(pair.cable.bytes),periods,(held,expected)
   finally:pair.close()
 
 def failed(side):
@@ -76,17 +88,21 @@ def main():
   results={}
   for label,settings,fails,compare in CASES:
    started=time.monotonic()
-   sides,missed,taken=measure(rom,host_cpu=cpu,peer_cpu=cpu,**settings)
+   sides,missed,taken,periods,(held,expected)=measure(rom,host_cpu=cpu,peer_cpu=cpu,**settings)
    results[label]=taken[1]
-   print(f'{cpu+1}x {label}: host {sides[0]}, peer {sides[1]}, edges lost {missed}, bytes taken {taken}; {time.monotonic()-started:.0f} s',flush=True)
+   print(f'{cpu+1}x {label}: host {sides[0]}, peer {sides[1]}, edges lost {missed}, bytes taken {taken}, '
+         f'clock periods {periods}, steps {held}; {time.monotonic()-started:.0f} s',flush=True)
    if fails:ok=any(missed) and any(failed(side) for side in sides)
    else:ok=all(clean_ok(side) for side in sides) and not any(missed)
+   # Only the host clocks: 512 cycles a bit, or 16 on the fast wire, halved at double speed.
+   wire=(16 if settings.get('link') else 512)/(2 if cpu else 1)
+   ok=ok and periods==[[wire],[]] and held==expected
    if label in BASELINE[cpu]:
-    base=BASELINE[cpu][label];ok=ok and abs(taken[1]-base)<=0.03*base
+    base=BASELINE[cpu][label];ok=ok and abs(taken[1]-base)<=TOLERANCE[label]*base
    if compare:
     other,factor=compare;bound=factor*results[other]
     ok=ok and (taken[1]>=bound if factor>1 else taken[1]<bound)
-   if not ok:failures.append((cpu,label,sides,missed,taken))
+   if not ok:failures.append((cpu,label,sides,missed,taken,periods,held,expected))
  assert not failures,failures
  print('Link stress: the presets pace as before Custom pacing and stay clean, an 8-byte Custom burst moves more than Burst, '
        '8 masked lines stay clean at Burst, 64 on the peer fail with no idle, and masked lines on the host only slow it, at both CPU speeds')
