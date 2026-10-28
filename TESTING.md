@@ -65,7 +65,8 @@ open and Link must not start. `preset_bounce` picks Flicker's and
 Infrared's presets with an A press that reads released for one frame, as a
 bouncing button can; neither instrument may start from the held button. `lettering`, `menu_alignment`,
 `menu_art`, `ui_spacing` and `ui_transitions` cover glyphs, layout, animation,
-focus changes and counter formatting.
+focus changes and counter formatting. `ui_transitions` also requires the cards
+below the header to stay visible on every frame of a focus move.
 
 The build regenerates `assets/font.png` from `tools/lettering.py`, so `lettering`
 also compares the font with a SHA-256 digest pinned in `FONT_SHA256` at the top
@@ -96,8 +97,13 @@ lowest changed byte to stay above the static RAM limit in
 `screen_tour` walks every screen of both builds in SameBoy, in color and
 monochrome, and judges each frame as shown. It rejects a font slot showing
 anything but its glyph, a cell that blinks off and back within four frames, a
-change that takes more than three frames to land, and a blank body longer than
-18 frames. `--frames` keeps every other frame for review.
+change that takes more than three frames to land, a blank body longer than
+18 frames, and a header that differs from the browser's on any frame outside
+the Display and Flicker full views or more than four frames after the B press
+that leaves one. Punctuation slots may hold label pieces only while the browser
+is shown, and the blink check skips only the Audio waveform's cells while a tone
+plays. A step that cannot reach its test or opens the wrong screen stops the
+tour. `--frames` keeps every other frame for review.
 
 `raster_transitions` compares the displayed header on every frame during
 navigation, diagnostic entry, settings-page changes and return, in CGB/DMG
