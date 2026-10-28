@@ -6,6 +6,13 @@ ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools'))
 from lettering import tiles
 from header import pyboy_header,vram_header
 from PIL import Image
+import hashlib
+# The build rewrites assets/font.png from tools/lettering.py, so the sheet alone
+# cannot catch a damaged glyph. A deliberate font change updates this digest;
+# TESTING.md explains how.
+FONT_SHA256='3c860d2494f04e94fc7f9811bafc4b68856a2cea759a45a4784818236ae2efb3'
+digest=hashlib.sha256(tiles()).hexdigest()
+assert digest==FONT_SHA256,('The font differs from the pinned reference; if the change is deliberate, set FONT_SHA256 to',digest)
 # The published glyph sheet must decode to the same tiles the ROM carries.
 sheet=Image.open(ROOT/'assets/font.png').convert('L');decoded=bytearray()
 for i in range(96):

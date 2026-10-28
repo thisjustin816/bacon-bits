@@ -67,6 +67,14 @@ bouncing button can; neither instrument may start from the held button. `letteri
 `menu_art`, `ui_spacing` and `ui_transitions` cover glyphs, layout, animation,
 focus changes and counter formatting.
 
+The build regenerates `assets/font.png` from `tools/lettering.py`, so `lettering`
+also compares the font with a SHA-256 digest pinned in `FONT_SHA256` at the top
+of `tests/lettering.py`. A damaged glyph fails there even though the sheet, the
+ROM and the other suites all follow the same data. To change the font on purpose,
+edit `tools/lettering.py`, rebuild, review the regenerated `assets/font.png`,
+and set `FONT_SHA256` to the digest the failing assertion prints. Commit the
+three files together.
+
 `screen_text` walks the settings pages and checks that no label touches its
 value, along with the Buttons timing status, the Link timer, Infrared after a mode
 switch, the Audio frequency unit and the Clock counters. `tools/check_build.py`
