@@ -178,6 +178,8 @@ def _end_class(serial, utils):
             self.edge = utils.MAX_CYCLES
             self.bits = 0
             self.armed_at = utils.MAX_CYCLES
+            # Every edge period this end has clocked the wire at.
+            self.clock_periods = set()
             self.mb = None
             self.base = 0.0
 
@@ -197,6 +199,8 @@ def _end_class(serial, utils):
             # 8192 Hz, or 262144 Hz with CGB fast clock; double speed doubles either.
             self.period = (16 if value & 2 else 512) / (2 if self.mb.double_speed else 1)
             self.edge = now + self.period if self.transfer_enabled and self.internal_clock else utils.MAX_CYCLES
+            if self.transfer_enabled and self.internal_clock:
+                self.clock_periods.add(self.period)
             self._cycles_to_interrupt = utils.MAX_CYCLES
 
         def tick(self, cycles):
