@@ -61,6 +61,8 @@ for variant in ['', 'mbc3']:
        frames.append(p.image().copy())
        assert v[:61*16]+v[65*16:1536]==font,(name,key,frame,'Visible font reloaded')
        assert label_signature(v)==labels,(name,key,frame,'Label changed during focus move')
+       # The header alone gives a frame several colors, so judge the cards below it.
+       assert len(frames[-1].convert('RGB').crop((0,24,160,144)).getcolors(65536))>1,(name,key,frame,'Cards hidden during a focus move')
      # Page changes may clear/reveal labels, but must never show other glyphs.
      for _ in range(3):p.press('right')
      for target in [4,8,0]:
