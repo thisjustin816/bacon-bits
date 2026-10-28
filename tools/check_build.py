@@ -49,26 +49,48 @@ font=syms['_bb_font'];assert rom[font:font+1536]==font_tiles(), 'The compiled mi
 scene_source=(ROOT/'src/scene_data.h').read_text()
 scene_sizes=re.search(r'scene_sizes\[8\]\[5\]=\{(.+)\};',scene_source)[1]
 counts=[int(row.split(',')[0]) for row in re.findall(r'\{([^{}]+)\}',scene_sizes)]
+# The tile layout comes from src/bb.h and the code that loads each range, so a
+# moved base or a longer range is judged by its real values.
+ui={n:int(v,0) for n,v in re.findall(r'^#define (UI_\w+) (\d+|0x[\da-fA-F]+)u?$',(ROOT/'src/bb.h').read_text(),re.M)}
+main_source=(ROOT/'src/main.c').read_text();art=(ROOT/'src/art.h').read_text()
+def art_tiles(name):return len(re.findall(r'0x[\da-fA-F]{2}',re.search(name+r'\[\] = \{([^}]+)\}',art)[1]))//16
+chrome=int(re.search(r'set_bkg_data\(UI_CHROME,(\d+),bb_chrome\)',main_source)[1]);probes=int(re.search(r'set_bkg_data\(UI_PASS,(\d+),bb_probes\)',main_source)[1])
+assert art_tiles('bb_font')==ui['UI_FONT_COUNT'] and art_tiles('bb_chrome')==chrome and art_tiles('bb_probes')==probes,(art_tiles('bb_font'),art_tiles('bb_chrome'),art_tiles('bb_probes'))
+assert ui['UI_FONT_COUNT']<=ui['UI_CHROME'] and ui['UI_CHROME']+chrome<=ui['UI_PASS'],'Chrome overlaps the font or the probe marks'
+assert ui['UI_PASS']+probes<=ui['UI_LINK_BALL']<ui['UI_ART'],'Link sprite overlaps the font or instruments'
 assert len(counts)==8 and max(counts)<=128,counts
-assert 112+max(counts)<=232,'Instrument tiles overlap the focus border'
-assert 232+8<=256,'Focus border runs past the tile table'
-label_slots=set(map(int,re.search(r'slots\[\]=\{([^}]+)\}',(ROOT/'src/main.c').read_text())[1].split(',')))
-assert label_slots.isdisjoint(range(61,65)), 'Focus patterns overlap centered-label slots'
+assert ui['UI_ART']+max(counts)<=ui['UI_FOCUS'],'Instrument tiles overlap the focus border'
+focus_slots=eval(re.search(r'^ slots=(.+)$',(ROOT/'tools/controls_art.py').read_text(),re.M)[1],{'range':range,'list':list})
+assert focus_slots==list(range(ui['UI_FOCUS'],ui['UI_FOCUS']+8))+list(range(ui['UI_FOCUS_EXTRA'],ui['UI_FOCUS_EXTRA']+4)),('Focus art slots differ from src/bb.h',focus_slots)
+assert max(focus_slots)<256,'Focus border runs past the tile table'
+label_slots=set(map(int,re.search(r'slots\[\]=\{([^}]+)\}',main_source)[1].split(',')))
+assert label_slots.isdisjoint(focus_slots), 'Focus patterns overlap centered-label slots'
+assert max(label_slots)<ui['UI_FONT_COUNT'],'Centered-label slots run past the font'
 controls=(ROOT/'src/button_data.h').read_text()
 button_bytes=re.search(r'button_tiles\[\]=\{([^}]+)\}',controls)[1].split(',')
 assert len(button_bytes)==37*16, 'Live D-pad tile budget changed'
-assert 96+11+3<=110 and 110<112,'Link sprite overlaps the font or instruments'
-print(f'Mixed-case font and instrument ranges passed; browser uses {96+11+3+max(counts)+8} resident tiles, including focus; live D-pad uses 37 tiles')
+print(f'Mixed-case font and instrument ranges passed; browser uses {ui["UI_PASS"]+probes+max(counts)+8} resident tiles, including focus; live D-pad uses 37 tiles')
 
 # Flicker keeps the UI font resident while both maps alternate.
 flicker=(ROOT/'src/flicker_data.h').read_text()
-for name,limit in [('preview',98),('reference',15)]:
+flicker_source=(ROOT/'src/flicker.c').read_text()
+sizes={}
+for name in ('preview','reference'):
  values=re.search(r'flicker_'+name+r'_tiles\[\]=\{([^}]+)\}',flicker)[1].split(',')
- assert len(values)%16==0 and len(values)//16<=limit,(name,len(values))
-assert 112+98==210 and 210+15==225 and 225+6<=240
-assert 110+98+15+6==229
+ assert len(values)%16==0,(name,len(values));sizes[name]=len(values)//16
+preview=int(re.search(r'set_bkg_data\((\d+),sizeof\(flicker_preview_tiles\)',flicker_source)[1])
+phases=int(re.search(r'set_bkg_data\((\d+)u\+phase\*count\+t',flicker_source)[1])
+reference=int(re.search(r'set_bkg_data\((\d+),sizeof\(flicker_reference_tiles\)',flicker_source)[1])
+actor,actors=map(int,re.search(r'set_sprite_data\((\d+),(\d+),flicker_actor\)',flicker_source).groups())
+# The full view streams two phases of n*n tiles; a checker cell of c pixels
+# repeats every n tiles once its factors of two are removed, as in prepare().
+cell=lambda c:c if c&1 else c>>1 if (c>>1)&1 else c>>2
+full=2*max(cell(c)**2 for c in range(1,9))
+assert preview==phases==ui['UI_ART'],(preview,phases,'Flicker tiles must start after the resident UI tiles')
+assert preview+max(sizes['preview'],full)<=reference,('Flicker preview or full-view tiles overlap the reference',sizes['preview'],full,reference)
+assert reference+sizes['reference']<=actor and actor+actors<=ui['UI_FOCUS'],('Flicker reference, sprites and focus overlap',reference,sizes['reference'],actor,actors)
 assert syms['_flicker_run']>>16==4,'Flicker moved out of its allocated code bank'
-print('Flicker fits 229 resident patterns, 6 sprites, and both preloaded LCD maps')
+print(f'Flicker fits {ui["UI_PASS"]+probes+full+sizes["reference"]+actors} resident patterns, {actors} sprites, and both preloaded LCD maps')
 
 # The Color header's tiles live alone in VRAM bank 1 and its map covers rows 0-2.
 logo=(ROOT/'src/logo.h').read_text()
