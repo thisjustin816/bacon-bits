@@ -19,6 +19,13 @@ with tempfile.TemporaryDirectory() as td:
   assert 'CLOCK PRESETS' in text(),text()
   for _ in range(n if 'CONTINUE' in text() else n-1):press('down')
   press('a');p.tick(60,True)
+ def seconds(d):return ((d[3]+((d[4]&1)<<8))*24+d[2])*3600+d[1]*60+d[0]
+ def restored_clock(before,frame,label):
+  # Reopen the clock read only and check that exit put back the clock the test
+  # replaced, advanced by the time it ran: ticking, no carry, within two seconds.
+  press('a');preset(1);now=snapshot();at=p.frame_count;expected=seconds(before)+(at-frame)/59.7275;press('b')
+  assert not now[4]&0xc0 and abs(seconds(now)-expected)<=2,(label,'exit did not restore the clock',now.hex(),before.hex(),round(expected))
+  return now,at
  def journal():return bytes(p.memory[0,0xbff0:0xbfff])+bytes([p.memory[0,0xbfff]])
  try:
   boot();open_clock();preset(1);assert 'CLOCK' in text() and get('rtc_valid') and not get('rtc_dirty')
@@ -27,10 +34,12 @@ with tempfile.TemporaryDirectory() as td:
   p.tick(180,True);assert not get('rtc_running') and snapshot()!=held and 'LATCH HELD' in text();press('b')
   press('a');preset(3);press('a');assert 'CONFIRM' in text();press('a');assert not get('rtc_dirty') and not get('rtc_running'),'NO default altered the RTC'
   press('a');press('down');press('a');assert get('rtc_dirty') and get('rtc_running') and snapshot()[4]&64 and journal()[:2]==b'RT'
-  frozen=snapshot();p.tick(180,True);assert snapshot()==frozen and get('rtc_halt_errors',2)==0;press('b');assert not get('rtc_dirty') and journal()[:2]!=b'RT'
+  frozen=snapshot();started=p.frame_count;p.tick(180,True);assert snapshot()==frozen and get('rtc_halt_errors',2)==0;press('b');assert not get('rtc_dirty') and journal()[:2]!=b'RT'
+  restored=restored_clock(frozen,started,'halt check')
   press('a');preset(4);press('a');press('down');press('a');assert get('rtc_dirty')
   p.tick(240,True);assert get('rtc_rollover_seen') and snapshot()[4]&128 and snapshot()[3]==0 and not snapshot()[4]&1
   p.screen.image.save(ROOT/'build/rtc-rollover.png');press('b');assert not get('rtc_dirty')
+  restored_clock(*restored,'day rollover')
   # Persist a pending halt check, then recover on a fresh emulator instance.
   press('a');preset(3);press('a');press('down');press('a');saved=bytes(p.memory[syms['_rtc_saved']:syms['_rtc_saved']+5]);assert get('rtc_dirty')
   p.stop(save=True);boot();open_clock();assert 'RESTORE SAVED RTC?' in text();assert p.memory[0,0x98d3]==97,'Recovery prompt overwrote its frame';press('a');assert get('selected_test')==2
