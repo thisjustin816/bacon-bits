@@ -20,7 +20,7 @@ def run(cgb):
  c=Cart(args.rom,cgb)
  try:
   # Every Select page of the settings screens reached through presets.
-  settings_pages(c,3,2,2);settings_pages(c,5,1,2);settings_pages(c,6,2,2);settings_pages(c,7,1,2);settings_pages(c,10,1,4)
+  settings_pages(c,3,2,2);settings_pages(c,5,1,2);settings_pages(c,6,2,2);settings_pages(c,7,1,2);settings_pages(c,10,1,4);settings_pages(c,11,1,2)
   # Flicker: the speed unit sits on the Speed row.
   c.go(10);c.preset(1);c.press('select');c.press('select')
   speed=[y for y in range(18) if c.row(y)[2:7]=='Speed']

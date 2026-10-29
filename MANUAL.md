@@ -354,9 +354,10 @@ agreeing. Steady sends four strips back to back. Paused 100 ms and Paused
 200 ms wait that long before each strip after the first, and Slow bytes spaces
 each strip's bytes 6 ms apart. Up/Down select Strips (1-9), Pause ms (0-250 in
 steps of 10) and Byte ms (1-8), and Left/Right change them. A prints. B while
-the border reads Printing sends Break and stops; otherwise B returns. The instrument runs at
-normal CPU speed, which gives the printer its 8,192 Hz clock, and restores the
-previous speed on return.
+the border reads Printing sends Break and stops; otherwise B returns. Select
+switches between the two pages, 1/2 and the Init check on 2/2, and shows
+Ready in the border. The instrument runs at normal CPU speed, which gives the
+printer its 8,192 Hz clock, and restores the previous speed on return.
 
 Strip k carries k tiles of black from the left edge below a light grey top
 row, so the paper shows which strips the printer still held when it printed.
@@ -380,3 +381,28 @@ clears what it holds after about 125 ms with no byte while it is idle. On a
 printer, Slow bytes should end in No reply, and Paused 200 ms in a print of the
 last strip with Kept 1 of 4. Paused 100 ms stays inside the limit. Emulated
 printers differ: PyBoy's accepts any timing.
+
+### Init check
+
+Page 2 shows whether a printer needs an Init between the parts of a print.
+A prints one strip, waits until the printer has gone idle (two status polls in
+a row after it was busy), sends one data packet with no Init and keeps the
+status the printer answers it with, then sends Init and a second strip and
+prints that. The firmware reading is that the next data packet after a print
+starts a new image by itself; a printer may instead answer it with a packet
+error. B between packets sends Break and stops. The check sends its data bytes
+at full rate, whatever Byte ms says.
+
+Part 1 and Init read Printed, Failed, or Stopped when B ended the check. No
+Init is the status byte of the reply to the data packet sent with no Init, in
+hex. Refused is Yes when that status has the packet-error bit (10) set, as 14
+does (packet error and image full), and No otherwise, whatever else the status
+holds. Under the box, Init needed or Init not needed gives the verdict once the
+check finished, and Did not finish says it stopped early. The border and its
+corner read as on page 1. The paper has the first strip one tile wide and the
+second two tiles wide; the data packet sent with no Init carries a two-tile
+strip that the Init that follows discards.
+
+On a physical printer, report the printer's model, the console, the No Init
+byte and what the paper shows. Emulated printers take the data, so only a
+physical printer can show Refused Yes.

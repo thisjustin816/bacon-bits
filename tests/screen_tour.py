@@ -168,7 +168,7 @@ for variant in ['', 'mbc3']:
    t.step='flicker settings';t.go(10);t.preset(1);t.expect('Flicker')
    for _ in range(4):t.press('select')
    t.step='flicker full view';t.full_view=True;t.press('a',120);t.header_from=t.frames+HEADER_GRACE;t.press('b',10);t.full_view=False;t.header_from=None;t.step='flicker return';t.tick(60);t.press('b',60)
-   t.step='printer';t.go(11);t.preset(1);t.expect('Printer');t.press('a',90);t.press('b',40)
+   t.step='printer';t.go(11);t.preset(1);t.expect('Printer');t.press('a',90);t.step='printer init check';t.press('select');t.press('a',90);t.press('b',40)
    t.step='browser after tour';t.tick(120)
    grouped={}
    for step,frame,kind in t.problems:

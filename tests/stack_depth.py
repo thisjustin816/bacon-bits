@@ -47,7 +47,7 @@ for variant in ['mbc5','mbc3']:
    if cgb:c.press('down');c.press('a',after=30);c.press('a',after=150)
    c.press('b',after=40)
    c.go(10);c.preset(1);opened('Flicker');c.press('a',after=120);c.press('b',after=10);c.press('b',after=60)
-   c.go(11);c.preset(1);opened('Printer');c.press('a',after=60);c.press('b',after=40)
+   c.go(11);c.preset(1);opened('Printer');c.press('a',after=60);c.press('select');c.press('a',after=60);c.press('b',after=40)
    gap=bytes(c.p.memory[heap:sp-32])
    lowest=heap+next((i for i,b in enumerate(gap) if b!=FILL),len(gap))
    name=f'{variant}-{"cgb" if cgb else "dmg"}'

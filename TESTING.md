@@ -55,7 +55,7 @@ with `make -j1`: the parallel build can race on a helper program.
 | Cartridge LED (MBC5) | Actual compiled 24-bit command order, idle output, primary-color commands and OFF cleanup | Compatible cartridge protocol and visible light output |
 | Infrared | Compiled edge-cycle counts, burst count, presets, receiver controls, mode-switch text and cleanup; two benches in one harness, one sending each transmit preset and the other counting every pulse at three frame offsets | Optical transmission and reception between real devices: receiver response, range and ambient light |
 | Flicker | Every-frame phase cadence, duty, movement, pause/step, reference stability, OAM DMA and cleanup in both emulators | Panel blending and perceived flicker |
-| Printer | Every packet's order, the strip pauses and data-byte spacing as sent, other packets at full rate, the sheet strip by strip on PyBoy's printer, error, stop and no-printer readings, and CPU speed restored | A printer's timeouts, reset and replies, which PyBoy's printer does not model |
+| Printer | Every packet's order, the strip pauses and data-byte spacing as sent, other packets at full rate, the sheet strip by strip on PyBoy's printer, error, stop and no-printer readings, CPU speed restored, and the Init check page: no Init before its data packet, the wait for two idle replies, replies of 14, 08, 10 and none shown as the status byte and Refused, and part failures and stop | A printer's timeouts, reset and replies, which PyBoy's printer does not model, and whether a printer refuses data after a print with no Init |
 
 `smoke`, `variants` and `graphical_ui` cover entry routes and safe initial
 states. Their broad checks supplement the diagnostic-specific suites.
@@ -94,6 +94,18 @@ The cartridge verifies SRAM with the generator it writes with, so
 require exit to have restored it. `rumble_return` holds B, Select and Start in
 turn ahead of the rest of the return chord. `burn_faults` runs the Output load
 preset and requires Stop to turn the APU off.
+
+`printer` runs the Printer instrument against PyBoy's printer, which prints
+at once, takes data after a print and answers each packet with the status from
+before it. So the Init check never sees a refusal there: the suite puts a reply
+of 14, 08, 10 or none in at the check's data packet to cover the screens and
+what the check does next, and only a physical printer shows the refusal. The
+maintainer reported on 2026-10-29 that a physical Game Boy Printer on a ModRetro
+Chromatic, model unknown, answered a data packet sent after a completed Print
+with no Init, in a game's two-part print, with status 14 every time, and printed
+both parts when an Init came before the second; a one-part print always worked.
+That was the game's print, not the Init check, which has not yet run on a
+printer.
 
 `stack_depth` fills the WRAM between static data and the stack with `$A5`,
 opens and runs every instrument in each build and model, and requires the
