@@ -13,10 +13,8 @@ def pixel(v,x,y):
 def check_edges(v,page,context):
  assert 103 not in [v[0x1800+y*32+x] for y in range(4,17) for x in range(20)],(context,"Extra menu cursor")
  for card,(left,top) in enumerate([(4,37),(82,37),(4,85),(82,85)]):
-  if page==2 and card>2:continue
   assert all(pixel(v,x,top)==3 and pixel(v,x,top+43)==3 for x in range(left+2,left+72)),(context,card,"Card top or bottom erased")
   assert all(pixel(v,left,y)==3 and pixel(v,left+73,y)==3 for y in range(top+2,top+42)),(context,card,"Card side erased")
- if page==2:assert all(pixel(v,x,85)==0 for x in range(80,160)),(context,"Focus drew an absent lower card")
 def check_fill(v,card,model,context):
  # A focused card's edge tiles carry the highlight fill out to the card's border. A pixel left as
  # background there shows as a white line on Color, where the interior takes the fill from its palette.
@@ -52,7 +50,6 @@ for variant in ['', 'mbc3']:
     for frame in range(64):
      p.tick();v=p.vram()
      for card,(left,top) in enumerate([(4,37),(82,37),(4,85),(82,85)]):
-      if page==2 and card>2:continue
       points=[(x,y) for y in range(top+3,top+31) for x in range(left+12,left+63)]
       points+=[(x,top+2) for x in range(left+12,left+63) if any(template.getpixel((x,top+2)) for template in templates)]
       raw=bytes(pixel(v,x,y) for x,y in points)
@@ -75,9 +72,9 @@ for variant in ['', 'mbc3']:
       assert all(pixel(v,130,y)==3 for y in range(46,60)),'IR rays crossed the receiver outline'
      if frame%16==0:shots.append(p.image.copy())
     # Focus each other card, then restore the first before changing pages.
-    for selected in range(1,3 if page==2 else 4):
+    for selected in range(1,4):
      press('right');check_edges(p.vram(),page,(variant,model,page,selected));check_fill(p.vram(),selected,model,(variant,model,page,selected))
-    for _ in range(2 if page==2 else 3):press('left')
+    for _ in range(3):press('left')
   except Exception as error:
    p.image.save(OUT/'first-failing-frame.png')
    (OUT/'first-failing-input.json').write_text(json.dumps({'variant':variant,'model':model,'frame':p.frame,'inputs':events,'failure':str(error)},indent=2)+'\n')

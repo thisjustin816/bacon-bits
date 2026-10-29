@@ -22,7 +22,7 @@ for variant in ['mbc5','mbc3']:
    # Leave the live frames above SP alone.
    c.p.memory[heap:sp-32]=[FILL]*(sp-32-heap)
    def opened(title):assert title in c.row(4),(title,c.text())
-   def leave():c.leave();assert c.get('selected_test')<11
+   def leave():c.leave();assert c.get('selected_test')<12
    c.go(0);c.press('a',after=120);opened('Platform');c.press('select');c.press('right');c.press('a');c.press('b',after=60);leave()
    c.go(1);c.press('a',after=60);c.press('a',after=60);opened('Link');c.press('down');c.press('right');c.press('start',after=90)
    for _ in range(4):c.press('right')
@@ -47,6 +47,7 @@ for variant in ['mbc5','mbc3']:
    if cgb:c.press('down');c.press('a',after=30);c.press('a',after=150)
    c.press('b',after=40)
    c.go(10);c.preset(1);opened('Flicker');c.press('a',after=120);c.press('b',after=10);c.press('b',after=60)
+   c.go(11);c.preset(1);opened('Printer');c.press('a',after=60);c.press('b',after=40)
    gap=bytes(c.p.memory[heap:sp-32])
    lowest=heap+next((i for i,b in enumerate(gap) if b!=FILL),len(gap))
    name=f'{variant}-{"cgb" if cgb else "dmg"}'

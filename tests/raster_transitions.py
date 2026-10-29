@@ -22,7 +22,7 @@ for variant in ['', 'mbc3']:
    def press(k):
     events.append({'frame':p.frame,'key':k});p.held={p.BUTTONS[k]};tick(8);p.held=set();tick(40)
    # All page changes, including wraparound, and all diagnostic entrances.
-   for selected in range(11):
+   for selected in range(12):
     if selected:press('right')
     assert get('selected_test')==selected,('Navigation missed a route',selected)
     revision=get('ui_revision',2);press('a')

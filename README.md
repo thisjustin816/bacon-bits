@@ -1,6 +1,6 @@
 # Bacon Bit Bench
 
-A test bench for the Game Boy and Game Boy Color. It has eleven instruments,
+A test bench for the Game Boy and Game Boy Color. It has twelve instruments,
 and each one exposes its settings: pulse lengths, frequencies, phase timing,
 memory patterns and loads. Set the exact condition, then watch what the
 hardware does with it. Everything works in color and in monochrome.
@@ -49,6 +49,7 @@ join them on one menu with the same controls.
 | Cart LED (MBC5) | 256 levels per color on the insideGadgets RGB cartridge, plus color and pulse sequences |
 | Infrared (CGB) | Counts received edges, or sends bursts with cycle-counted on and off widths |
 | Flicker | Alternating layers, shadows, fine detail and color fields beside a static dither, with each phase 1 to 60 frames |
+| Printer | A test sheet of 1 to 9 strips on the Game Boy Printer, with 0 to 250 ms between strips and 1 to 8 ms between bytes. Shows how many strips the printer kept and its status byte |
 
 ## Controls
 
@@ -88,6 +89,12 @@ test, power off, and check again later.
 Made by CptBacon. All artwork and the font are original. The font is also
 published as [assets/font.png](assets/font.png): ASCII 32 to 127 in 8x8 cells,
 16 per row.
+
+The Printer instrument's presets and readings follow the Game Boy Printer's
+own firmware as Raphaël Boichot's
+[Game-Boy-Printer-disassembly](https://github.com/Raphael-Boichot/Game-Boy-Printer-disassembly)
+documents it, and were checked against his emulator of that firmware. None of
+its code or the printer's ROM is included.
 
 ## Diagnostic development
 

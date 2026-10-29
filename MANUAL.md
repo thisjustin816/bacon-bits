@@ -345,3 +345,38 @@ widths are cycle-counted; repetition follows the UI polling loop. Receiver
 sensitivity and physical transmission require hardware observation.
 
 RTC and IR register behavior follows [Pan Docs](https://gbdev.io/pandocs/).
+
+## Printer
+
+Printer sends a test sheet to a Game Boy Printer with set waits between strips
+and between bytes, to find the timing at which a console and a printer stop
+agreeing. Steady sends four strips back to back. Paused 100 ms and Paused
+200 ms wait that long before each strip after the first, and Slow bytes spaces
+each strip's bytes 6 ms apart. Up/Down select Strips (1-9), Pause ms (0-250 in
+steps of 10) and Byte ms (1-8), and Left/Right change them. A prints. B while
+the border reads Printing sends Break and stops; otherwise B returns. The instrument runs at
+normal CPU speed, which gives the printer its 8,192 Hz clock, and restores the
+previous speed on return.
+
+Strip k carries k tiles of black from the left edge below a light grey top
+row, so the paper shows which strips the printer still held when it printed.
+Kept counts those strips from the printer's replies: a data packet answered
+without the unprocessed-data bit (08), after the first, means the printer
+reset and dropped the strips before it. Byte ms runs from the start of one
+byte to the next inside a data packet. Init, the empty data packet, Print and
+the status polls go at full rate.
+
+The bottom border shows the result: Printed; Error with the status byte in
+hex; No printer when the first reply is not 81; No reply when a later one is
+not; Still busy after 20 seconds; or Stopped. Its corner shows the last two
+reply bytes, 81 and the status. The status bits are 01 checksum, 02 busy,
+04 image full, 08 unprocessed data, 10 packet error, 20 paper jam, 40 other
+error and 80 low battery.
+
+The printer's firmware, as Raphaël Boichot's
+[Game-Boy-Printer-disassembly](https://github.com/Raphael-Boichot/Game-Boy-Printer-disassembly)
+documents it, drops a packet whose bytes come more than 5.12 ms apart, and
+clears what it holds after about 125 ms with no byte while it is idle. On a
+printer, Slow bytes should end in No reply, and Paused 200 ms in a print of the
+last strip with Kept 1 of 4. Paused 100 ms stays inside the limit. Emulated
+printers differ: PyBoy's accepts any timing.
