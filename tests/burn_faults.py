@@ -13,7 +13,7 @@ with tempfile.TemporaryDirectory() as td:
  def press(k):p.button_press(k);p.tick(8,True);p.button_release(k);p.tick(16,True)
  try:
   p.tick(240,True)
-  for _ in range(4):press('left')
+  for _ in range(5):press('left')
   assert get('selected_test')==7
   press('a');p.tick(60,True);press('up');press('a');p.tick(60,True);press('down');press('right') # high load
   press('down');press('right') # CGB double speed

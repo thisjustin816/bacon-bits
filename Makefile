@@ -13,7 +13,7 @@ endif
 ifneq ($(AUTORUN),)
 FLAGS += -DBB_AUTORUN=$(AUTORUN)
 endif
-SOURCES = $(BUILD_DIR)/adapted/rumble.c src/main.c src/common.c src/scenes.c src/rumble_ui.c src/manifest.c src/hardware_art.c src/rtc.c src/led.c src/ir.c src/audio.c src/tones.c src/buttons.c src/focus.c src/display.c src/flicker.c src/sram.c src/burn.c src/platform_details.c $(BUILD_DIR)/adapted/platform.c $(BUILD_DIR)/adapted/link.c $(BUILD_DIR)/adapted/protocol.c $(BUILD_DIR)/adapted/stress.c
+SOURCES = $(BUILD_DIR)/adapted/rumble.c src/main.c src/common.c src/scenes.c src/rumble_ui.c src/manifest.c src/hardware_art.c src/rtc.c src/led.c src/ir.c src/printer.c src/audio.c src/tones.c src/buttons.c src/focus.c src/display.c src/flicker.c src/sram.c src/burn.c src/platform_details.c $(BUILD_DIR)/adapted/platform.c $(BUILD_DIR)/adapted/link.c $(BUILD_DIR)/adapted/protocol.c $(BUILD_DIR)/adapted/stress.c
 all:
 	mkdir -p $(BUILD_DIR)
 	$(PYTHON) tools/art.py

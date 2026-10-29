@@ -80,6 +80,7 @@ void rtc_run(void) BANKED;
 void rtc_read(uint8_t latch) BANKED;
 void led_run(void) BANKED;
 void ir_run(void) BANKED;
+void printer_run(void) BANKED;
 void rumble_view(void) BANKED;
 void rumble_ui_reset(void) BANKED;
 void ui_scene(uint8_t scene,uint8_t frame) BANKED;

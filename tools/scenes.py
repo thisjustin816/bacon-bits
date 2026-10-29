@@ -32,7 +32,6 @@ def picture(scene,phase):
  im,d=canvas()
  if scene in [0,5,6,7]:
   for i,(x,y) in enumerate([(4,37),(82,37),(4,85),(82,85)]):
-   if scene==6 and i>=3:continue
    panel(d,x,y)
    if scene==5:
     if i==0:
@@ -50,6 +49,11 @@ def picture(scene,phase):
     elif i==1:
      d.rectangle((x+18,y+9,x+28,y+22),fill=3);d.rectangle((x+48,y+9,x+58,y+22),fill=3)
      for xx in range(x+31,x+45,5):d.line((xx,y+13,xx+2,y+16),fill=2)
+    elif i==3:
+     # A printer with a printed strip out of its slot; its lamp blinks.
+     d.rectangle((x+28,y+5,x+45,y+14),fill=0);d.rectangle((x+28,y+5,x+28,y+14),fill=1);d.rectangle((x+45,y+5,x+45,y+14),fill=1)
+     for yy in range(y+7,y+13,3):d.line((x+31,yy,x+42,yy),fill=2)
+     d.rectangle((x+20,y+14,x+53,y+27),fill=3);d.rectangle((x+22,y+16,x+51,y+18),fill=1);d.rectangle((x+46,y+21,x+49,y+23),fill=2 if phase&1 else 1)
     else:
      d.rectangle((x+22,y+6,x+49,y+25),fill=3);d.rectangle((x+24,y+8,x+47,y+23),fill=0)
      for yy in range(y+9,y+23,2):

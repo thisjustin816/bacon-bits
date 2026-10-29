@@ -19,7 +19,7 @@ for variant in ['', 'mbc3']:
     p.tick(240,True)
     assert pyboy_header(p,cgb),(variant,cgb,'Header missing over the menu')
     clock=rom.read_bytes()[0x147]==0x10
-    pages=[['Platform','Link','Clock' if clock else 'Rumble','Audio'],['Buttons','Display','SRAM','Burn in'],['Cart LED','Infrared','Flicker']]
+    pages=[['Platform','Link','Clock' if clock else 'Rumble','Audio'],['Buttons','Display','SRAM','Burn in'],['Cart LED','Infrared','Flicker','Printer']]
     for page,labels in enumerate(pages):
      for i,label in enumerate(labels):
       center=120 if i&1 else 40;start=center-len(label)*4;y=120 if i&2 else 72
@@ -27,7 +27,7 @@ for variant in ['', 'mbc3']:
       actual={(x,yy) for yy in range(y,y+8) for x in range(center-32,center+32) if ink(x,yy)}
       assert actual==expected,(variant,cgb,page,label,'Label is not centered or shares a border')
      # Lower cards must have their bottom border, including the row below the text.
-     if page<2:assert all(ink(x,128) for x in range(8,76)),(variant,cgb,'Missing lower border')
+     assert all(ink(x,128) for x in range(8,76)),(variant,cgb,'Missing lower border')
      if page<2:
       for _ in range(4):press('right')
     # Entering IR restores every punctuation tile borrowed by the launcher.

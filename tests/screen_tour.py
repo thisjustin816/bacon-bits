@@ -135,7 +135,7 @@ for variant in ['', 'mbc3']:
   try:
    t.tick(600);t.header=t.p.image.crop((0,0,160,24)).tobytes()
    t.step='browser animation';t.tick(120)
-   for test in range(11):t.step=f'browse {test}';t.go(test);t.tick(30)
+   for test in range(12):t.step=f'browse {test}';t.go(test);t.tick(30)
    t.step='browser up/down'
    for key in ['down','down','up','up']:t.press(key)
    t.step='platform';t.go(0);t.press('a',120);t.expect('Platform');t.press('select');t.press('right');t.press('a');t.press('select');t.press('b',60);t.leave()
@@ -168,6 +168,7 @@ for variant in ['', 'mbc3']:
    t.step='flicker settings';t.go(10);t.preset(1);t.expect('Flicker')
    for _ in range(4):t.press('select')
    t.step='flicker full view';t.full_view=True;t.press('a',120);t.header_from=t.frames+HEADER_GRACE;t.press('b',10);t.full_view=False;t.header_from=None;t.step='flicker return';t.tick(60);t.press('b',60)
+   t.step='printer';t.go(11);t.preset(1);t.expect('Printer');t.press('a',90);t.press('b',40)
    t.step='browser after tour';t.tick(120)
    grouped={}
    for step,frame,kind in t.problems:

@@ -12,10 +12,15 @@ def wait(c,done,frames):
 
 c=Cart(args.rom)
 try:
- # Up and Down move two cards at a time through one list of eleven, wrapping at the ends.
+ # Up and Down move two cards at a time through one list of twelve, wrapping at the ends, in
+ # both columns.
  seen=[]
  for key in ['down']*6+['up']*6:c.press(key);seen.append(c.get('selected_test'))
  assert seen==[2,4,6,8,10,0,10,8,6,4,2,0],seen
+ c.press('right');seen=[]
+ for key in ['down']*6+['up']*6:c.press(key);seen.append(c.get('selected_test'))
+ assert seen==[3,5,7,9,11,1,11,9,7,5,3,1],seen
+ c.press('left')
  # Bit patterns preset cycles ten passes; one bank keeps the run short.
  c.go(6);c.preset(3);assert c.get('ram_mode')==2 and c.get('ram_pattern')==4
  c.press('down')
