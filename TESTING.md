@@ -97,9 +97,10 @@ preset and requires Stop to turn the APU off.
 
 `printer` runs the Printer instrument against PyBoy's printer, which prints
 at once, takes data after a print and answers each packet with the status from
-before it. So the Init check never sees a refusal there: the suite puts a reply
-of 14, 08, 10 or none in at the check's data packet to cover the screens and
-what the check does next, and only a physical printer shows the refusal. The
+before it. SameBoy's own printer has no packet-error rules either. So the Init
+check never sees a refusal in either: the suite puts a reply of 14, 08, 10 or
+none in at the check's data packet to cover the screens and what the check does
+next, and a physical printer is where the refusal shows. The
 maintainer reported on 2026-10-29 that a physical Game Boy Printer on a ModRetro
 Chromatic, model unknown, answered a data packet sent after a completed Print
 with no Init, in a game's two-part print, with status 14 every time, and printed

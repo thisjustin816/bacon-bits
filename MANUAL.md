@@ -404,5 +404,5 @@ second two tiles wide; the data packet sent with no Init carries a two-tile
 strip that the Init that follows discards.
 
 On a physical printer, report the printer's model, the console, the No Init
-byte and what the paper shows. Emulated printers take the data, so only a
-physical printer can show Refused Yes.
+byte and what the paper shows. The printers PyBoy and SameBoy emulate take the
+data, so Refused Yes needs a printer that refuses it.
