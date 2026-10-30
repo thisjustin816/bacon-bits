@@ -55,7 +55,7 @@ with `make -j1`: the parallel build can race on a helper program.
 | Cartridge LED (MBC5) | Actual compiled 24-bit command order, idle output, primary-color commands and OFF cleanup | Compatible cartridge protocol and visible light output |
 | Infrared | Compiled edge-cycle counts, burst count, presets, receiver controls, mode-switch text and cleanup; two benches in one harness, one sending each transmit preset and the other counting every pulse at three frame offsets | Optical transmission and reception between real devices: receiver response, range and ambient light |
 | Flicker | Every-frame phase cadence, duty, movement, pause/step, reference stability, OAM DMA and cleanup in both emulators | Panel blending and perceived flicker |
-| Printer | Every packet's order, the strip pauses and data-byte spacing as sent, other packets at full rate, the sheet strip by strip on PyBoy's printer, error, stop and no-printer readings, CPU speed restored, and the Init check page: no Init before its data packet, the wait for two idle replies, replies of 14, 08, 10 and none shown as the status byte and Refused, and part failures and stop | A printer's timeouts, reset and replies, which PyBoy's printer does not model, and whether a printer refuses data after a print with no Init |
+| Printer | Every packet's order, the strip pauses and data-byte spacing as sent, other packets at full rate, the sheet strip by strip on PyBoy's printer, error, stop and no-printer readings, CPU Double sending every byte at double speed with 200 ms pauses kept, CPU speed restored, and the Init check pages: no Init before its data packet, the wait for two idle replies, 200 ms of quiet or one 00 byte 20 ms before it, replies of 14, 08, 10 and none shown as the status byte and Refused, and part failures and stop | A printer's timeouts, reset and replies, which PyBoy's printer does not model, whether a printer refuses data after a print with no Init, after a quiet reset or after a 00 byte, and whether it takes the double-speed clock |
 
 `smoke`, `variants` and `graphical_ui` cover entry routes and safe initial
 states. Their broad checks supplement the diagnostic-specific suites.
@@ -106,7 +106,11 @@ Chromatic, model unknown, answered a data packet sent after a completed Print
 with no Init, in a game's two-part print, with status 14 every time, and printed
 both parts when an Init came before the second; a one-part print always worked.
 That was the game's print, not the Init check, which has not yet run on a
-printer.
+printer. The firmware reading is that 200 ms of quiet or a 00 byte resets an
+idle printer as an Init does, and Press Any's emulated printer takes the data
+on pages 3 and 4 accordingly; no physical printer has been checked for it.
+Two commercial Color games print at double speed, so a printer is expected to
+take 16,384 Hz, but CPU Double has not yet run on one either.
 
 `stack_depth` fills the WRAM between static data and the stack with `$A5`,
 opens and runs every instrument in each build and model, and requires the
