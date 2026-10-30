@@ -353,15 +353,17 @@ and between bytes, to find the timing at which a console and a printer stop
 agreeing. Steady sends four strips back to back. Paused 100 ms and Paused
 200 ms wait that long before each strip after the first, and Slow bytes spaces
 each strip's bytes 6 ms apart. Up/Down select Strips (1-9), Pause ms (0-250 in
-steps of 10) and Byte ms (1-8), and Left/Right change them. A prints. B while
-the border reads Printing sends Break and stops; otherwise B returns. Select
-switches between the two pages, 1/2 and the Init check on 2/2, and shows
-Ready in the border. The instrument runs at normal CPU speed, which gives the
-printer its 8,192 Hz clock, and restores the previous speed on return.
+steps of 10), Byte ms (1-8) and CPU, and Left/Right change them. A prints. B
+while the border reads Printing sends Break and stops; otherwise B returns.
+Select steps through the four pages, 1/4 and the Init checks on 2/4 to 4/4,
+and shows Ready in the border. The instrument runs at normal CPU speed, which
+gives the printer its 8,192 Hz clock, and restores the previous speed on
+return. CPU Double, on a Color only, sends a print from page 1 at double speed,
+which clocks the link at 16,384 Hz; Pause ms and Byte ms keep their length.
 
 Strip k carries k tiles of black from the left edge below a light grey top
 row, so the paper shows which strips the printer still held when it printed.
-Kept counts those strips from the printer's replies: a data packet answered
+Kept, under the box, counts those strips from the printer's replies: a data packet answered
 without the unprocessed-data bit (08), after the first, means the printer
 reset and dropped the strips before it. Byte ms runs from the start of one
 byte to the next inside a data packet. Init, the empty data packet, Print and
@@ -403,6 +405,16 @@ corner read as on page 1. The paper has the first strip one tile wide and the
 second two tiles wide; the data packet sent with no Init carries a two-tile
 strip that the Init that follows discards.
 
-On a physical printer, report the printer's model, the console, the No Init
-byte and what the paper shows. The printers PyBoy and SameBoy emulate take the
-data, so Refused Yes needs a printer that refuses it.
+Pages 3 and 4 run the same check with something between the print and the data
+packet sent with no Init. On 3/4 nothing is sent for 200 ms, past the 125 ms
+after which the firmware resets an idle printer as an Init does. On 4/4 one 00
+byte goes out 20 ms before the data packet; the firmware answers a packet that
+starts with anything but 88 with FF, and resets an idle printer as an Init
+does. Their second reading is named Quiet or 00 byte in place of No Init. A
+printer that refuses the data on page 2 and takes it on page 3 or 4 resets
+after a print as the firmware reading says. Changing pages clears the readings.
+
+On a physical printer, report the printer's model, the console, the No Init,
+Quiet and 00 byte bytes and what the paper shows, and whether a print with CPU
+Double came out whole. The printers PyBoy and SameBoy emulate take the data,
+so Refused Yes needs a printer that refuses it.

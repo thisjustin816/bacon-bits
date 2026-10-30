@@ -22,14 +22,14 @@ class PrinterCart(Cart):
   path=Path(self.folder.name)/'cart.gbc';shutil.copy(self.rom,path)
   extra=dict(printer=True,printer_output=str(self.paper)) if printer else {}
   self.p=PyBoy(str(path),window='null',sound_emulated=False,cgb=cgb,**extra);self.p.set_emulation_speed(0)
-  self.bytes=[];self.faults={};self.calls=0;self.gap_fault=None
+  self.bytes=[];self.junk=[];self.faults={};self.calls=0;self.gap_fault=None
   bank,local=local_symbols(rom)
   self.p.hook_register(bank,local['_xfer'],self.sent,None)
   self.p.hook_register(bank,local['_failed'],self.inject,None)
   self.p.hook_register(bank,local['_gap'],self.inject_gap,None)
   self.p.tick(240,True)
  def sent(self,_):
-  self.bytes.append((self.p.frame_count*FRAME+self.p.memory[0xFF44]*LINE,self.p.register_file.A))
+  self.bytes.append((self.p.frame_count*FRAME+self.p.memory[0xFF44]*LINE,self.p.register_file.A,self.p.memory[0xFF4D]>>7))
  def inject(self,_):
   '''Replaces the reply that the n-th failed() call of the job reads: {n: (alive, status)}.
   A key of None applies to every call.'''
@@ -38,7 +38,9 @@ class PrinterCart(Cart):
  def inject_gap(self,_):
   '''Replaces the reply to the data packet the Init check sends with no Init: (alive, status).'''
   if self.gap_fault:self.p.memory[self.syms['_prn_alive']],self.p.memory[self.syms['_prn_status']]=self.gap_fault
- def kept(self):return self.row(12).strip('#').split('Kept')[1].strip()
+ def kept(self):
+  '''The detail line's kept count on page 1, or '' before a job counted one.'''
+  r=self.row(17);return r.split('Kept')[1].strip() if 'Kept' in r else ''
  def status(self):
   '''The bottom border's reading, without the reply in its corner.'''
   return re.sub(r'[ #]*([0-9A-F]{2} [0-9A-F]{2})? #$','',self.row(15)).strip('# ')
@@ -47,15 +49,17 @@ class PrinterCart(Cart):
   m=re.search(r'([0-9A-F]{2} [0-9A-F]{2}) #$',self.row(15));return m and m.group(1)
  def print_job(self,faults={}):
   self.bytes=[];self.faults=faults;self.calls=0;self.press('a')
+  # A frame can catch the status half rewritten, as Prining between Sending and Printing, so
+  # only an outcome ends the wait.
   for _ in range(2400):
-   if self.status() not in ('Sending','Printing','Part 1','No Init','Part 2'):break
+   if self.status().startswith(('Printed','Error','No printer','No reply','Still busy','Stopped')):break
    self.tick()
   self.tick(10)
  def check_job(self,faults={},gap=None):
   '''Runs the Init check on page 2; faults and gap replace replies as in print_job.'''
   self.gap_fault=gap;self.print_job(faults)
  def fields(self):
-  '''The four readings on page 2 and the detail line below the box.'''
+  '''The four readings on pages 2 to 4 and the detail line below the box.'''
   return [self.row(y)[2:18].strip('# ') for y in (6,8,10,12)]+[self.row(17).strip()]
  def papers(self):
   '''The last check's two sheets: part 1 was saved when part 2 started, part 2 is still held.'''
@@ -65,13 +69,15 @@ class PrinterCart(Cart):
   '''The last print. PyBoy holds it until the next print's top margin ends it.'''
   return self.p.printer_image()
  def packets(self):
-  """Each packet as (command, times of its payload bytes, start, end), from its 0x88 0x33."""
-  out=[];b=self.bytes;i=0
+  """Each packet as (command, times of its payload bytes, start, end), from its 0x88 0x33. A 00
+  byte between packets is kept in self.junk as (time, index of the packet after it)."""
+  out=[];b=self.bytes;i=0;self.junk=[]
   while i+5<len(b):
+   if b[i][1]==0x00:self.junk.append((b[i][0],len(out)));i+=1;continue
    assert b[i][1]==0x88 and b[i+1][1]==0x33,('Packet does not start with its magic bytes',i,b[i:i+2])
    length=b[i+4][1]|b[i+5][1]<<8;end=i+6+length+4
    if end>len(b):break
-   out.append((b[i+2][1],[t for t,_ in b[i+6:i+6+length]],b[i][0],b[end-1][0]));i=end
+   out.append((b[i+2][1],[x[0] for x in b[i+6:i+6+length]],b[i][0],b[end-1][0]));i=end
   return out
 
 def check_band(px,top,k,black):
@@ -102,9 +108,10 @@ for variant in ['mbc5','mbc3']:
   try:
    key1=c.p.memory[0xFF4D]>>7
    c.go(11);c.preset(1);assert 'Printer' in c.text() and c.status()=='Ready',(where,c.text())
+   assert 'CPU      Normal' in c.row(12) and c.kept()=='',(where,c.row(12),c.row(17))
    # Steady: four strips back to back, each byte about one byte period after the last.
    c.print_job();assert c.status()=='Printed',(where,c.text())
-   assert '4 of 4' in c.row(12),(where,'Kept',c.row(12))
+   assert c.kept()=='4 of 4',(where,'Kept',c.row(17))
    assert c.reply() and c.reply().startswith('81 0'),(where,'Reply corner',c.row(15))
    packets=c.packets();assert [p[0] for p in packets][:7]==[1,4,4,4,4,4,2],(where,[p[0] for p in packets])
    steady=max(max_gap(p[1]) for p in packets)
@@ -115,7 +122,7 @@ for variant in ['mbc5','mbc3']:
    # Nine strips fill the printer's memory.
    c.press('right');c.press('right');c.press('right');c.press('right');c.press('right');c.press('right')
    assert c.get('prn_strips')==9,(where,c.get('prn_strips'))
-   c.print_job();assert c.status()=='Printed' and '9 of 9' in c.row(12),(where,c.text())
+   c.print_job();assert c.status()=='Printed' and c.kept()=='9 of 9',(where,c.text())
    check_sheet(c.sheet(),9)
    c.press('b');c.tick(30)
    # Paused 200 ms: the wait sits between data packets, and only there.
@@ -124,7 +131,7 @@ for variant in ['mbc5','mbc3']:
    pauses=[b[2]-a[3] for a,b in zip(data,data[1:])]
    assert len(pauses)==3 and all(199<x<203 for x in pauses),(where,'Strip pauses',pauses)
    # Slow bytes stay inside the data packets, out of the pause.
-   c.press('up');c.press('right',after=4);[c.press('right',after=4) for _ in range(6)]
+   c.press('up');c.press('up');c.press('right',after=4);[c.press('right',after=4) for _ in range(6)]
    assert c.get('prn_byte')==8,(where,c.get('prn_byte'))
    c.print_job();data=[p for p in c.packets() if p[0]==4 and p[1]]
    pauses=[b[2]-a[3] for a,b in zip(data,data[1:])]
@@ -161,7 +168,7 @@ for variant in ['mbc5','mbc3']:
    c.print_job();c.press('left');assert c.kept()=='4 of 4' and c.get('prn_strips')==3,(where,c.text())
    c.press('right')
    # B held while a strip goes out stops the job at the next strip with Break.
-   c.press('up');c.press('right');c.press('right');assert c.get('prn_byte')==3,(where,c.get('prn_byte'))
+   c.press('up');c.press('up');c.press('right');c.press('right');assert c.get('prn_byte')==3,(where,c.get('prn_byte'))
    c.bytes=[];c.press('a',after=0);c.p.button_press('b')
    for _ in range(600):
     c.tick()
@@ -177,6 +184,19 @@ for variant in ['mbc5','mbc3']:
     if 'Printing' in c.row(15):break
    c.press('b');c.tick(10)
    assert c.status()=='Stopped' and 8 in [p[0] for p in c.packets()],(where,c.text())
+   # CPU Double on a Color sends every packet at double speed, with the strip pauses still
+   # 200 ms; a DMG stays at Normal. The instrument returns to normal speed after the job.
+   c.press('b');c.tick(30);c.preset(3);c.press('up');c.press('right')
+   if cgb:
+    assert 'CPU      Double' in c.row(12),(where,c.row(12))
+    c.print_job();assert c.status()=='Printed' and c.kept()=='4 of 4',(where,c.text())
+    assert all(x[2]==1 for x in c.bytes),(where,'A byte went out at normal speed')
+    data=[p for p in c.packets() if p[0]==4 and p[1]]
+    pauses=[b[2]-a[3] for a,b in zip(data,data[1:])]
+    assert len(pauses)==3 and all(199<x<203 for x in pauses),(where,'Strip pauses at double speed',pauses)
+    assert c.p.memory[0xFF4D]>>7==0,(where,'Still at double speed after the job')
+    c.press('left');assert 'CPU      Normal' in c.row(12),(where,c.row(12))
+   else:assert 'CPU      Normal' in c.row(12),(where,'A DMG offered double speed',c.row(12))
    c.press('b');c.tick(60)
    assert c.p.memory[0xFF4D]>>7==key1,(where,'CPU speed not restored')
    assert c.get('selected_test')==11 and 'of 3' in c.row(17),(where,'Did not return to the browser')
@@ -186,8 +206,8 @@ for variant in ['mbc5','mbc3']:
   c=PrinterCart(ROMS[variant],cgb)
   try:
    key1=c.p.memory[0xFF4D]>>7;busy=(0x81,0x02);idle=(0x81,0x00)
-   c.go(11);c.preset(1);assert '1/2' in c.row(4),(where,c.row(4))
-   c.press('select');assert '2/2' in c.row(4) and c.status()=='Ready',(where,c.text())
+   c.go(11);c.preset(1);assert '1/4' in c.row(4),(where,c.row(4))
+   c.press('select');assert '2/4' in c.row(4) and c.status()=='Ready',(where,c.text())
    assert c.fields()==['Part 1   -','No Init  -','Refused  -','Init     -','A: run the check'],(where,c.fields())
    # A clean run: Part 1, then one data packet with no Init, then Init and part 2.
    c.check_job();assert c.status()=='Printed',(where,c.text())
@@ -201,8 +221,8 @@ for variant in ['mbc5','mbc3']:
    assert c.get('prn_gapped')==1 and c.get('prn_stage')==4 and c.reply().startswith('81 '),(where,c.text())
    first,second=c.papers();check_strip(first,1);check_strip(second,2)
    assert max(max_gap(p[1]) for p in packets)<1.6,(where,'Check data bytes are not at the steady rate')
-   # Byte ms on page 1 does not slow the check.
-   c.press('select');c.press('down');c.press('down');[c.press('right',after=4) for _ in range(7)]
+   # Byte ms on page 1 does not slow the check. Select steps through pages 3 and 4 back to 1.
+   [c.press('select') for _ in range(3)];c.press('down');c.press('down');[c.press('right',after=4) for _ in range(7)]
    assert c.get('prn_byte')==8,(where,c.get('prn_byte'))
    c.press('select');c.check_job();assert c.status()=='Printed',(where,c.text())
    assert max(max_gap(p[1]) for p in c.packets())<1.6,(where,'Byte ms reached the check')
@@ -238,8 +258,27 @@ for variant in ['mbc5','mbc3']:
    commands=[p[0] for p in c.packets()]
    assert c.status()=='Stopped' and commands[-1]==8 and 4 not in commands[commands.index(15):],(where,commands,c.text())
    assert c.fields()[0]=='Part 1   Stopped',(where,c.fields())
-   # Select back shows page 1 with a clean state; B leaves from either page.
-   c.press('select');assert '1/2' in c.row(4) and c.status()=='Ready',(where,c.text())
+   # Page 3 runs the same check with 200 ms of quiet before the data packet, and page 4 with one
+   # 00 byte 20 ms before it; both clean runs and a refusal read as on page 2.
+   c.press('select');assert '3/4' in c.row(4) and c.status()=='Ready',(where,c.text())
+   assert c.fields()==['Part 1   -','Quiet    -','Refused  -','Init     -','A: run the check'],(where,c.fields())
+   c.check_job();assert c.status()=='Printed',(where,c.text())
+   packets=c.packets();gap_at=next(i for i,p in enumerate(packets) if p[0]==4 and p[1] and i>3)
+   assert [p[0] for p in packets[gap_at-1:gap_at+2]]==[15,4,1] and not c.junk,(where,'Quiet check packets',[p[0] for p in packets])
+   quiet=packets[gap_at][2]-packets[gap_at-1][3]
+   assert 199<quiet<210,(where,'Quiet before the data packet',quiet)
+   status=c.get('prn_gap');assert c.fields()==['Part 1   Printed','Quiet    %02X'%status,'Refused  No','Init     Printed','Init not needed'],(where,c.fields())
+   c.check_job(gap=(0x81,0x14));assert c.fields()==['Part 1   Printed','Quiet    14','Refused  Yes','Init     Printed','Init needed'],(where,c.fields())
+   c.press('select');assert '4/4' in c.row(4) and c.status()=='Ready',(where,c.text())
+   assert c.fields()[1]=='00 byte  -',(where,c.fields())
+   c.check_job();assert c.status()=='Printed',(where,c.text())
+   packets=c.packets();gap_at=next(i for i,p in enumerate(packets) if p[0]==4 and p[1] and i>3)
+   assert [p[0] for p in packets[gap_at-1:gap_at+2]]==[15,4,1],(where,'00 byte check packets',[p[0] for p in packets])
+   assert len(c.junk)==1 and c.junk[0][1]==gap_at,(where,'One 00 byte right before the data packet',c.junk,gap_at)
+   assert 19<packets[gap_at][2]-c.junk[0][0]<23,(where,'Wait after the 00 byte',packets[gap_at][2]-c.junk[0][0])
+   c.check_job(gap=(0x81,0x14));assert c.fields()==['Part 1   Printed','00 byte  14','Refused  Yes','Init     Printed','Init needed'],(where,c.fields())
+   # Select from the last page shows page 1 with a clean state; B leaves from any page.
+   c.press('select');assert '1/4' in c.row(4) and c.status()=='Ready',(where,c.text())
    c.press('select');c.press('b');c.tick(60)
    assert c.p.memory[0xFF4D]>>7==key1,(where,'CPU speed not restored after page 2')
    assert c.get('selected_test')==11 and 'of 3' in c.row(17),(where,'Did not return to the browser from page 2')
@@ -248,8 +287,8 @@ for variant in ['mbc5','mbc3']:
   c=PrinterCart(ROMS[variant],cgb,printer=False)
   try:
    c.go(11);c.preset(1);c.print_job()
-   assert c.status()=='No printer' and 'of' not in c.row(12) and c.reply() is None,(where,c.text())
+   assert c.status()=='No printer' and c.kept()=='' and c.reply() is None,(where,c.text())
    c.press('select');c.check_job()
    assert c.status()=='No printer' and c.fields()[0]=='Part 1   Failed' and c.reply() is None,(where,c.text())
   finally:c.close()
-print('Printer: steady, nine-strip, paused and slow-byte prints on PyBoy\'s printer with the sheet checked strip by strip, 200 ms strip pauses, 6 ms data bytes with other packets at full rate, kept counts, error, no-reply, busy, stop and no-printer readings, and CPU speed restored, and the Init check page: packet order with no Init before the gap packet, the wait for two idle replies, the refusal and other replies shown as the status byte and Refused, failures and stop, and steady data bytes whatever Byte ms says, on CGB and DMG with both mappers')
+print('Printer: steady, nine-strip, paused and slow-byte prints on PyBoy\'s printer with the sheet checked strip by strip, 200 ms strip pauses, 6 ms data bytes with other packets at full rate, kept counts, error, no-reply, busy, stop and no-printer readings, double speed on a Color with 200 ms pauses kept, and CPU speed restored, and the Init check pages: packet order with no Init before the gap packet, the wait for two idle replies, 200 ms of quiet or one 00 byte before it, the refusal and other replies shown as the status byte and Refused, failures and stop, and steady data bytes whatever Byte ms says, on CGB and DMG with both mappers')
