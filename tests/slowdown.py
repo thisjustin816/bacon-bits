@@ -160,7 +160,7 @@ def check_run(rec,expected,fast,context):
 def table_cases():
  # Steady loads on both sides of one and two lag frames, and the patterns, each over whole pattern cycles.
  cases=[(True,False,'steady',p,{}) for p in (75,95,100,105,125,150,185,200)]
- cases+=[(True,False,'pulse',125,dict(base=50,heavy=4,light=4)),(True,False,'pulse',125,dict(base=50,heavy=1,light=1)),
+ cases+=[(True,False,'pulse',125,dict(base=50,heavy=4,light=4)),(True,False,'pulse',125,dict(base=50,heavy=1,light=1)),(True,False,'pulse',150,dict(base=25,heavy=3,light=5)),
   (True,False,'ramp',150,dict(base=25,steps=60)),(True,False,'ramp',200,dict(base=150,steps=10)),
   (True,True,'steady',95,{}),(True,True,'steady',125,{}),(True,True,'steady',200,{}),(True,True,'pulse',125,dict(base=50,heavy=4,light=4)),
   (False,False,'steady',125,{}),(False,False,'pulse',125,dict(base=50,heavy=4,light=4)),(False,False,'ramp',150,dict(base=25,steps=60))]
@@ -228,11 +228,14 @@ def cycle_cases():
   pb=pyboy_module().PyBoy(str(args.rom),window='null',sound_emulated=False,cgb=True)
   try:
    state.seek(0);pb.load_state(state);mb=pb.mb;mb.step_cycles=1
-   entry,burn=syms['_slow_vbl'],syms['_slow_burn'];handler=[];overhead=[];start=back=wake=None
+   entry,burn=syms['_slow_vbl'],syms['_slow_burn'];handler=[];overhead=[];burns=[];start=back=wake=None
    for _ in range(vblanks*80000):
     if len(handler)>=vblanks:break
     pc=mb.cpu.PC
     if pc==0x40:wake=mb.cpu.cycles
+    if pc==burn and (not burns or len(burns[-1])==2):
+     sp=mb.cpu.SP;burns.append([mb.cpu.cycles,mb.cpu.D<<8|mb.cpu.E,mb.getitem(sp)|mb.getitem(sp+1)<<8])
+    elif burns and len(burns[-1])==3 and pc==burns[-1][2]:burns[-1]=(mb.cpu.cycles-burns[-1][0],burns[-1][1])
     if pc==entry and start is None:
      sp=mb.cpu.SP;back=mb.getitem(sp)|mb.getitem(sp+1)<<8;start=mb.cpu.cycles;ly=mb.getitem(0xff44)
     elif start is not None and pc==back:
@@ -240,22 +243,25 @@ def cycle_cases():
     if pc==burn and wake is not None:overhead.append(mb.cpu.cycles-wake);wake=None
     mb.tick()
    assert len(handler)>=vblanks,('Stepping found too few VBlanks',len(handler))
-   return handler,overhead
+   return handler,overhead,[b for b in burns if len(b)==2]
   finally:pb.stop(save=False)
  def carry(c):
   for name,value in (('slow_frames',[0x99,0x99,0x09]),('slow_lag',[0x99,0x99,0x09])):
    at=c.syms['_'+name];c.p.memory[at:at+3]=value
  # Over Steady 125% the VBlanks alternate busy and idle and a 64-frame block ends.
  for label,poke in (('counts with no carry',None),('counts that carry through every digit',carry)):
-  handler,overhead=stepped('steady',125,poke)
+  handler,overhead,_=stepped('steady',125,poke)
   assert {h[0] for h in handler}=={HANDLER_CYCLES},(label,'Readout handler cycles',sorted({h[0] for h in handler}))
   assert all(144<=ly<=153 and 144<=end<=153 for _,ly,end in handler),(label,'Handler ran outside VBlank',handler[:4])
  # Pulse takes both paths of the schedule step: the overhead of every update must match.
- handler,overhead=stepped('pulse',75,base=50,heavy=3,light=2,vblanks=24)
+ handler,overhead,burns=stepped('pulse',75,base=50,heavy=3,light=2,vblanks=24)
  assert len(set(overhead))==1,('Update overhead differs between schedule paths',sorted(set(overhead)))
+ # No VBlank lands in these burns: from the first instruction to the ret, n
+ # iterations take 28n cycles, and the ret 16 more.
+ assert len(burns)>=12 and all(cycles==LOOP*n+16 for cycles,n in burns),('Burn loop is not 28 cycles an iteration',burns[:6])
  print(f'Readout handler: {HANDLER_CYCLES} cycles on every VBlank, busy or idle, at a block end and with counts that carry, '
        f'inside VBlank (LY {min(h[1] for h in handler)} to {max(h[2] for h in handler)}); '
-       f'{overhead[0]} cycles from the waking VBlank to the burn on every Pulse update',flush=True)
+       f'{overhead[0]} cycles from the waking VBlank to the burn on every Pulse update; each burn 28 cycles an iteration',flush=True)
 
 def control_cases():
  c=Bench()
@@ -349,6 +355,8 @@ def cleanup_cases():
 def sameboy_cases():
  from libretro import SameBoy
  syms=symbols(args.rom)
+ missing=[n for n in ('_slow_frames','_slow_lag','_slow_tick_lag','_slow_running','_slow_pattern') if n not in syms]
+ if missing:raise AssertionError(('Slowdown symbols missing from this build',missing))
  for model in ('Game Boy Color','Game Boy'):
   for pattern,load,extra in (('steady',75,{}),('steady',125,{}),('pulse',125,dict(base=50,heavy=4,light=4))):
    p=SameBoy(args.core,args.rom,model=model)
