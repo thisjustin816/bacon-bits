@@ -3,7 +3,7 @@
 A button bounces as it closes, so the press that picks a preset can read as
 released for a moment while it is still held. The next screen must not take
 that held button as a new press: Flicker must not open its full view and
-Infrared must not start listening.
+Infrared must not start listening, and Slowdown must not start a run.
 """
 from pathlib import Path
 import sys
@@ -17,7 +17,7 @@ def bounced_pick(c):
 
 rom=Path(sys.argv[1]) if len(sys.argv)>1 else ROMS['mbc5']
 failures=[]
-for test,name,running,expect in ((10,'Flicker','flicker_running','FLICKER'),(9,'Infrared','ir_running','INFRARED')):
+for test,name,running,expect in ((10,'Flicker','flicker_running','FLICKER'),(9,'Infrared','ir_running','INFRARED'),(12,'Slowdown','slow_running','SLOWDOWN')):
  c=Cart(rom)
  try:
   c.go(test);c.press('a');assert 'presets' in c.row(4),c.text()
@@ -25,4 +25,4 @@ for test,name,running,expect in ((10,'Flicker','flicker_running','FLICKER'),(9,'
   if c.get(running) or expect not in c.text().upper():failures.append((name,c.get(running),c.row(4)))
  finally:c.p.stop(save=False)
 assert not failures,failures
-print('A bouncing preset press picks the preset without starting Flicker or Infrared')
+print('A bouncing preset press picks the preset without starting Flicker, Infrared or Slowdown')

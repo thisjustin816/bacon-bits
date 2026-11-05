@@ -199,7 +199,7 @@ for variant in ['mbc5','mbc3']:
    else:assert 'CPU      Normal' in c.row(12),(where,'A DMG offered double speed',c.row(12))
    c.press('b');c.tick(60)
    assert c.p.memory[0xFF4D]>>7==key1,(where,'CPU speed not restored')
-   assert c.get('selected_test')==11 and 'of 3' in c.row(17),(where,'Did not return to the browser')
+   assert c.get('selected_test')==11 and 'of 4' in c.row(17),(where,'Did not return to the browser')
   finally:c.close()
   # Page 2, the Init check. PyBoy's printer takes data after a print, so the refusal is a reply
   # put in at gap(); only a physical printer shows it.
@@ -281,7 +281,7 @@ for variant in ['mbc5','mbc3']:
    c.press('select');assert '1/4' in c.row(4) and c.status()=='Ready',(where,c.text())
    c.press('select');c.press('b');c.tick(60)
    assert c.p.memory[0xFF4D]>>7==key1,(where,'CPU speed not restored after page 2')
-   assert c.get('selected_test')==11 and 'of 3' in c.row(17),(where,'Did not return to the browser from page 2')
+   assert c.get('selected_test')==11 and 'of 4' in c.row(17),(where,'Did not return to the browser from page 2')
   finally:c.close()
   # No printer: the first reply is not 81, and nothing else is shown.
   c=PrinterCart(ROMS[variant],cgb,printer=False)

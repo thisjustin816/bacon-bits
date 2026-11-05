@@ -28,14 +28,17 @@ HEADER_GRACE=6
 # columns; the blink check skips only those cells.
 WAVE_ROWS=range(6,12);WAVE_COLUMNS=range(2,18)
 WAVE_CELLS={(y-3)*20+x for y in WAVE_ROWS for x in WAVE_COLUMNS}
+# While Slowdown runs, Run under the box counts each lag frame and clears on
+# the next idle one, so at 125% it reads 1 and 0 on alternate frames.
+RUN_CELLS={(17-3)*20+7}
 def body_cells(image):
  data=image.crop((0,24,160,144)).tobytes()
  return [hash(b''.join(data[(y*8+r)*480+x*24:(y*8+r)*480+x*24+24] for r in range(8))) for y in range(15) for x in range(20)]
 def borrowed_cell(x,y):
  # On the browser, labels sit on rows 9 and 15; the focus border runs along each card's edge.
  return y in (4,9,10,15,16) or (x in (0,9,10,19) and 4<=y<=16)
-# The browser's footer reads "1 of 3" to "3 of 3" from column 7.
-BROWSER_FOOTER=bytes(ord(c)-32 for c in 'of 3')
+# The browser's footer reads "1 of 4" to "4 of 4" from column 7.
+BROWSER_FOOTER=bytes(ord(c)-32 for c in 'of 4')
 
 class Tour:
  def __init__(self,variant,model):
@@ -44,7 +47,7 @@ class Tour:
   # Compare VRAM with the font compiled into this ROM.
   at=self.syms['_bb_font'];data=rom.read_bytes();self.font=data[(at>>16)*16384+(at&0xffff)-(16384 if at>>16 else 0):][:1536]
   self.p=SameBoy(args.core,rom,model=model);self.name=f'{variant or "mbc5"}-{"cgb" if "Color" in model else "dmg"}'
-  self.history=[];self.step='boot';self.problems=[];self.full_view=False;self.frames=0;self.blank_run=0;self.blank_runs={};self.cells=None;self.change_run=0;self.change_runs={};self.animated=False;self.header=None;self.header_from=None
+  self.history=[];self.step='boot';self.problems=[];self.full_view=False;self.frames=0;self.blank_run=0;self.blank_runs={};self.cells=None;self.change_run=0;self.change_runs={};self.animated=set();self.header=None;self.header_from=None
  def get(self,name):return self.p.read(self.syms['_'+name])[0]
  def text(self,y):
   v=self.p.vram();return ''.join(chr(t+32) if t<96 else '#' for t in v[0x1800+y*32:0x1814+y*32])
@@ -87,7 +90,7 @@ class Tour:
     if self.blank_run>MAX_BLANK:self.problems.append((self.step,self.frames,f'body blank for {self.blank_run} frames'))
     self.blank_run=0
    # A scrolling waveform repeats, so two different steps can look identical.
-   self.history.append([0 if self.animated and i in WAVE_CELLS else c for i,c in enumerate(cells)])
+   self.history.append([0 if i in self.animated else c for i,c in enumerate(cells)])
    if len(self.history)>BLINK+1:self.history.pop(0)
    if len(self.history)>=3:
     now=self.history[-1]
@@ -108,7 +111,7 @@ class Tour:
   self.p.held={self.p.BUTTONS[key]};self.tick(8);self.p.held=set();self.tick(after)
  def chord(self):self.p.held={0,2,3,8};self.tick(80);self.p.held=set();self.tick(40)
  def go(self,test):
-  for _ in range(12):
+  for _ in range(13):
    if self.get('selected_test')==test:return
    step=self.step;self.step=f'browse to {test}';self.press('right');self.step=step
   raise AssertionError((self.name,self.step,'Browser never reached test',test))
@@ -135,7 +138,7 @@ for variant in ['', 'mbc3']:
   try:
    t.tick(600);t.header=t.p.image.crop((0,0,160,24)).tobytes()
    t.step='browser animation';t.tick(120)
-   for test in range(12):t.step=f'browse {test}';t.go(test);t.tick(30)
+   for test in range(13):t.step=f'browse {test}';t.go(test);t.tick(30)
    t.step='browser up/down'
    for key in ['down','down','up','up']:t.press(key)
    t.step='platform';t.go(0);t.press('a',120);t.expect('Platform');t.press('select');t.press('right');t.press('a');t.press('select');t.press('b',60);t.leave()
@@ -151,7 +154,7 @@ for variant in ['', 'mbc3']:
     for _ in range(4):t.press('b',30)
     t.p.held={t.p.BUTTONS['select']};t.tick(40);t.p.held=set();t.tick(30)
     t.press('start',90);t.press('start',40);t.leave()
-   t.step='audio';t.go(3);t.preset(2);t.expect('Audio');t.animated=True;t.history=[];t.press('a',90);t.press('right');t.press('select');t.press('down');t.press('right');t.press('select');t.press('a');t.press('b',40);t.animated=False;t.history=[]
+   t.step='audio';t.go(3);t.preset(2);t.expect('Audio');t.animated=WAVE_CELLS;t.history=[];t.press('a',90);t.press('right');t.press('select');t.press('down');t.press('right');t.press('select');t.press('a');t.press('b',40);t.animated=set();t.history=[]
    t.step='buttons';t.go(4);t.preset(1);t.expect('Buttons')
    for _ in range(4):t.press('select')
    t.p.held={t.p.BUTTONS['up'],t.p.BUTTONS['right']};t.tick(30);t.p.held=set();t.tick(20);t.leave()
@@ -169,6 +172,8 @@ for variant in ['', 'mbc3']:
    for _ in range(4):t.press('select')
    t.step='flicker full view';t.full_view=True;t.press('a',120);t.header_from=t.frames+HEADER_GRACE;t.press('b',10);t.full_view=False;t.header_from=None;t.step='flicker return';t.tick(60);t.press('b',60)
    t.step='printer';t.go(11);t.preset(1);t.expect('Printer');t.press('a',90);t.step='printer init check';t.press('select');t.press('a',90);t.press('b',40)
+   t.step='slowdown settings';t.go(12);t.preset(3);t.expect('Slowdown');t.press('select');t.press('select')
+   t.step='slowdown run';t.animated=RUN_CELLS;t.history=[];t.press('a',150);t.step='slowdown results';t.press('b',40);t.animated=set();t.history=[];t.press('start',40);t.press('b',40)
    t.step='browser after tour';t.tick(120)
    grouped={}
    for step,frame,kind in t.problems:

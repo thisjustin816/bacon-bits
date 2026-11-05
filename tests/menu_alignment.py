@@ -19,7 +19,7 @@ for variant in ['', 'mbc3']:
     p.tick(240,True)
     assert pyboy_header(p,cgb),(variant,cgb,'Header missing over the menu')
     clock=rom.read_bytes()[0x147]==0x10
-    pages=[['Platform','Link','Clock' if clock else 'Rumble','Audio'],['Buttons','Display','SRAM','Burn in'],['Cart LED','Infrared','Flicker','Printer']]
+    pages=[['Platform','Link','Clock' if clock else 'Rumble','Audio'],['Buttons','Display','SRAM','Burn in'],['Cart LED','Infrared','Flicker','Printer'],['Slowdown']]
     for page,labels in enumerate(pages):
      for i,label in enumerate(labels):
       center=120 if i&1 else 40;start=center-len(label)*4;y=120 if i&2 else 72
@@ -27,11 +27,14 @@ for variant in ['', 'mbc3']:
       actual={(x,yy) for yy in range(y,y+8) for x in range(center-32,center+32) if ink(x,yy)}
       assert actual==expected,(variant,cgb,page,label,'Label is not centered or shares a border')
      # Lower cards must have their bottom border, including the row below the text.
-     assert all(ink(x,128) for x in range(8,76)),(variant,cgb,'Missing lower border')
-     if page<2:
+     if len(labels)>2:assert all(ink(x,128) for x in range(8,76)),(variant,cgb,'Missing lower border')
+     # The fourth page holds one card and nothing else.
+     else:assert not any(ink(x,y) for y in range(32,136) for x in range(84,160)) and not any(ink(x,y) for y in range(88,136) for x in range(0,84)),(variant,cgb,'Ink beside the only card')
+     if page<3:
       for _ in range(4):press('right')
     # Entering IR restores every punctuation tile borrowed by the launcher.
-    press('right');press('a');p.tick(60,True)
+    for _ in range(3):press('left')
+    press('a');p.tick(60,True)
     assert bytes(p.memory[0,0x8000:0x8600])==tiles(),'Launcher label tiles leaked into a test'
     p.screen.image.save(ROOT/'build'/f'menu-font-restored-{variant or "mbc5"}-{cgb}.png')
    finally:p.stop(save=False)
