@@ -42,7 +42,8 @@ static const palette_color_t breakfast[16] = {
 #define CARD_9 "Infrared"
 #define CARD_10 "Flicker"
 #define CARD_11 "Printer"
-static const char * const labels[] = {CARD_0,CARD_1,CARD_2,CARD_3,CARD_4,CARD_5,CARD_6,CARD_7,CARD_8,CARD_9,CARD_10,CARD_11};
+#define CARD_12 "Slowdown"
+static const char * const labels[] = {CARD_0,CARD_1,CARD_2,CARD_3,CARD_4,CARD_5,CARD_6,CARD_7,CARD_8,CARD_9,CARD_10,CARD_11,CARD_12};
 #define CARDS ((uint8_t)(sizeof(labels)/sizeof(labels[0])))
 /* Menu-only punctuation slots hold half-cell shifts for odd-length labels.
    ui_init reloads the complete font before entering any test or dialog. */
@@ -51,7 +52,8 @@ static const uint8_t label_slots[]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,26,27,28
 #define LABEL_SLOTS(s) (((sizeof(s)-1u)&1u)?sizeof(s):0u)
 typedef char label_slots_fit[(LABEL_SLOTS(CARD_0)+LABEL_SLOTS(CARD_1)+LABEL_SLOTS(CARD_2)+LABEL_SLOTS(CARD_3)<=sizeof(label_slots)
  && LABEL_SLOTS(CARD_4)+LABEL_SLOTS(CARD_5)+LABEL_SLOTS(CARD_6)+LABEL_SLOTS(CARD_7)<=sizeof(label_slots)
- && LABEL_SLOTS(CARD_8)+LABEL_SLOTS(CARD_9)+LABEL_SLOTS(CARD_10)+LABEL_SLOTS(CARD_11)<=sizeof(label_slots))?1:-1];
+ && LABEL_SLOTS(CARD_8)+LABEL_SLOTS(CARD_9)+LABEL_SLOTS(CARD_10)+LABEL_SLOTS(CARD_11)<=sizeof(label_slots)
+ && LABEL_SLOTS(CARD_12)<=sizeof(label_slots))?1:-1];
 void ui_cell(uint8_t x,uint8_t y,uint8_t tile) {set_bkg_tile_xy(x,y,tile);}
 void ui_text(uint8_t x,uint8_t y,const char *s) {while(*s) ui_cell(x++,y,(uint8_t)*s++-32u);}
 /* On Color the header is the logo, drawn from VRAM bank 1; on monochrome
@@ -119,7 +121,7 @@ static void menu_label(uint8_t item,const char *label,uint8_t *borrowed) {
  }
 }
 static void browser(uint8_t fresh) {
- uint8_t i,at,borrowed=0,group=selected_test/4u,scene=group==2?6:group==1?5:
+ uint8_t i,at,borrowed=0,group=selected_test/4u,scene=group==3?8:group==2?6:group==1?5:
 #ifdef BB_MBC3
  7;
 #else
@@ -132,7 +134,7 @@ static void browser(uint8_t fresh) {
  }
  ui_focus(selected_test&3u,fresh);
  if(fresh){
-  fill_bkg_rect(0,17,20,1,0);ui_text(7,17,group==2?"3 of 3":group==1?"2 of 3":"1 of 3");
+  fill_bkg_rect(0,17,20,1,0);ui_text(7,17,group==3?"4 of 4":group==2?"3 of 4":group==1?"2 of 4":"1 of 4");
   /* A redraw outlasts one animation pose, so show the current one when uncovering. */
   ui_scene(scene,(uint8_t)(bb_frame()/12u)&3u);ui_reveal();
  }
@@ -220,12 +222,12 @@ void main(void) {
    else if(selected_test==5)display_run();
    else if(selected_test==6)sram_run();
    else if(selected_test==7)burn_run();
-   else if(selected_test==8)led_run();else if(selected_test==9)ir_run();else if(selected_test==10)flicker_run();else printer_run();
+   else if(selected_test==8)led_run();else if(selected_test==9)ir_run();else if(selected_test==10)flicker_run();else if(selected_test==11)printer_run();else slowdown_run();
  browser(1);
 #endif
  for(;;) {
   vsync();keys=joypad();pressed=keys&~previous;previous=keys;
-  if(pressed&(J_UP|J_DOWN)){if(pressed&J_DOWN){selected_test+=2u;if(selected_test>=CARDS)selected_test&=1u;}else selected_test=selected_test>=2u?selected_test-2u:selected_test+CARDS-2u;browser((selected_test/4u)!=last_group);}
+  if(pressed&(J_UP|J_DOWN)){if(pressed&J_DOWN){selected_test+=2u;if(selected_test>=CARDS)selected_test&=1u;}else selected_test=selected_test>=2u?selected_test-2u:selected_test+((CARDS-1u-selected_test)&~1u);browser((selected_test/4u)!=last_group);}
   if(pressed&(J_LEFT|J_RIGHT)) {
    selected_test=(selected_test+((pressed&J_RIGHT)?1u:CARDS-1u))%CARDS;
    browser((selected_test/4u)!=last_group);
@@ -248,7 +250,7 @@ void main(void) {
    else if(selected_test==5)display_run();
    else if(selected_test==6)sram_run();
    else if(selected_test==7)burn_run();
-   else if(selected_test==8)led_run();else if(selected_test==9)ir_run();else if(selected_test==10)flicker_run();else printer_run();
+   else if(selected_test==8)led_run();else if(selected_test==9)ir_run();else if(selected_test==10)flicker_run();else if(selected_test==11)printer_run();else slowdown_run();
    NR52_REG=0;browser(1);previous=0;
   }
  }

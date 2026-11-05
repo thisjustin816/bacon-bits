@@ -9,7 +9,6 @@ extern uint8_t rtc_valid,rtc_data[5];
 uint32_t burn_seconds,burn_cycles,burn_errors;
 uint16_t burn_first_expected,burn_first_read,burn_first_offset;
 uint8_t burn_first_kind,burn_first_bank,burn_running,burn_bank,burn_ram_status;
-static uint8_t scratch[256];
 static uint16_t expected[8],crc,offset;
 static uint8_t duration=1,load=1,fast,onfail,output,motor,ram_check;
 static uint8_t seen;
@@ -62,8 +61,8 @@ void burn_run(void) BANKED {uint8_t row=0,page=0,key,old=0,n,finished=0,i,patter
  if(burn_running){now=bb_frame();delta=now-last;last=now;phase+=(uint32_t)delta*70224UL;while(phase>=4194304UL){phase-=4194304UL;++burn_seconds;}
   chunk=load==0?32:load==1?128:256;crc=bb_rom_crc(burn_bank,offset,chunk,crc);offset+=chunk;
   if(offset==16384){if(crc!=expected[burn_bank])fail(1,burn_bank,0,expected[burn_bank],crc);crc=0xffff;offset=0;if(++burn_bank==8){burn_bank=0;++burn_cycles;}}
-  for(a=0;a<256;++a)scratch[a]=(uint8_t)a^pattern;
-  for(a=0;a<256;++a){uint8_t got=*(volatile uint8_t *)&scratch[a];if(got!=((uint8_t)a^pattern))fail(2,0,a,(uint8_t)a^pattern,got);}++pattern;
+  for(a=0;a<256;++a)bb_shared[a]=(uint8_t)a^pattern;
+  for(a=0;a<256;++a){uint8_t got=*(volatile uint8_t *)&bb_shared[a];if(got!=((uint8_t)a^pattern))fail(2,0,a,(uint8_t)a^pattern,got);}++pattern;
   if(ram_active && sram_step()){ram_active=0;burn_ram_status=ram_errors?3:2;if(ram_errors)fail(3,ram_first_bank,ram_first_address,ram_want,ram_got);}
   if(ram_check && !ram_active && !offset && !burn_bank)ram_active=sram_begin(0);
 #ifdef BB_MBC3

@@ -4,7 +4,7 @@ import argparse,hashlib,json,re,subprocess
 ROOT=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser();p.add_argument('--cc',required=True);p.add_argument('--output',default='build');p.add_argument('args',nargs=argparse.REMAINDER);a=p.parse_args()
 args=a.args[1:] if a.args[:1]==['--'] else a.args
-sources=[x for x in args if x.endswith('.c')];flags=[x for x in args if not x.endswith('.c')]
+sources=[x for x in args if x.endswith(('.c','.s'))];flags=[x for x in args if not x.endswith(('.c','.s'))]
 out=ROOT/a.output;out.mkdir(parents=True,exist_ok=True);obj=out/'objects';obj.mkdir(exist_ok=True)
 state_path=out/'compile-state.json';state=json.loads(state_path.read_text()) if state_path.exists() else {}
 includes=[ROOT/x[2:] for x in flags if x.startswith('-I')]

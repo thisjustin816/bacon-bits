@@ -27,6 +27,14 @@ for name,start,size in areas:
  start=int(start,16);size=int(size,16)
  assert (start&0xffff)+size <= (0x4000 if start<0x4000 else 0x8000),(name,start,size)
  print(f'{name}: {size} bytes, ends {start+size:05x}')
+# Slowdown's timed code runs while any bank is mapped and its cycle counts
+# leave out bank switching, so it must sit in bank 0.
+for name in ('_slow_burn','_slow_vbl','_slow_update'):assert syms[name]<0x4000,(name,hex(syms[name]))
+assert syms['_slowdown_run']>>16==1,'Slowdown moved out of its allocated code bank'
+# Burn In's scratch test writes all of the shared buffer and Slowdown's run
+# state must stay inside it.
+shared=syms['_bb_shared']
+assert syms['_slow_sched']+120<=shared+256,'Slowdown run state outgrew the shared buffer'
 print('Mapper header, 128 KiB image, bank bounds, fixed serial interrupt and assembly return gate passed')
 
 assert syms['_burn_expected']==0x74000,hex(syms['_burn_expected'])
@@ -47,7 +55,7 @@ for name,start,size in re.findall(r'^(_DATA|_INITIALIZED)\s+([\dA-F]+)\s+([\dA-F
 from lettering import tiles as font_tiles
 font=syms['_bb_font'];assert rom[font:font+1536]==font_tiles(), 'The compiled mixed-case font is stale'
 scene_source=(ROOT/'src/scene_data.h').read_text()
-scene_sizes=re.search(r'scene_sizes\[8\]\[5\]=\{(.+)\};',scene_source)[1]
+scene_sizes=re.search(r'scene_sizes\[9\]\[5\]=\{(.+)\};',scene_source)[1]
 counts=[int(row.split(',')[0]) for row in re.findall(r'\{([^{}]+)\}',scene_sizes)]
 # The tile layout comes from src/bb.h and the code that loads each range, so a
 # moved base or a longer range is judged by its real values.
@@ -58,7 +66,7 @@ chrome=int(re.search(r'set_bkg_data\(UI_CHROME,(\d+),bb_chrome\)',main_source)[1
 assert art_tiles('bb_font')==ui['UI_FONT_COUNT'] and art_tiles('bb_chrome')==chrome and art_tiles('bb_probes')==probes,(art_tiles('bb_font'),art_tiles('bb_chrome'),art_tiles('bb_probes'))
 assert ui['UI_FONT_COUNT']<=ui['UI_CHROME'] and ui['UI_CHROME']+chrome<=ui['UI_PASS'],'Chrome overlaps the font or the probe marks'
 assert ui['UI_PASS']+probes<=ui['UI_LINK_BALL']<ui['UI_ART'],'Link sprite overlaps the font or instruments'
-assert len(counts)==8 and max(counts)<=128,counts
+assert len(counts)==9 and max(counts)<=128,counts
 assert ui['UI_ART']+max(counts)<=ui['UI_FOCUS'],'Instrument tiles overlap the focus border'
 focus_slots=eval(re.search(r'^ slots=(.+)$',(ROOT/'tools/controls_art.py').read_text(),re.M)[1],{'range':range,'list':list})
 assert focus_slots==list(range(ui['UI_FOCUS'],ui['UI_FOCUS']+8))+list(range(ui['UI_FOCUS_EXTRA'],ui['UI_FOCUS_EXTRA']+4)),('Focus art slots differ from src/bb.h',focus_slots)
