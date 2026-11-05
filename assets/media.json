@@ -1,26 +1,26 @@
 {
  "audio.gif": {
   "roms": {
-   "mbc5": "45707eded9845d42a59f126481d7ba6b1272ed19c4246543a37eed1b95ee471b",
-   "mbc3": "fa02fc3a6f4c2833aa296bc92003ea6035d7c17740d6e215dfe98c3233a3ffe7"
+   "mbc5": "b445b48a53d1b42618619babe5cf9f565221edbba9601129578b6567a3bbc793",
+   "mbc3": "67a0db63a69f5e1158174ad0bb4d28707fa48cb6931e98b84a6a657f6f61e6aa"
   },
-  "built_from": "e87ff69",
+  "built_from": "3d83594",
   "emulator": "PyBoy"
  },
  "browser.gif": {
   "roms": {
-   "mbc5": "45707eded9845d42a59f126481d7ba6b1272ed19c4246543a37eed1b95ee471b",
-   "mbc3": "fa02fc3a6f4c2833aa296bc92003ea6035d7c17740d6e215dfe98c3233a3ffe7"
+   "mbc5": "b445b48a53d1b42618619babe5cf9f565221edbba9601129578b6567a3bbc793",
+   "mbc3": "67a0db63a69f5e1158174ad0bb4d28707fa48cb6931e98b84a6a657f6f61e6aa"
   },
-  "built_from": "e87ff69",
+  "built_from": "3d83594",
   "emulator": "PyBoy"
  },
  "controls.png": {
   "roms": {
-   "mbc5": "45707eded9845d42a59f126481d7ba6b1272ed19c4246543a37eed1b95ee471b",
-   "mbc3": "fa02fc3a6f4c2833aa296bc92003ea6035d7c17740d6e215dfe98c3233a3ffe7"
+   "mbc5": "b445b48a53d1b42618619babe5cf9f565221edbba9601129578b6567a3bbc793",
+   "mbc3": "67a0db63a69f5e1158174ad0bb4d28707fa48cb6931e98b84a6a657f6f61e6aa"
   },
-  "built_from": "e87ff69",
+  "built_from": "3d83594",
   "emulator": "PyBoy"
  },
  "flicker.png": {
@@ -32,18 +32,18 @@
  },
  "presets.png": {
   "roms": {
-   "mbc5": "45707eded9845d42a59f126481d7ba6b1272ed19c4246543a37eed1b95ee471b",
-   "mbc3": "fa02fc3a6f4c2833aa296bc92003ea6035d7c17740d6e215dfe98c3233a3ffe7"
+   "mbc5": "b445b48a53d1b42618619babe5cf9f565221edbba9601129578b6567a3bbc793",
+   "mbc3": "67a0db63a69f5e1158174ad0bb4d28707fa48cb6931e98b84a6a657f6f61e6aa"
   },
-  "built_from": "e87ff69",
+  "built_from": "3d83594",
   "emulator": "PyBoy"
  },
  "review.png": {
   "roms": {
-   "mbc5": "45707eded9845d42a59f126481d7ba6b1272ed19c4246543a37eed1b95ee471b",
-   "mbc3": "fa02fc3a6f4c2833aa296bc92003ea6035d7c17740d6e215dfe98c3233a3ffe7"
+   "mbc5": "b445b48a53d1b42618619babe5cf9f565221edbba9601129578b6567a3bbc793",
+   "mbc3": "67a0db63a69f5e1158174ad0bb4d28707fa48cb6931e98b84a6a657f6f61e6aa"
   },
-  "built_from": "e87ff69",
+  "built_from": "3d83594",
   "emulator": "PyBoy"
  }
 }
