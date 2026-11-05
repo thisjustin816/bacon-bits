@@ -1,6 +1,6 @@
 # Bacon Bit Bench
 
-A test bench for the Game Boy and Game Boy Color. It has twelve instruments,
+A test bench for the Game Boy and Game Boy Color. It has thirteen instruments,
 and each one exposes its settings: pulse lengths, frequencies, phase timing,
 memory patterns and loads. Set the exact condition, then watch what the
 hardware does with it. Everything works in color and in monochrome.
@@ -25,6 +25,8 @@ works. I needed to know how it behaves at a setting I chose:
   dither at the same average.
 - Which frequencies a speaker can still play, down to 32 Hz, one voice at a
   time.
+- How many frames a game falls behind at a given load, as a known figure to
+  check an emulator's or an overlay's lag count against.
 
 Some of these started as one-off test ROMs for a single game. One measured
 flash cart motors while I patched Pokemon Pinball's rumble. Another stressed
@@ -50,6 +52,7 @@ join them on one menu with the same controls.
 | Infrared (CGB) | Counts received edges, or sends bursts with cycle-counted on and off widths |
 | Flicker | Alternating layers, shadows, fine detail and color fields beside a static dither, with each phase 1 to 60 frames |
 | Printer | A test sheet of 1 to 9 strips on the Game Boy Printer, with 0 to 250 ms between strips and 1 to 8 ms between bytes, at normal or, on a Color, double speed. Shows how many strips the printer kept and its status byte. Three more pages, the Init checks, show whether the printer refuses data after a print with no Init: right after the print, after 200 ms of quiet and after a 00 byte |
+| Slowdown | Burns 5% to 200% of a frame in each update, steady, in a pulse or in a ramp, at either CPU speed, and counts the lag frames that load costs in two ways, with the longest run and the share. Game side only: it cannot see a slow host |
 
 ## Controls
 
@@ -82,7 +85,9 @@ The cartridge reports what the console reads and writes. It cannot feel a
 motor, hear a speaker, see an LED or judge how a screen blends two frames.
 Those need someone watching or listening while it runs. It also cannot
 measure battery retention or clock drift by itself: run the SRAM or Clock
-test, power off, and check again later.
+test, power off, and check again later. Slowdown counts lag in the cartridge's
+own time, so it cannot see a host emulator that runs slowly or drops frames;
+it gives the count a frame-time tool on that host should match.
 
 ## Credits
 

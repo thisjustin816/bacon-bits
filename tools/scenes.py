@@ -3,6 +3,12 @@ from pathlib import Path
 from generated import write_generated
 from PIL import Image,ImageDraw
 ROOT=Path(__file__).resolve().parents[1]
+# Scenes 0 and 5-8 are the browser pages: 0 is page 1 with the Rumble card and
+# 7 page 1 with the Clock card, then 5, 6 and 8 are pages 2, 3 and 4.
+SCENES=9
+# Each release shows only its own first page, so a build carries only that
+# scene's data and the other number points at it.
+RELEASE_ONLY={0:'#ifndef BB_MBC3',7:'#ifdef BB_MBC3'}
 def canvas():
  im=Image.new('P',(160,144),0);return im,ImageDraw.Draw(im)
 def chip(d,x,y):
@@ -28,9 +34,17 @@ def clock(d,x,y,phase):
  d.line((x+12,y+5,x+12,y+13),fill=3,width=2)
  end=[(x+19,y+13),(x+12,y+20),(x+5,y+13),(x+12,y+5)][phase&3]
  d.line((x+12,y+13,*end),fill=2,width=2)
+def tracks(d,x,y,phase):
+ # Slowdown: the VBlank marker steps every pose, the Update marker every
+ # other pose, as a game falls behind its frames.
+ for row,step in ((y+11,phase),(y+25,phase//2)):
+  d.line((x+12,row,x+61,row),fill=3)
+  d.rectangle((x+13+step*12,row-3,x+18+step*12,row+3),fill=2)
 def picture(scene,phase):
  im,d=canvas()
- if scene in [0,5,6,7]:
+ if scene==8:
+  panel(d,4,37);tracks(d,4,37,phase)
+ elif scene in [0,5,6,7]:
   for i,(x,y) in enumerate([(4,37),(82,37),(4,85),(82,85)]):
    panel(d,x,y)
    if scene==5:
@@ -98,8 +112,8 @@ def array(name,data):return 'static const uint8_t '+name+'[]={'+','.join(map(str
 def main():
  output='/* Generated original instrument drawings; tools/scenes.py. */\n'
  sizes=[]
- for scene in range(8):
-  union=[bytes(16)];maps=[];rect=(0,4,20,13) if scene in [0,5,6,7] else (1,6,18,8)
+ for scene in range(SCENES):
+  union=[bytes(16)];maps=[];rect=(0,4,20,13) if scene in [0,5,6,7,8] else (1,6,18,8)
   for phase in range(4):
    im=picture(scene,phase);m=[]
    for y in range(rect[1],rect[1]+rect[3]):
@@ -110,12 +124,18 @@ def main():
    maps.append(m)
   assert len(union)-1<=120,(scene,len(union))
   assert max(sum(a!=b for a,b in zip(old,new)) for old in maps for new in maps)<=32, "Animation update queue too small"
-  output+=array('scene_tiles_'+str(scene),b''.join(union[1:]))
-  for phase,m in enumerate(maps):output+=array('scene_map_'+str(scene)+'_'+str(phase),m)
+  block=array('scene_tiles_'+str(scene),b''.join(union[1:]))
+  for phase,m in enumerate(maps):block+=array('scene_map_'+str(scene)+'_'+str(phase),m)
+  output+=RELEASE_ONLY[scene]+'\n'+block+'#endif\n' if scene in RELEASE_ONLY else block
   sizes.append((len(union)-1,rect));print('scene',scene,'tiles',len(union)-1)
- output+='static const uint8_t *const scene_tiles[]={'+','.join('scene_tiles_'+str(i) for i in range(8))+'};\n'
- output+='static const uint8_t *const scene_maps[8][4]={'+','.join('{'+','.join('scene_map_'+str(i)+'_'+str(f) for f in range(4))+'}' for i in range(8))+'};\n'
- output+='static const uint8_t scene_sizes[8][5]={'+','.join('{'+','.join(map(str,(n,*r)))+'}' for n,r in sizes)+'};\n'
+ # One sizes table serves both builds, so the two first pages must match in size.
+ assert sizes[0]==sizes[7],(sizes[0],sizes[7])
+ names=['scene_tiles_{}']+['scene_map_{}_'+str(f) for f in range(4)]
+ output+='#ifdef BB_MBC3\n'+''.join(f'#define {n.format(0)} {n.format(7)}\n' for n in names)
+ output+='#else\n'+''.join(f'#define {n.format(7)} {n.format(0)}\n' for n in names)+'#endif\n'
+ output+='static const uint8_t *const scene_tiles[]={'+','.join('scene_tiles_'+str(i) for i in range(SCENES))+'};\n'
+ output+='static const uint8_t *const scene_maps['+str(SCENES)+'][4]={'+','.join('{'+','.join('scene_map_'+str(i)+'_'+str(f) for f in range(4))+'}' for i in range(SCENES))+'};\n'
+ output+='static const uint8_t scene_sizes['+str(SCENES)+'][5]={'+','.join('{'+','.join(map(str,(n,*r)))+'}' for n,r in sizes)+'};\n'
  write_generated(ROOT/'src/scene_data.h',output)
 
 if __name__=='__main__':main()

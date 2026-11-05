@@ -3,7 +3,7 @@ from pathlib import Path
 import argparse,concurrent.futures,hashlib,json,os,subprocess,sys,threading
 ROOT=Path(__file__).resolve().parents[1]
 a=argparse.ArgumentParser();a.add_argument('--core',type=Path,help='SameBoy libretro core; without it the SameBoy suites are reported as not run');a.add_argument('--jobs',type=int,default=4);a.add_argument('--resume',action='store_true',help='skip suites that already passed for the same ROMs, test sources and core, as recorded in build/verification-progress.json');a.add_argument('--shard',metavar='K/N',help='run slice K of N of the suites a full run starts together, as in 2/4; the slow suites run only when named');a.add_argument('--list',action='store_true',help='print the suites this run would start, one per line, and exit');a.add_argument('cases',nargs='*',help='run only these suites, for example the ones a change touches');args=a.parse_args()
-commands={name:[sys.executable,'tests/'+name+'.py'] for name in ['smoke','modal_regression','rumble_combined','audio_ui','audio_backend','audio_shapes','audio_responsiveness','additions','sram_patterns','burn_faults','presets','lettering','menu_alignment','ui_spacing','diagonals','graphical_ui','serial_ui_bank','cartridge_features','ir_cycles','ir_pair','printer','preset_bounce','platform_mode3','rtc','variants','flicker','display_font','screen_text','display_timing','buttons_chord','buttons_poll','burn_cadence','sram_burn','audio_dacs','stack_depth']}
+commands={name:[sys.executable,'tests/'+name+'.py'] for name in ['smoke','modal_regression','rumble_combined','audio_ui','audio_backend','audio_shapes','audio_responsiveness','additions','sram_patterns','burn_faults','presets','lettering','menu_alignment','ui_spacing','diagonals','graphical_ui','serial_ui_bank','cartridge_features','ir_cycles','ir_pair','printer','preset_bounce','platform_mode3','rtc','variants','flicker','display_font','screen_text','display_timing','buttons_chord','buttons_poll','burn_cadence','sram_burn','audio_dacs','stack_depth','slowdown']}
 commands['build_check']=[sys.executable,'tools/check_build.py']
 commands['mbc3_build_check']=[sys.executable,'tools/check_build.py']
 commands['mbc3_additions']=[sys.executable,'tests/additions.py','build/mbc3/bacon-bits.gbc']
@@ -11,9 +11,9 @@ commands['mbc3_audio_backend']=[sys.executable,'tests/audio_backend.py','build/m
 commands['mbc3_audio']=[sys.executable,'tests/audio_ui.py','build/mbc3/bacon-bits.gbc']
 commands['mbc3_audio_dacs']=[sys.executable,'tests/audio_dacs.py','--rom','build/mbc3/bacon-bits.gbc']
 commands['mbc3_ir_cycles']=[sys.executable,'tests/ir_cycles.py','--rom','build/mbc3/bacon-bits.gbc']
-sameboy=['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art','raster_transitions','burn_rumble','screen_tour','flicker_sameboy','platform_mode3_sameboy']
+sameboy=['sameboy','audio_sameboy','additions_sameboy','rumble_return','hardware_sameboy','ui_transitions','menu_art','raster_transitions','burn_rumble','screen_tour','flicker_sameboy','platform_mode3_sameboy','slowdown_sameboy']
 if args.core:
- for name in sameboy:commands[name]=[sys.executable,'tests/'+(name[:-len('_sameboy')] if name in ('flicker_sameboy','platform_mode3_sameboy') else name)+'.py','--core',str(args.core)]
+ for name in sameboy:commands[name]=[sys.executable,'tests/'+(name[:-len('_sameboy')] if name in ('flicker_sameboy','platform_mode3_sameboy','slowdown_sameboy') else name)+'.py','--core',str(args.core)]
 slow=['link_combined','upstream','link_pair','link_long','link_stress','link_snapshot']
 known=set(commands)|set(sameboy)|set(slow)
 unknown=[name for name in args.cases if name not in known]

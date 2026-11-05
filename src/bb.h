@@ -38,6 +38,9 @@ void display_run(void) BANKED;
 void flicker_run(void) BANKED;
 void sram_run(void) BANKED;
 void burn_run(void) BANKED;
+void slowdown_run(void) BANKED;
+/* Burn In's scratch test and Slowdown's run state, which never run at once. */
+extern uint8_t bb_shared[256];
 char *ui_decimal(char *out,uint32_t n);
 uint8_t ui_number(uint8_t x,uint8_t y,uint32_t n);
 void ui_pad(uint8_t x,uint8_t y,const char *s,uint8_t width);

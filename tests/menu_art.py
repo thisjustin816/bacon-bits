@@ -12,7 +12,8 @@ def pixel(v,x,y):
  return ((v[at]>>b)&1)|(((v[at+1]>>b)&1)<<1)
 def check_edges(v,page,context):
  assert 103 not in [v[0x1800+y*32+x] for y in range(4,17) for x in range(20)],(context,"Extra menu cursor")
- for card,(left,top) in enumerate([(4,37),(82,37),(4,85),(82,85)]):
+ # The fourth page holds one card.
+ for card,(left,top) in enumerate([(4,37),(82,37),(4,85),(82,85)][:1 if page==3 else 4]):
   assert all(pixel(v,x,top)==3 and pixel(v,x,top+43)==3 for x in range(left+2,left+72)),(context,card,"Card top or bottom erased")
   assert all(pixel(v,left,y)==3 and pixel(v,left+73,y)==3 for y in range(top+2,top+42)),(context,card,"Card side erased")
 def check_fill(v,card,model,context):
@@ -32,7 +33,7 @@ for variant in ['', 'mbc3']:
    events.append({'frame':p.frame,'key':key,'held_frames':8,'released_frames':12});p.press(key)
   try:
    p.tick(600);palette={}
-   for page,scene in enumerate([7 if variant else 0,5,6]):
+   for page,scene in enumerate([7 if variant else 0,5,6,8]):
     if page:
      for _ in range(4):press('right')
      p.tick(60)
@@ -72,9 +73,9 @@ for variant in ['', 'mbc3']:
       assert all(pixel(v,130,y)==3 for y in range(46,60)),'IR rays crossed the receiver outline'
      if frame%16==0:shots.append(p.image.copy())
     # Focus each other card, then restore the first before changing pages.
-    for selected in range(1,4):
+    for selected in range(1,4 if page<3 else 1):
      press('right');check_edges(p.vram(),page,(variant,model,page,selected));check_fill(p.vram(),selected,model,(variant,model,page,selected))
-    for _ in range(3):press('left')
+    for _ in range(3 if page<3 else 0):press('left')
   except Exception as error:
    p.image.save(OUT/'first-failing-frame.png')
    (OUT/'first-failing-input.json').write_text(json.dumps({'variant':variant,'model':model,'frame':p.frame,'inputs':events,'failure':str(error)},indent=2)+'\n')

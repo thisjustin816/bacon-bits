@@ -12,11 +12,11 @@ def wait(c,done,frames):
 
 c=Cart(args.rom)
 try:
- # Up and Down move two cards at a time through one list of twelve, wrapping at the ends, in
- # both columns.
+ # Up and Down move two cards at a time through one list of thirteen, wrapping at the ends to
+ # the first or last card of the same column.
  seen=[]
- for key in ['down']*6+['up']*6:c.press(key);seen.append(c.get('selected_test'))
- assert seen==[2,4,6,8,10,0,10,8,6,4,2,0],seen
+ for key in ['down']*7+['up']*7:c.press(key);seen.append(c.get('selected_test'))
+ assert seen==[2,4,6,8,10,12,0,12,10,8,6,4,2,0],seen
  c.press('right');seen=[]
  for key in ['down']*6+['up']*6:c.press(key);seen.append(c.get('selected_test'))
  assert seen==[3,5,7,9,11,1,11,9,7,5,3,1],seen

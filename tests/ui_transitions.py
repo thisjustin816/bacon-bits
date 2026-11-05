@@ -65,7 +65,7 @@ for variant in ['', 'mbc3']:
        assert len(frames[-1].convert('RGB').crop((0,24,160,144)).getcolors(65536))>1,(name,key,frame,'Cards hidden during a focus move')
      # Page changes may clear/reveal labels, but must never show other glyphs.
      for _ in range(3):p.press('right')
-     for target in [4,8,0]:
+     for target in [4,8,12,0]:
       old=label_signature(p.frame());samples=[];p.hold(['right'])
       for frame in range(80):
        if frame==8:p.hold([])
@@ -74,7 +74,7 @@ for variant in ['', 'mbc3']:
       for frame,sample in enumerate(samples):
        for index,(tile,glyph) in enumerate(sample):
         assert tile>=96 or glyph in [blank,old[index][1],new[index][1]],(name,target,frame,index,'Transient label garbage')
-      if target!=0:
+      if target not in (0,12):
        for _ in range(3):p.press('right')
      # Back on Platform, advance to Buttons and choose the live preset.
      for _ in range(4):p.press('right')

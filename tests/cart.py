@@ -26,7 +26,7 @@ class Cart:
  def row(self,y):return ''.join(chr(t+32) if t<96 else '#' for t in self.p.memory[0,0x9800+y*32:0x9814+y*32])
  def text(self):return '\n'.join(self.row(y) for y in range(18))
  def go(self,test):
-  for _ in range(12):
+  for _ in range(13):
    if self.get('selected_test')==test:return
    self.press('right')
   raise AssertionError(('Browser never reached test',test))
