@@ -29,7 +29,8 @@ for variant in ['', 'mbc3']:
      # Lower cards must have their bottom border, including the row below the text.
      if len(labels)>2:assert all(ink(x,128) for x in range(8,76)),(variant,cgb,'Missing lower border')
      # The fourth page holds one card and nothing else.
-     else:assert not any(ink(x,y) for y in range(32,136) for x in range(84,160)) and not any(ink(x,y) for y in range(88,136) for x in range(0,84)),(variant,cgb,'Ink beside the only card')
+     # The card and its focus border end on line 81.
+     else:assert not any(ink(x,y) for y in range(32,136) for x in range(84,160)) and not any(ink(x,y) for y in range(83,136) for x in range(0,84)),(variant,cgb,'Ink beside or below the only card')
      if page<3:
       for _ in range(4):press('right')
     # Entering IR restores every punctuation tile borrowed by the launcher.
