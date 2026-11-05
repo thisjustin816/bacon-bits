@@ -55,6 +55,7 @@ with `make -j1`: the parallel build can race on a helper program.
 | Cartridge LED (MBC5) | Actual compiled 24-bit command order, idle output, primary-color commands and OFF cleanup | Compatible cartridge protocol and visible light output |
 | Infrared | Compiled edge-cycle counts, burst count, presets, receiver controls, mode-switch text and cleanup; two benches in one harness, one sending each transmit preset and the other counting every pulse at three frame offsets | Optical transmission and reception between real devices: receiver response, range and ambient light |
 | Flicker | Every-frame phase cadence, duty, movement, pause/step, reference stability, OAM DMA and cleanup in both emulators | Panel blending and perceived flicker |
+| Slowdown | Every update's burn length, and the lag frames counted by the VBlank handler, by the gaps between wakes and by the HALT test at the VBlank vector, against a table from the cycle arithmetic: Steady from 75% to 200%, Pulse, Ramp, double speed and DMG; the lag thresholds; the readout handler's cycles with any counts, inside VBlank; each burn's cycles; presets, row limits, the frame limit and cleanup after every exit; SameBoy's two counts against the same table | The counts on a console, where the cycle arithmetic should hold but has not been checked; a host's own dropped frames, which the cartridge cannot see |
 | Printer | Every packet's order, the strip pauses and data-byte spacing as sent, other packets at full rate, the sheet strip by strip on PyBoy's printer, error, stop and no-printer readings, CPU Double sending every byte at double speed with 200 ms pauses kept, CPU speed restored, and the Init check pages: no Init before its data packet, the wait for two idle replies, 200 ms of quiet or one 00 byte 20 ms before it, replies of 14, 08, 10 and none shown as the status byte and Refused, and part failures and stop | A printer's timeouts, reset and replies, which PyBoy's printer does not model, whether a printer refuses data after a print with no Init, after a quiet reset or after a 00 byte, and whether it takes the double-speed clock |
 
 `smoke`, `variants` and `graphical_ui` cover entry routes and safe initial
@@ -62,9 +63,9 @@ states. Their broad checks supplement the diagnostic-specific suites.
 `modal_regression`, `sameboy` and `rumble_return` cover dialog restoration,
 consumed input and shared-memory cleanup. `modal_regression` also presses
 Start a frame ahead of the rest of the chord in Link setup; the dialog must
-open and Link must not start. `preset_bounce` picks Flicker's and
-Infrared's presets with an A press that reads released for one frame, as a
-bouncing button can; neither instrument may start from the held button. `lettering`, `menu_alignment`,
+open and Link must not start. `preset_bounce` picks Flicker's,
+Infrared's and Slowdown's presets with an A press that reads released for one
+frame, as a bouncing button can; no instrument may start from the held button. `lettering`, `menu_alignment`,
 `menu_art`, `ui_spacing` and `ui_transitions` cover glyphs, layout, animation,
 focus changes and counter formatting. `ui_transitions` also requires the cards
 below the header to stay visible on every frame of a focus move.
@@ -86,7 +87,7 @@ source, including the entries of string tables indexed in the call, such as
 the button names. `display_timing`, `buttons_chord`, `buttons_poll`, `burn_cadence` and
 `burn_rumble` cover flicker phase lengths, the Buttons return chord, hints and
 clear confirmation, how often the Buttons loop reads the pad, and Burn In timing.
-`sram_burn` covers browser Up/Down order, SRAM cycle passes, a stopped write,
+`sram_burn` covers browser Up/Down order through the thirteen cards, SRAM cycle passes, a stopped write,
 and Burn In's SRAM watch passing and then catching a flipped bit.
 The cartridge verifies SRAM with the generator it writes with, so
 `sram_patterns` also compares every written byte with each pattern's definition.
@@ -112,6 +113,29 @@ on pages 3 and 4 accordingly; no physical printer has been checked for it.
 Two commercial Color games print at double speed, so a printer is expected to
 take 16,384 Hz, but CPU Double has not yet run on one either.
 
+`slowdown` checks Slowdown against a table the suite builds from the cycle
+arithmetic, not from the cartridge's schedule: 28 cycles an iteration,
+round(2508 x L / 100) iterations for a load of L percent, doubled at double
+speed, and the overhead and interrupt cost pinned at the top of the suite. At
+every update it requires the burn the table gives, and the same lag frames from
+three counts: the cartridge's VBlank handler, its gaps between wakes and the
+suite's own HALT test at the VBlank vector. Frames must equal updates plus lag,
+Run must clear on the waking VBlank, Max and the 64-frame block must match the
+HALT test, and the readout must show the counts as of the VBlank before.
+Updates that end within one instruction of a VBlank read as on time to the
+handler and as lag to the other two, so every case keeps at least 56 cycles
+from a frame boundary and the suite stops if the pinned figures would put one
+closer. Forced burns must first lag at 2,388 iterations at normal speed, 4,896
+at double speed and with counts that carry through every digit, and lag twice
+from 4,815. On a pure-Python PyBoy stepped one instruction at a time, the
+readout handler must take 1,044 cycles at every VBlank, busy or idle, at a
+block end and with counts that carry, and end inside VBlank; every Pulse
+update must take the same cycles from its VBlank to its burn; and each burn
+must take 28 cycles an iteration. `slowdown_sameboy` runs Steady 75% and 125%
+and Pulse in SameBoy on Color and monochrome, where there are no hooks, and
+compares the two cartridge counts with the table after each run. These are
+emulator results; no console has run Slowdown yet.
+
 `stack_depth` fills the WRAM between static data and the stack with `$A5`,
 opens and runs every instrument in each build and model, and requires the
 lowest changed byte to stay above the static RAM limit in
@@ -126,7 +150,8 @@ change that takes more than three frames to land, a blank body longer than
 the Display and Flicker full views or more than six frames after the B press
 that leaves one, and any frame where the cover window is up over a wrong
 header. Punctuation slots may hold label pieces only while the browser is shown, and the blink check skips only the Audio waveform's cells while a tone
-plays. A step that cannot reach its test or opens the wrong screen stops the
+plays and Slowdown's Run digit while it runs, which reads 1 and 0 on
+alternate frames at 125%. A step that cannot reach its test or opens the wrong screen stops the
 tour. `--frames` keeps every other frame for review.
 
 `raster_transitions` compares the displayed header on every frame during

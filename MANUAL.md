@@ -11,8 +11,8 @@ Each test page is a box. Its title and page count sit in the top border, and
 what the test is doing, such as Stopped or Running, sits in the bottom border.
 A line under the box adds one more reading, or on Buttons' count and timing pages a hint.
 
-Platform, Link, Rumble, Buttons and Flicker use A+B+Start+Select to open a
-return dialog. Continue is selected first; Test menu returns to the browser.
+Platform, Link, Rumble, Buttons, Flicker and Slowdown use A+B+Start+Select
+to open a return dialog. Continue is selected first; Test menu returns to the browser.
 Stop Link or Rumble before opening it. Buttons requires the chord to be held
 for at least 60 frames so each of its buttons can be tested separately.
 
@@ -418,3 +418,85 @@ On a physical printer, report the printer's model, the console, the No Init,
 Quiet and 00 byte bytes and what the paper shows, and whether a print with CPU
 Double came out whole. The printers PyBoy and SameBoy emulate take the data,
 so Refused Yes needs a printer that refuses it.
+
+## Slowdown
+
+Slowdown spends a set share of each frame on every game-logic update and
+counts its own lag frames. That gives an emulator, a flash cart or a
+frame-time overlay a known amount of game-side lag to be checked against. A
+lag frame is a VBlank that arrives while an update is still working instead
+of waiting for it.
+
+It measures the game side only. The cartridge runs in emulated time: when the
+host emulator runs slowly, or drops or repeats frames on its screen, every
+VBlank still arrives on time as far as the cartridge can tell. Slowdown cannot
+see a slow host. Its counts are what an outside tool should report for the
+game, and a host that shows more lag than this adds its own.
+
+Each update waits for the next VBlank, reads the pad, then burns its load in
+a loop of 28 cycles an iteration. A frame is 70,224 cycles, so 2,508
+iterations fill one, and a load of L percent runs round(2508 x L / 100)
+iterations. At double speed a frame is 140,448 cycles and the count doubles,
+so a load keeps its share of the frame. An update that overruns waits for the
+following VBlank, as a game that waits with GBDK's `vsync` does, and the loop
+runs at a half or a third of the frame rate.
+
+Settings, page 1/2:
+
+- Load, 5% to 200% in steps of 5: the burn in each update, as a share of a
+  frame.
+- Pattern: Steady runs every update at Load. Pulse runs Heavy updates at
+  Load, then Light updates at Base, and repeats. Ramp steps from Base to Load
+  over Steps updates, both ends included, then starts again at Base.
+- CPU: Normal or, on a Color, Double.
+- Base, 5% to 200%: the light load for Pulse and the start of Ramp. It shows
+  `-` for Steady.
+
+The line under the box predicts an update at Load: its busy share and the lag
+frames it should cost, as in `Busy 130%: 1 in 2`. The busy share adds the
+3,374 cycles each update spends besides its burn, about 4.8% of a frame at
+normal speed.
+
+Page 2/2 sets Heavy and Light, 1 to 60 updates, and Steps, 2 to 60. Wait
+reads VBlank and does not change. The line under the box says which rows the
+pattern uses.
+
+The presets are Under budget (Steady 75%), Over budget (Steady 125%), Pulse
+(4 updates at 125%, then 4 at 50%) and Ramp (25% to 150% over 60 updates).
+Each sets CPU to Normal. Manual, then Continue, keeps the settings.
+
+A starts. The border shows the pattern and the load. The VBlank marker moves
+one pixel at each VBlank and the Update marker one pixel at each update, so
+with lag the Update marker falls behind. Frames counts the VBlanks since the
+start and Lag fr those that found an update still working. The bottom border
+reads Running, or Running x2 at double speed, and at its right the lag frames
+in the last complete block of 64 VBlanks. Under the box, Run is the number of
+lag frames in a row so far and Max the longest run. Load stops at 200%, so
+neither goes past 2. The VBlank handler draws the readings before it counts,
+so they trail the counts by one frame, and shows each with all its digits so
+that drawing them always costs the same.
+
+B stops the run and shows Share, Lag fr divided by Frames to 0.1%, with Max.
+B again returns to the browser, and Start returns to settings. The return
+chord stops a run before the dialog opens. A run stops by itself before Frames
+passes 999,999, about 4 hours 39 minutes.
+
+The cartridge counts lag twice, and the counts agree at every update. The
+VBlank handler counts a VBlank as lag when the update's busy flag is still
+set; the update sets it when it wakes and clears it just before it halts. The
+update also adds the gap since its last wake, less one, from GBDK's frame
+counter. The emulator suites add a third count of their own (see
+[TESTING.md](TESTING.md)).
+
+Each update costs 3,361 to 3,388 cycles besides its burn, at either speed: the
+VBlank interrupt, GBDK's handler with its sprite copy, Slowdown's readout and
+the update's own work. The readout takes 1,044 cycles at every VBlank, whatever
+the counts hold. So updates lag from 2,388 iterations, 95.2% at normal speed. A
+VBlank that interrupts a burn costs about 2,268 cycles more, and two lag
+frames start at 4,815 iterations, 192%. An update that finishes within one
+instruction of a VBlank can read as on time to the handler and as one lag
+frame to the gap count.
+
+These figures come from PyBoy and SameBoy. The cycle counts are a property of
+the code, so the arithmetic should hold on a console, but none has been
+checked yet.
